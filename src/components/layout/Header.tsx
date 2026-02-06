@@ -94,17 +94,19 @@ const Header = () => {
 
   return (
     <header className="w-full bg-white">
-      <div className="flex items-center justify-between px-page-x h-header">
+      <div className="flex items-center px-page-x h-header">
         {/* Logo */}
-        <a href="/" className="shrink-0">
-          <VibelinkLogo />
-        </a>
+        <div className="flex-1">
+          <a href="/" className="shrink-0 inline-block">
+            <VibelinkLogo />
+          </a>
+        </div>
 
-        {/* Tab Toggle */}
+        {/* Tab Toggle — 항상 화면 중앙 */}
         <TabToggle tabs={HEADER_TABS} activeTab={activeTab} onChange={setActiveTab} />
 
         {/* Right Section */}
-        <div className="flex items-center gap-5">
+        <div className="flex-1 flex items-center justify-end gap-5">
           <button className="cursor-pointer">
             <BellIcon />
           </button>
