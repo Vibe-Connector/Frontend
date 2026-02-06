@@ -1,1 +1,45 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
 @import "tailwindcss";
+
+@theme {
+  /* ===== Colors ===== */
+
+  /* 브랜드 메인 컬러 — 로고, 활성 탭 배경, 주요 버튼 등 */
+  --color-brand: #171E03;
+
+  /* 포인트/강조 컬러 — CTA 버튼, 알림 뱃지, 하이라이트 등 */
+  --color-accent: #F1863B;
+
+  /* 서피스 컬러 — 탭 토글 배경, 카드/입력필드 배경 등 비활성 영역 */
+  --color-surface: #F2F2F2;
+
+  /* 아이콘 컬러 — 헤더 벨/유저 아이콘 등 아웃라인 아이콘 */
+  --color-icon: #33363F;
+
+  /* 비활성 텍스트/요소 — 푸터 로고, 저작권, 소셜 아이콘, 보조 텍스트 */
+  --color-muted: #999999;
+
+  /* ===== Font ===== */
+
+  /* 기본 산세리프 폰트 — 전체 프로젝트 기본 서체 */
+  --font-sans: 'Pretendard Variable', Pretendard, system-ui, sans-serif;
+
+  /* ===== Layout Spacing ===== */
+
+  /* 헤더 높이 (피그마 109px × 0.75) */
+  --spacing-header: 82px;
+
+  /* 푸터 높이 (피그마 162px × 0.75) */
+  --spacing-footer: 122px;
+
+  /* 페이지 좌우 패딩 — 헤더, 푸터, 본문 컨텐츠 영역 공통 (피그마 64px × 0.75) */
+  --spacing-page-x: 48px;
+
+  /* 탭 버튼 최소 너비 — Generate/Explore 토글 버튼 (피그마 142px × 0.75) */
+  --spacing-tab-btn: 107px;
+
+  /* ===== Border Radius ===== */
+
+  /* 필(pill) 형태 — 탭 토글, 태그, 뱃지 등 완전 둥근 모서리 */
+  --radius-pill: 9999px;
+}

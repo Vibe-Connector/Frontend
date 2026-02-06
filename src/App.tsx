@@ -1,9 +1,12 @@
-
+import Header from './components/layout/Header'
+import Footer from './components/layout/Footer'
 
 function App() {
   return (
     <div className="app">
-      <li>야호</li>
+      <Header />
+      <main className="min-h-screen" />
+      <Footer />
     </div>
   )
 }
