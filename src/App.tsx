@@ -6,11 +6,9 @@ function App() {
   return (
     <div className="app">
       <Sidebar />
-      <div className="ml-sidebar">
-        <Header />
-        <main className="min-h-screen" />
-        <Footer />
-      </div>
+      <Header />
+      <main className="min-h-screen" />
+      <Footer />
     </div>
   )
 }
