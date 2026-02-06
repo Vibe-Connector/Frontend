@@ -1,1 +1,46 @@
 @import "tailwindcss";
+
+@theme {
+  --font-pretendard: "Pretendard", system-ui, -apple-system, sans-serif;
+
+  /* Text Colors */
+  --color-high-emphasis: #333333;
+  --color-caption: #82898E;
+  --color-low-emphasis: #9C9C9C;
+  --color-text-primary: #F1863B;
+
+  /* UI Colors */
+  --color-primary: #F4B225;
+  --color-default: #333333;
+  --color-stroke: #DADADA;
+  --color-disabled: #EDEEEF;
+  --color-input: #F2F5F9;
+  --color-search: #F6F7F8;
+  --color-primary-bg: #FFE4E4;
+  --color-purple: #7572FF;
+  --color-blue-bg: #F5F8FF;
+  --color-green: #ACA05F;
+  --color-green-bg: #EFFFF7;
+  --color-blue: #0090F9;
+
+  /* Border Radius */
+  --radius-control: 8px;
+  --radius-card: 16px;
+
+  /* Shadow */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  /* Animation */
+  --animate-fade-in: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,11 +1,7 @@
-
+import ComponentTestPage from "@/pages/ComponentTestPage";
 
 function App() {
-  return (
-    <div className="app">
-      <li>야호</li>
-    </div>
-  )
+  return <ComponentTestPage />;
 }
 
-export default App
+export default App;
