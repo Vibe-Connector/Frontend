@@ -1,6 +1,12 @@
 import { useState } from 'react';
+import TabToggle from '../common/TabToggle';
 
 type Tab = 'generate' | 'explore';
+
+const HEADER_TABS: { key: Tab; label: string }[] = [
+  { key: 'generate', label: 'Generate' },
+  { key: 'explore', label: 'Explore' },
+];
 
 const VibelinkLogo = () => (
   <svg
@@ -95,28 +101,7 @@ const Header = () => {
         </a>
 
         {/* Tab Toggle */}
-        <div className="flex bg-surface rounded-pill">
-          <button
-            onClick={() => setActiveTab('generate')}
-            className={`min-w-tab-btn py-3 rounded-pill text-sm font-medium transition-colors cursor-pointer ${
-              activeTab === 'generate'
-                ? 'bg-brand text-white'
-                : 'text-brand'
-            }`}
-          >
-            Generate
-          </button>
-          <button
-            onClick={() => setActiveTab('explore')}
-            className={`min-w-tab-btn py-3 rounded-pill text-sm font-medium transition-colors cursor-pointer ${
-              activeTab === 'explore'
-                ? 'bg-brand text-white'
-                : 'text-brand'
-            }`}
-          >
-            Explore
-          </button>
-        </div>
+        <TabToggle tabs={HEADER_TABS} activeTab={activeTab} onChange={setActiveTab} />
 
         {/* Right Section */}
         <div className="flex items-center gap-5">
