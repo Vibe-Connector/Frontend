@@ -19,6 +19,15 @@
   /* 비활성 텍스트/요소 — 푸터 로고, 저작권, 소셜 아이콘, 보조 텍스트 */
   --color-muted: #999999;
 
+  /* 사이드바 아이콘/비활성 요소 컬러 */
+  --color-sidebar-icon: #9D9AA4;
+
+  /* 사이드바 텍스트 컬러 */
+  --color-sidebar-text: #3A383F;
+
+  /* 퍼플 포인트 — Beta 뱃지, 멤버십 프로그레스 바 */
+  --color-purple: #6400CD;
+
   /* ===== Font ===== */
 
   /* 기본 산세리프 폰트 — 전체 프로젝트 기본 서체 */
@@ -37,6 +46,9 @@
 
   /* 탭 버튼 최소 너비 — Generate/Explore 토글 버튼 (피그마 142px × 0.75) */
   --spacing-tab-btn: 107px;
+
+  /* 사이드바 접힌 상태 너비 (피그마 ~80px × 0.75) */
+  --spacing-sidebar: 60px;
 
   /* ===== Border Radius ===== */
 

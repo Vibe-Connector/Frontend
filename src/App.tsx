@@ -1,12 +1,16 @@
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
+import Sidebar from './components/layout/Sidebar'
 
 function App() {
   return (
     <div className="app">
-      <Header />
-      <main className="min-h-screen" />
-      <Footer />
+      <Sidebar />
+      <div className="ml-sidebar">
+        <Header />
+        <main className="min-h-screen" />
+        <Footer />
+      </div>
     </div>
   )
 }

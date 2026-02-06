@@ -101,7 +101,7 @@ const Header = () => {
             className={`min-w-tab-btn py-3 rounded-pill text-sm font-medium transition-colors cursor-pointer ${
               activeTab === 'generate'
                 ? 'bg-brand text-white'
-                : 'text-black'
+                : 'text-brand'
             }`}
           >
             Generate
@@ -111,7 +111,7 @@ const Header = () => {
             className={`min-w-tab-btn py-3 rounded-pill text-sm font-medium transition-colors cursor-pointer ${
               activeTab === 'explore'
                 ? 'bg-brand text-white'
-                : 'text-black'
+                : 'text-brand'
             }`}
           >
             Explore
@@ -125,7 +125,7 @@ const Header = () => {
           </button>
           <div className="flex items-center gap-2">
             <UserIcon />
-            <span className="text-black text-sm">Nickname</span>
+            <span className="text-brand text-sm">Nickname</span>
           </div>
         </div>
       </div>
