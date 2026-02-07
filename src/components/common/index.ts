@@ -18,3 +18,5 @@ export type { ModalProps, ModalAction } from "./Modal";
 
 export { default as Alert } from "./Alert";
 export type { AlertProps } from "./Alert";
+
+export { default as ProfileDropdown } from "./ProfileDropdown";

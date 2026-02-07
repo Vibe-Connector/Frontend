@@ -1,6 +1,5 @@
 import { useState } from 'react';
-
-type SidebarMode = 'explore' | 'profile';
+import { useAppMode } from '../../hooks/useAppMode';
 
 /* ─── Icons (Material Design, viewBox 0 0 24 24) ─── */
 
@@ -40,12 +39,6 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const LogoutIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
-    <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" />
-  </svg>
-);
-
 /* ─── Types ─── */
 
 type SidebarItemData = {
@@ -57,7 +50,7 @@ type SidebarItemData = {
 /* ─── Sidebar ─── */
 
 const Sidebar = () => {
-  const [mode, setMode] = useState<SidebarMode>('explore');
+  const { sidebarMode, switchToExplore, switchToProfile } = useAppMode();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const exploreItems: SidebarItemData[] = [
@@ -68,13 +61,12 @@ const Sidebar = () => {
   ];
 
   const profileItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home', onClick: () => setMode('explore') },
-    { icon: <MyInfoIcon />, label: 'My Info' },
-    { icon: <SettingsIcon />, label: 'Settings' },
-    { icon: <LogoutIcon />, label: 'Logout' },
+    { icon: <HomeIcon />, label: 'Home', onClick: switchToExplore },
+    { icon: <MyInfoIcon />, label: 'My Info', onClick: () => switchToProfile('my-info') },
+    { icon: <SettingsIcon />, label: 'Settings', onClick: () => switchToProfile('settings') },
   ];
 
-  const items = mode === 'explore' ? exploreItems : profileItems;
+  const items = sidebarMode === 'explore' ? exploreItems : profileItems;
 
   /* p-4 (16px × 2) + w-6 (24px) = 56px */
   const BUTTON_SIZE = 56;

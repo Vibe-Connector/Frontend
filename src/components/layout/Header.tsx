@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import TabToggle from '../common/TabToggle';
+import ProfileDropdown from '../common/ProfileDropdown';
+import { useAppMode } from '../../hooks/useAppMode';
 
 type Tab = 'generate' | 'explore';
 
@@ -65,55 +67,43 @@ const BellIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
-  <svg
-    viewBox="1703 41 27 28"
-    className="w-4.5 h-4.5 text-icon"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M1727.13 66.1147C1726.5 64.3605 1725.12 62.8104 1723.2 61.7048C1721.28 60.5993 1718.92 60 1716.5 60C1714.08 60 1711.72 60.5993 1709.8 61.7048C1707.88 62.8104 1706.5 64.3605 1705.87 66.1147"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-    />
-    <circle
-      cx="1716.5"
-      cy="49"
-      r="5.5"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-    />
-  </svg>
-);
-
 const Header = () => {
   const [activeTab, setActiveTab] = useState<Tab>('generate');
+  const { sidebarMode, profilePage, switchToExplore } = useAppMode();
+
+  /** 프로필 페이지 라벨 매핑 */
+  const profilePageLabel = profilePage === 'my-info' ? '내 정보' : '설정';
 
   return (
     <header className="w-full bg-white">
       <div className="flex items-center px-page-x h-header">
-        {/* Logo */}
+        {/* Logo — 클릭 시 Explore 모드로 복귀 */}
         <div className="flex-1">
-          <a href="/" className="shrink-0 inline-block">
+          <a
+            href="/"
+            className="shrink-0 inline-block"
+            onClick={(e) => {
+              e.preventDefault();
+              switchToExplore();
+            }}
+          >
             <VibelinkLogo />
           </a>
         </div>
 
-        {/* Tab Toggle — 항상 화면 중앙 */}
-        <TabToggle tabs={HEADER_TABS} activeTab={activeTab} onChange={setActiveTab} />
+        {/* 중앙: Explore 모드 → TabToggle / Profile 모드 → 페이지명 */}
+        {sidebarMode === 'explore' ? (
+          <TabToggle tabs={HEADER_TABS} activeTab={activeTab} onChange={setActiveTab} />
+        ) : (
+          <span className="text-brand text-sm font-medium">{profilePageLabel}</span>
+        )}
 
-        {/* Right Section */}
+        {/* Right Section — ProfileDropdown으로 교체 */}
         <div className="flex-1 flex items-center justify-end gap-5">
           <button className="cursor-pointer">
             <BellIcon />
           </button>
-          <div className="flex items-center gap-2">
-            <UserIcon />
-            <span className="text-brand text-sm">Nickname</span>
-          </div>
+          <ProfileDropdown />
         </div>
       </div>
     </header>
