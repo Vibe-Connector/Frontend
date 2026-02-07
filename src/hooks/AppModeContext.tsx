@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useState, type ReactNode } from 'react';
 import type { AppModeContextValue, ProfilePage, SidebarMode } from '../types/app-mode';
 
 /**
@@ -6,7 +6,7 @@ import type { AppModeContextValue, ProfilePage, SidebarMode } from '../types/app
  * - explore 모드: 기본 탐색 (Home, My Feed, Archive, Report)
  * - profile 모드: 프로필 관리 (Home, My Info, Settings)
  */
-const AppModeContext = createContext<AppModeContextValue | null>(null);
+export const AppModeContext = createContext<AppModeContextValue | null>(null);
 
 /** App 최상단에서 감싸는 Provider — 모드 상태와 전환 함수를 제공 */
 export function AppModeProvider({ children }: { children: ReactNode }) {
@@ -30,16 +30,4 @@ export function AppModeProvider({ children }: { children: ReactNode }) {
       {children}
     </AppModeContext.Provider>
   );
-}
-
-/**
- * AppMode Context 소비 훅.
- * Header, Sidebar 등에서 현재 모드 상태와 전환 함수에 접근할 때 사용합니다.
- */
-export function useAppMode(): AppModeContextValue {
-  const context = useContext(AppModeContext);
-  if (!context) {
-    throw new Error('useAppMode must be used within an AppModeProvider');
-  }
-  return context;
 }

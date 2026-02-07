@@ -1,4 +1,4 @@
-import { AppModeProvider } from './hooks/useAppMode'
+import { AppModeProvider } from './hooks/AppModeContext'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Sidebar from './components/layout/Sidebar'
