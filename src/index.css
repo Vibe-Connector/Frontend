@@ -33,6 +33,11 @@
 
   /* Animation */
   --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-slide-right: slide-in-right 0.3s ease-out;
+  --animate-slide-left: slide-in-left 0.3s ease-out;
+
+  /* Vibe flow */
+  --color-vibe-bg: #FFF8F0;
 
     /* ===== Colors ===== */
 
@@ -83,14 +88,18 @@
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ===== Custom Utilities ===== */
@@ -98,4 +107,40 @@
 /* 부드러운 트랜지션 — 사이드바 fish-eye, 툴팁 슬라이드 등 공통 애니메이션 */
 @utility animate-smooth {
   transition: all 300ms ease-out;
+}
+
+@utility animate-slide-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+@utility animate-slide-left {
+  animation: slide-in-left 0.3s ease-out;
+}
+
+/* Vibe weather slider */
+input[type="range"].vibe-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  outline: none;
+  background: var(--color-surface);
+}
+input[type="range"].vibe-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+}
+input[type="range"].vibe-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  border: none;
 }
