@@ -2,22 +2,22 @@ import { createBrowserRouter } from 'react-router-dom';
 import PublicLayout from '@/components/layout/PublicLayout';
 import AppLayout from '@/components/layout/AppLayout';
 
-import Home from '@/pages/Home';
-import Login from '@/pages/Login';
-import SignUp from '@/pages/SignUp';
-import Explore from '@/pages/Explore';
-import Feed from '@/pages/Feed';
-import FeedDetail from '@/pages/FeedDetail';
-import VibeConnector from '@/pages/VibeConnector';
-import VibeConnectorConnect from '@/pages/VibeConnectorConnect';
-import VibeConnectorEdit from '@/pages/VibeConnectorEdit';
-import VibeConnectorLoading from '@/pages/VibeConnectorLoading';
-import VibeConnectorResult from '@/pages/VibeConnectorResult';
-import Profile from '@/pages/Profile';
-import ProfileSettings from '@/pages/ProfileSettings';
-import ProfileAnalysisReport from '@/pages/ProfileAnalysisReport';
-import Archive from '@/pages/Archive';
-import ArchiveDetail from '@/pages/ArchiveDetail';
+import Home from '@/pages/home/Home';
+import Login from '@/pages/auth/Login';
+import SignUp from '@/pages/auth/SignUp';
+import Explore from '@/pages/home/Explore';
+import Feed from '@/pages/feed/Feed';
+import FeedDetail from '@/pages/feed/FeedDetail';
+import VibeConnector from '@/pages/vibe/VibeConnector';
+import VibeConnectorConnect from '@/pages/vibe/VibeConnectorConnect';
+import VibeConnectorEdit from '@/pages/vibe/VibeConnectorEdit';
+import VibeConnectorLoading from '@/pages/vibe/VibeConnectorLoading';
+import VibeConnectorResult from '@/pages/vibe/VibeConnectorResult';
+import Profile from '@/pages/mypage/Profile';
+import ProfileSettings from '@/pages/mypage/ProfileSettings';
+import ProfileAnalysisReport from '@/pages/mypage/ProfileAnalysisReport';
+import Archive from '@/pages/archive/Archive';
+import ArchiveDetail from '@/pages/archive/ArchiveDetail';
 
 export const router = createBrowserRouter([
   // -- Public (비인증) --
