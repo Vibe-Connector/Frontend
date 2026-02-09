@@ -1,20 +1,6 @@
-import { AppModeProvider } from './hooks/AppModeContext'
-import Header from './components/layout/Header'
-import Footer from './components/layout/Footer'
-import Sidebar from './components/layout/Sidebar'
+import { RouterProvider } from 'react-router-dom';
+import { router } from '@/router';
 
-function App() {
-  return (
-    <AppModeProvider>
-      <div className="app">
-        <Sidebar />
-        <Header />
-        <main className="min-h-screen" />
-        <Footer />
-      </div>
-    </AppModeProvider>
-  )
+export default function App() {
+  return <RouterProvider router={router} />;
 }
-
-
-export default App;
