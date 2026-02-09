@@ -68,16 +68,28 @@ const BellIcon = () => (
 );
 
 const Header = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('generate');
+  const navigate = useNavigate();
+  const location = useLocation();
   const { sidebarMode, profilePage, switchToExplore } = useAppMode();
 
+  /** URL 기반 탭 활성 상태 동기화 */
+  const activeTab: Tab = location.pathname.startsWith('/vibe') ? 'generate' : 'explore';
+
+  /** 탭 변경 시 해당 경로로 이동 */
+  const handleTabChange = (tab: Tab) => {
+    if (tab === 'generate') navigate('/vibe');
+    else navigate('/explore');
+  };
+
   /** 프로필 페이지 라벨 매핑 */
-  const profilePageLabel = profilePage === 'my-info' ? '내 정보' : '설정';
+  const profilePageLabel =
+    profilePage === 'my-info' ? '내 정보' :
+    profilePage === 'report' ? 'Report' : '설정';
 
   return (
     <header className="w-full bg-white">
       <div className="flex items-center px-page-x h-header">
-        {/* Logo — 클릭 시 Explore 모드로 복귀 */}
+        {/* Logo — 클릭 시 '/'로 이동 + Explore 모드 복귀 */}
         <div className="flex-1">
           <a
             href="/"
@@ -85,6 +97,7 @@ const Header = () => {
             onClick={(e) => {
               e.preventDefault();
               switchToExplore();
+              navigate('/');
             }}
           >
             <VibelinkLogo />
@@ -93,7 +106,7 @@ const Header = () => {
 
         {/* 중앙: Explore 모드 → TabToggle / Profile 모드 → 페이지명 */}
         {sidebarMode === 'explore' ? (
-          <TabToggle tabs={HEADER_TABS} activeTab={activeTab} onChange={setActiveTab} />
+          <TabToggle tabs={HEADER_TABS} activeTab={activeTab} onChange={handleTabChange} />
         ) : (
           <span className="text-brand text-sm font-medium">{profilePageLabel}</span>
         )}

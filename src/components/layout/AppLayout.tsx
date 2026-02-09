@@ -16,7 +16,9 @@ function AppLayoutInner() {
 
     if (path.startsWith('/profile/settings')) {
       switchToProfile('settings');
-    } else if (path.startsWith('/profile') || path.startsWith('/archive')) {
+    } else if (path.startsWith('/profile/report')) {
+      switchToProfile('report');
+    } else if (path.startsWith('/profile')) {
       switchToProfile('my-info');
     } else {
       switchToExplore();

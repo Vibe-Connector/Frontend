@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { useAppMode } from '../../hooks/useAppMode';
 import type { ProfilePage } from '../../types/app-mode';
@@ -49,9 +50,17 @@ const MENU_ITEMS: ProfileMenuItem[] = [
   { label: '로그아웃', action: 'logout' },
 ];
 
+/** 프로필 페이지별 경로 매핑 */
+const PROFILE_ROUTES: Record<ProfilePage, string> = {
+  'my-info': '/profile',
+  'settings': '/profile/settings',
+  'report': '/profile/report',
+};
+
 const ProfileDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { switchToProfile } = useAppMode();
 
   /** 바깥 클릭 시 드롭다운 닫기 — useClickOutside 훅 사용 */
@@ -64,6 +73,7 @@ const ProfileDropdown = () => {
       // TODO: 로그아웃 로직 구현
     } else {
       switchToProfile(action);
+      navigate(PROFILE_ROUTES[action]);
     }
     setIsOpen(false);
   };
