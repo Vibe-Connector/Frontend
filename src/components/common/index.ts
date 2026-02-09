@@ -20,3 +20,6 @@ export { default as Alert } from "./Alert";
 export type { AlertProps } from "./Alert";
 
 export { default as ProfileDropdown } from "./ProfileDropdown";
+
+export { default as TextInput } from "./TextInput";
+export type { TextInputProps } from "./TextInput";
