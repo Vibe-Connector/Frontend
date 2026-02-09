@@ -2,7 +2,7 @@
 export type SidebarMode = 'explore' | 'profile';
 
 /** 프로필 모드 내 활성 페이지 */
-export type ProfilePage = 'my-info' | 'settings';
+export type ProfilePage = 'my-info' | 'settings' | 'report';
 
 /** AppMode Context가 제공하는 상태 및 액션 */
 export interface AppModeContextValue {

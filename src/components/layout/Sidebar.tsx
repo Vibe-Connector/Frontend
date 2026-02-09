@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppMode } from '../../hooks/useAppMode';
 
 /* ─── Icons (Material Design, viewBox 0 0 24 24) ─── */
@@ -50,20 +51,21 @@ type SidebarItemData = {
 /* ─── Sidebar ─── */
 
 const Sidebar = () => {
+  const navigate = useNavigate();
   const { sidebarMode, switchToExplore, switchToProfile } = useAppMode();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const exploreItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home' },
-    { icon: <FeedIcon />, label: 'My Feed' },
-    { icon: <ArchiveIcon />, label: 'Archive' },
-    { icon: <ReportIcon />, label: 'Report' },
+    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/'); } },
+    { icon: <FeedIcon />, label: 'My Feed', onClick: () => navigate('/feed') },
+    { icon: <ArchiveIcon />, label: 'Archive', onClick: () => navigate('/archive') },
   ];
 
   const profileItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home', onClick: switchToExplore },
-    { icon: <MyInfoIcon />, label: 'My Info', onClick: () => switchToProfile('my-info') },
-    { icon: <SettingsIcon />, label: 'Settings', onClick: () => switchToProfile('settings') },
+    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/'); } },
+    { icon: <MyInfoIcon />, label: 'My Info', onClick: () => { switchToProfile('my-info'); navigate('/profile'); } },
+    { icon: <ReportIcon />, label: 'Report', onClick: () => { switchToProfile('report'); navigate('/profile/report'); } },
+    { icon: <SettingsIcon />, label: 'Settings', onClick: () => { switchToProfile('settings'); navigate('/profile/settings'); } },
   ];
 
   const items = sidebarMode === 'explore' ? exploreItems : profileItems;
