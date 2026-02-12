@@ -82,29 +82,44 @@ const Sidebar = () => {
     return 1.0;
   };
 
+  /* Compute cumulative Y offset for each item so scaled buttons
+     maintain the original gap. Uses only transforms (GPU-accelerated,
+     no layout reflow) for jitter-free animation. */
+  const getOffsetY = (index: number): number => {
+    let offset = 0;
+    for (let i = 1; i <= index; i++) {
+      // Each pair of neighbours: previous expands down, current expands up
+      offset += (BUTTON_SIZE / 2) * ((getScale(i - 1) - 1) + (getScale(i) - 1));
+    }
+    return offset;
+  };
+
   return (
     <nav
       className="fixed left-5 top-1/2 -translate-y-1/2 z-50
-        flex flex-col items-center gap-3"
+        flex flex-col items-start gap-3"
       onMouseLeave={() => setHoveredIndex(null)}
     >
       {items.map((item, index) => {
         const scale = getScale(index);
         const isHovered = hoveredIndex === index;
-        const size = BUTTON_SIZE * scale;
+        const offsetY = getOffsetY(index);
 
         return (
           <div
             key={item.label}
-            className="relative flex items-center justify-center
-              animate-smooth"
-            style={{ width: size, height: size }}
+            className="relative flex items-center animate-smooth"
+            style={{
+              width: BUTTON_SIZE,
+              height: BUTTON_SIZE,
+              transform: `translateY(${offsetY}px)`,
+            }}
           >
             <button
               onMouseEnter={() => setHoveredIndex(index)}
               onClick={item.onClick}
               className="p-4 rounded-2xl bg-surface text-sidebar-icon
-                animate-smooth cursor-pointer"
+                animate-smooth cursor-pointer origin-left"
               style={{ transform: `scale(${scale})` }}
             >
               {item.icon}
@@ -112,7 +127,7 @@ const Sidebar = () => {
 
             {/* Label tooltip — slides in from left on hover */}
             <div
-              className={`absolute left-full top-1/2 -translate-y-1/2 ml-3
+              className={`absolute top-1/2 -translate-y-1/2 ml-3
                 bg-surface rounded-xl px-4 py-2
                 whitespace-nowrap text-sm font-bold text-sidebar-text
                 animate-smooth pointer-events-none
@@ -120,6 +135,7 @@ const Sidebar = () => {
                   ? 'opacity-100 translate-x-0'
                   : 'opacity-0 -translate-x-2'
                 }`}
+              style={{ left: BUTTON_SIZE * scale }}
             >
               {item.label}
             </div>
