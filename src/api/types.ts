@@ -20,13 +20,14 @@ export interface PageResponse<T> {
 // ── API 에러 클래스 ──
 // 인터셉터에서 생성하여 throw, TanStack Query와 ErrorBoundary에서 catch
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly status: number,
-  ) {
+  readonly code: string;
+  readonly status: number;
+
+  constructor(message: string, code: string, status: number) {
     super(message);
     this.name = 'ApiError';
+    this.code = code;
+    this.status = status;
   }
 }
 
