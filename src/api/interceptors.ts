@@ -28,12 +28,17 @@ function rejectPendingRequests() {
 
 // ── 공통 인터셉터 설정 ──
 export function setupInterceptors(instance: AxiosInstance) {
-  // Request: JWT 토큰 자동 주입
+  // Request: JWT 토큰 자동 주입 + i18n 언어 헤더
   instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     const { accessToken } = getAuthState();
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
+
+    // 백엔드 LanguageInterceptor가 Accept-Language를 파싱하여 languageId 결정
+    // MVP에서는 'ko' 고정, 향후 언어 설정 스토어에서 읽도록 확장
+    config.headers['Accept-Language'] = 'ko';
+
     return config;
   });
 
