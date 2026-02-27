@@ -26,3 +26,4 @@ export type {
   AromaProfile,
   CoffeeDetailResponse,
 } from './types';
+export * from './item';
