@@ -1,5 +1,9 @@
 import client from './client';
-import type { MovieDetailResponse, MusicDetailResponse } from './types';
+import type {
+  MovieDetailResponse,
+  MusicDetailResponse,
+  LightingDetailResponse,
+} from './types';
 
 // ── 영화 상세 조회 ──
 // GET /api/v1/items/{itemId}/movie
@@ -12,3 +16,9 @@ export const getMovieDetail = (itemId: number) =>
 
 export const getMusicDetail = (itemId: number) =>
   client.get<MusicDetailResponse>(`/items/${itemId}/music`);
+
+// ── 조명 상세 조회 ──
+// GET /api/v1/items/{itemId}/lighting
+
+export const getLightingDetail = (itemId: number) =>
+  client.get<LightingDetailResponse>(`/items/${itemId}/lighting`);
