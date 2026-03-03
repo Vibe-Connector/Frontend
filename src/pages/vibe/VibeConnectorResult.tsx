@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
+import { getVibeSession } from '@/api/vibe';
+import type { VibeResultResponse } from '@/api/vibe';
 
-/* ---------- Mock Data ---------- */
+// [BEFORE INTEGRATION] const MOCK_RESULT = { ... 하드코딩 mock 데이터 }
+// [AFTER INTEGRATION] 실제 API에서 데이터를 가져옴
 
-const MOCK_RESULT = {
+/* ---------- Mock Data (API 실패 시 폴백) ---------- */
+
+const FALLBACK_RESULT = {
   image: 'https://picsum.photos/seed/vibe-result/800/1100',
   sentence:
     'A warm afternoon wrapped in vintage textures and the quiet hum of a playlist — this is your vibe.',
@@ -199,10 +204,51 @@ function ItemRow({
 
 /* ---------- Main Component ---------- */
 
+// API 결과를 UI 형식으로 변환
+function mapApiResultToView(apiResult: VibeResultResponse) {
+  const CATEGORY_LABELS: Record<string, string> = {
+    movie: 'TV SHOW', music: 'PLAYLIST', lighting: 'LIGHT', coffee: 'FRAGRANCE',
+  };
+  return {
+    image: 'https://picsum.photos/seed/vibe-result/800/1100', // AI 이미지 URL은 추후 백엔드에서 제공
+    sentence: apiResult.phrase ?? 'Your unique vibe.',
+    moodColor: '#C4A882',
+    categories: apiResult.recommendations.map((cat) => ({
+      key: cat.categoryKey === 'movie' ? 'tvshow' : cat.categoryKey === 'music' ? 'playlist' : cat.categoryKey,
+      label: CATEGORY_LABELS[cat.categoryKey] ?? cat.categoryKey.toUpperCase(),
+      items: cat.items.map((item) => ({
+        id: String(item.itemId),
+        name: item.itemName ?? item.itemKey,
+        detail: [item.brand, item.recommendReason].filter(Boolean).join(' · ') || cat.categoryKey,
+      })),
+    })),
+  };
+}
+
 export default function VibeConnectorResult() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
-  const result = MOCK_RESULT;
+
+  // [AFTER INTEGRATION] API에서 결과 데이터 로드
+  const [result, setResult] = useState(FALLBACK_RESULT);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!sessionId || sessionId === 'demo') return;
+    setLoading(true);
+    getVibeSession(Number(sessionId))
+      .then((data) => setResult(mapApiResultToView(data)))
+      .catch(() => setResult(FALLBACK_RESULT))
+      .finally(() => setLoading(false));
+  }, [sessionId]);
+
+  if (loading) {
+    return (
+      <PageContainer className="flex items-center justify-center">
+        <p className="text-caption">결과를 불러오는 중...</p>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer className="!px-0">

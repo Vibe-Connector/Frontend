@@ -24,20 +24,36 @@ VibeLink는 **AI 기반 공감각 큐레이션 플랫폼**이다.
 ### 완료 (Foundation Layer)
 - **디자인 시스템**: Tailwind v4 `@theme` 기반 시맨틱 토큰 (색상, radius, 간격, 폰트)
 - **레이아웃 컴포넌트**: Header, Footer, Sidebar (fish-eye 호버, 모드 전환 애니메이션)
-- **공통 UI 라이브러리**: Button(3종), Dropdown, Modal, Alert, Pagination, TabToggle, ProfileDropdown
+- **레이아웃 시스템**: AppLayout (인증 라우트), PublicLayout (비인증 라우트), PageContainer
+- **공통 UI 라이브러리**: Button(3종), Dropdown, Modal, Alert, Pagination, TabToggle, ProfileDropdown, ExploreMasonryGrid
 - **프로젝트 설정**: TypeScript strict mode, Vite path alias (`@/*`), ESLint flat config
 - **상태 관리 (기초)**: AppModeContext (헤더/사이드바 모드 동기화), useClickOutside 훅
+- **라우터**: React Router v7 `createBrowserRouter` 기반 전체 라우트 정의 (레이아웃 분기 포함)
+
+### 완료 (Core Feature — Vibe 3단계 플로우)
+- **Vibe Feature 모듈** (`src/features/vibe/`): 타입, 상수, 훅, 컴포넌트 전체 구현
+- **Step 1**: MoodMindMap (구름형 칩 + 커스텀 무드 입력 + 방사형 배치)
+- **Step 2**: AnalogClock (SVG 섹터 시계) + WeatherSelector (카드 선택)
+- **Step 3**: PlaceSelector + CompanionSelector (SelectionCard 기반)
+- **상태 관리**: `useVibeFlow` 훅 (useReducer 기반, 11개 액션 타입)
+- **공통**: StepIndicator (진행 표시), StepNavigation (이전/다음/리셋/제출)
+
+### 완료 (Pages — UI 구현, 백엔드 미연동)
+- **VibeConnector**: 3단계 오케스트레이터 (방향 인식 슬라이드 애니메이션)
+- **VibeConnectorLoading**: 프로그레스 스피너 + 피드 토글 + ExploreMasonryGrid
+- **VibeConnectorResult**: 4카테고리 결과 표시 (LIGHT, TV SHOW, FRAGRANCE, PLAYLIST) + 모의 데이터
+- **Explore**: ExploreMasonryGrid 기반 탐색 페이지
+- **Feed**: 프로필 섹션 + 포토 그리드 + 컬렉션 (모의 데이터)
 
 ### 스캐폴딩됨 (파일 생성, 내용 미구현)
-- **페이지**: 16개 페이지 파일 (빈 상태)
-- **라우터**: `src/router/index.tsx` (빈 상태)
+- **페이지**: Home, Login, SignUp, FeedDetail, Profile, ProfileSettings, ProfileAnalysisReport, Archive, ArchiveDetail, VibeConnectorConnect, VibeConnectorEdit
 
 ### 미착수 (Core Features)
-- Feature 모듈 (auth, vibe, archive, feed, notification, integration, report)
+- Feature 모듈 (auth, archive, feed, notification, integration, report)
 - 상태 관리 (Zustand, React Query)
 - API 레이어 (HTTP 클라이언트, interceptor)
 - 인증 플로우 (JWT, 소셜 로그인)
-- Vibe 3단계 플로우
+- 백엔드 연동 (현재 모든 데이터는 모의/정적)
 - 다국어 (i18n)
 - 테스트 인프라
 - 환경 변수 설정
@@ -50,7 +66,7 @@ VibeLink는 **AI 기반 공감각 큐레이션 플랫폼**이다.
 |------|------|------|------|
 | Framework | **React** with **Vite** | React 19.2, Vite 7.2 | SPA 기반 |
 | Language | **TypeScript** | 5.9 | strict mode 활성 |
-| 라우팅 | **React Router** | v7.13 | 중첩 라우트 활용 (미구현) |
+| 라우팅 | **React Router** | v7.13 | `createBrowserRouter` 기반 레이아웃 분기 구현 완료 |
 | 스타일링 | **Tailwind CSS v4** | 4.1 | `@theme` 인라인 설정, `@tailwindcss/vite` 플러그인 |
 | 상태 관리 (예정) | **Zustand** (글로벌) + **React Query** (서버 상태) | 미설치 | Vibe 플로우는 Zustand store 분리 |
 | 다국어 (예정) | **react-i18next** | 미설치 | ko, en, zh 지원 |
@@ -73,6 +89,7 @@ src/
 │   │   ├── ButtonOrange.tsx
 │   │   ├── ButtonPrimary.tsx
 │   │   ├── Dropdown.tsx
+│   │   ├── ExploreMasonryGrid.tsx  # Pinterest 스타일 무한스크롤 그리드
 │   │   ├── Modal.tsx
 │   │   ├── Pagination.tsx
 │   │   ├── ProfileDropdown.tsx
@@ -80,36 +97,68 @@ src/
 │   │   └── index.ts           # barrel export
 │   ├── feedback/              # 피드백 컴포넌트 (빈 디렉토리)
 │   └── layout/                # 레이아웃 컴포넌트 (구현 완료)
+│       ├── AppLayout.tsx      # 인증 라우트 레이아웃 (Header+Sidebar+Footer, 경로 기반 모드 전환)
 │       ├── Header.tsx
 │       ├── Footer.tsx
+│       ├── PageContainer.tsx  # 페이지 콘텐츠 래퍼 (max-width + padding)
+│       ├── PublicLayout.tsx   # 비인증 라우트 레이아웃 (Header+Footer)
 │       └── Sidebar.tsx
+│
+├── features/
+│   └── vibe/                  # Vibe 3단계 플로우 (구현 완료)
+│       ├── types.ts           # MoodKeyword, TimeOption, WeatherOption, VibeFlowState, VibeAction
+│       ├── constants.ts       # 프리셋 무드/시간/날씨/공간/동반자 옵션, MAX_MOOD_SELECTIONS 등
+│       ├── hooks/
+│       │   └── useVibeFlow.ts # useReducer 기반 상태 관리 (11개 액션, canProceed 검증)
+│       └── components/
+│           ├── StepIndicator.tsx    # 1-2-3 진행 표시 (체크마크, 색상 전환)
+│           ├── StepNavigation.tsx   # PREV/NEXT/RESET/SUBMIT 버튼
+│           ├── step1/
+│           │   ├── MoodMindMap.tsx      # 메인 컨테이너 (장식 SVG 두들)
+│           │   ├── MoodCloudChip.tsx    # 구름형 칩 (비대칭 border-radius)
+│           │   └── MoodInputBubble.tsx  # 중앙 커스텀 무드 입력
+│           ├── step2/
+│           │   ├── TimeWeatherPanel.tsx # 2열 레이아웃
+│           │   ├── AnalogClock.tsx      # SVG 섹터 시계 (AM/PM, 호버, 클릭)
+│           │   └── WeatherSelector.tsx  # 날씨 카드 선택
+│           └── step3/
+│               ├── PlaceCompanionPanel.tsx  # 2열 레이아웃 + 프리뷰
+│               ├── SelectionCard.tsx        # 재사용 선택 카드
+│               ├── PlaceSelector.tsx        # 공간 선택
+│               └── CompanionSelector.tsx    # 동반자 선택
 │
 ├── hooks/                     # 커스텀 훅
 │   ├── AppModeContext.tsx      # 앱 모드 Context Provider
 │   ├── useAppMode.ts          # AppModeContext 소비 훅
 │   └── useClickOutside.ts     # 외부 클릭 감지 훅
 │
-├── pages/                     # 라우트 단위 페이지 (빈 파일들)
-│   ├── Home.tsx
-│   ├── Login.tsx
-│   ├── SignUp.tsx
-│   ├── Explore.tsx
-│   ├── Feed.tsx
-│   ├── FeedDetail.tsx
-│   ├── VibeConnector.tsx      # Vibe 3단계 플로우 메인
-│   ├── VibeConnectorConnect.tsx
-│   ├── VibeConnectorEdit.tsx
-│   ├── VibeConnectorLoading.tsx
-│   ├── VibeConnectorResult.tsx
-│   ├── Profile.tsx
-│   ├── ProfileSettings.tsx
-│   ├── ProfileAnalysisReport.tsx
-│   ├── Archive.tsx
-│   ├── ArchiveDetail.tsx
-│   └── ComponentTestPage.tsx  # 공통 컴포넌트 테스트 페이지 (구현 완료)
+├── pages/                     # 라우트 단위 페이지 (하위 폴더별 정리)
+│   ├── home/
+│   │   ├── Home.tsx               # 스캐폴드
+│   │   └── Explore.tsx            # ExploreMasonryGrid 기반 (구현 완료)
+│   ├── auth/
+│   │   ├── Login.tsx              # 스캐폴드
+│   │   └── SignUp.tsx             # 스캐폴드
+│   ├── vibe/
+│   │   ├── VibeConnector.tsx      # 3단계 오케스트레이터 (구현 완료)
+│   │   ├── VibeConnectorConnect.tsx  # 스캐폴드
+│   │   ├── VibeConnectorEdit.tsx     # 스캐폴드
+│   │   ├── VibeConnectorLoading.tsx  # 프로그레스 + 피드 (구현 완료)
+│   │   └── VibeConnectorResult.tsx   # 4카테고리 결과 (구현 완료, 모의 데이터)
+│   ├── feed/
+│   │   ├── Feed.tsx               # 프로필+그리드+컬렉션 (구현 완료, 모의 데이터)
+│   │   └── FeedDetail.tsx         # 스캐폴드
+│   ├── mypage/
+│   │   ├── Profile.tsx            # 스캐폴드
+│   │   ├── ProfileSettings.tsx    # 스캐폴드
+│   │   └── ProfileAnalysisReport.tsx  # 스캐폴드
+│   ├── archive/
+│   │   ├── Archive.tsx            # 스캐폴드
+│   │   └── ArchiveDetail.tsx      # 스캐폴드
+│   └── ComponentTestPage.tsx      # 공통 컴포넌트 테스트 (구현 완료)
 │
-├── router/                    # 라우트 설정 (빈 파일)
-│   └── index.tsx
+├── router/                    # 라우트 설정 (구현 완료)
+│   └── index.tsx              # createBrowserRouter, PublicLayout/AppLayout 분기, 404 핸들링
 │
 ├── types/                     # 타입 정의
 │   └── app-mode.ts            # SidebarMode, ProfilePage, AppModeContextValue
@@ -117,7 +166,7 @@ src/
 ├── assets/                    # 정적 파일
 │   └── react.svg
 │
-├── App.tsx                    # 앱 루트 (AppModeProvider + Layout)
+├── App.tsx                    # 앱 루트 (RouterProvider)
 ├── main.tsx                   # Vite 진입점
 └── index.css                  # 글로벌 스타일 + 디자인 토큰 (@theme)
 ```
@@ -198,36 +247,43 @@ src/
 
 ---
 
-## 라우트 구조 (계획)
+## 라우트 구조 (구현 완료)
 
 ```
-/                              → 랜딩 또는 Vibe 생성 페이지로 리다이렉트
-/login                         → 로그인 (Login.tsx)
-/signup                        → 회원가입 (SignUp.tsx)
-/auth/callback/:provider       → 소셜 로그인 콜백
+/                              → Home (AppLayout)
+/login                         → 로그인 (PublicLayout)
+/signup                        → 회원가입 (PublicLayout)
 
-/vibe                          → Vibe 생성 3단계 플로우 (VibeConnector.tsx)
-/vibe/connect                  → Vibe 연결 (VibeConnectorConnect.tsx)
-/vibe/edit                     → Vibe 편집 (VibeConnectorEdit.tsx)
-/vibe/loading                  → Vibe 생성 대기 (VibeConnectorLoading.tsx)
-/vibe/result/:sessionId        → Vibe 결과 (VibeConnectorResult.tsx)
+/explore                       → 탐색 (AppLayout)
+/feed                          → 공개 피드 목록 (AppLayout)
+/feed/:feedId                  → 피드 상세 (AppLayout)
 
-/explore                       → 탐색 (Explore.tsx)
-/feed                          → 공개 피드 목록 (Feed.tsx)
-/feed/:feedId                  → 피드 상세 (FeedDetail.tsx)
+/vibe                          → Vibe 생성 3단계 플로우 (AppLayout)
+/vibe/connect                  → Vibe 연결 (AppLayout)
+/vibe/edit                     → Vibe 편집 (AppLayout)
+/vibe/loading                  → Vibe 생성 대기 (AppLayout)
+/vibe/result/:sessionId        → Vibe 결과 (AppLayout)
 
-/profile                       → 프로필 (Profile.tsx)
-/profile/settings              → 설정 (ProfileSettings.tsx)
-/profile/report                → 분석 리포트 (ProfileAnalysisReport.tsx)
+/profile                       → 프로필 (AppLayout, 사이드바 profile 모드)
+/profile/settings              → 설정 (AppLayout, 사이드바 profile 모드)
+/profile/report                → 분석 리포트 (AppLayout, 사이드바 profile 모드)
 
-/archive                       → 아카이브 (Archive.tsx)
-/archive/:folderId             → 아카이브 상세 (ArchiveDetail.tsx)
+/archive                       → 아카이브 (AppLayout, 사이드바 profile 모드)
+/archive/:folderId             → 아카이브 상세 (AppLayout, 사이드바 profile 모드)
+
+*                              → 404 커스텀 에러 페이지
 ```
 
-### 라우트 가드
+### 레이아웃 분기
+- **PublicLayout**: `/login`, `/signup` — Header + Content + Footer
+- **AppLayout**: 그 외 모든 라우트 — Header + Sidebar + Content + Footer
+  - 경로 기반 자동 사이드바 모드 전환 (`/profile/*`, `/archive/*` → profile 모드)
+
+### 라우트 가드 (미구현)
 - **인증 필수**: `/vibe/*`, `/profile/*`, `/feed`, `/archive/*`
 - **비인증만 접근**: `/login`, `/signup`
 - JWT 만료 시 → 리프레시 토큰으로 갱신 시도 → 실패 시 `/login` 리다이렉트
+- `/auth/callback/:provider` → 소셜 로그인 콜백 (미구현)
 
 ---
 
@@ -235,16 +291,33 @@ src/
 
 ### Layout 컴포넌트
 
+#### AppLayout (`src/components/layout/AppLayout.tsx`)
+- 인증 라우트 전용 레이아웃 (Header + Sidebar + Content + Footer)
+- `AppLayoutInner`에서 경로 기반 사이드바 모드 자동 전환
+  - `/profile/settings` → profile 모드, 'settings' 페이지
+  - `/profile/*`, `/archive/*` → profile 모드, 'my-info' 페이지
+  - 그 외 → explore 모드
+
+#### PublicLayout (`src/components/layout/PublicLayout.tsx`)
+- 비인증 라우트 전용 레이아웃 (Header + Content + Footer)
+- AppModeProvider 래핑
+
+#### PageContainer (`src/components/layout/PageContainer.tsx`)
+- 페이지 콘텐츠 래퍼 (max-width: 1200px, `--spacing-page-x` 패딩)
+
 #### Header (`src/components/layout/Header.tsx`)
-- TabToggle로 Generate/Explore 모드 전환
+- VibeLink SVG 로고 (클릭 시 explore 모드 전환)
+- TabToggle로 Generate/Explore 모드 전환 (explore 모드에서만)
+- Profile 모드에서는 프로필 페이지 라벨 표시
 - 알림 벨 아이콘 + ProfileDropdown
-- AppModeContext와 연동하여 사이드바 모드 동기화
 - 탭 토글이 항상 화면 중앙에 위치
 
 #### Sidebar (`src/components/layout/Sidebar.tsx`)
-- Fish-eye 호버 효과 (scale 변환)
+- Fish-eye 호버 효과 (scale 1.0 → 1.6, 감쇠 적용)
 - 2가지 모드: explore (Home, My Feed, Archive, Report) / profile (Home, My Info, Settings)
-- 부드러운 CSS 트랜지션 애니메이션
+- Material Design 인라인 SVG 아이콘
+- 호버 시 왼쪽에서 슬라이드되는 라벨 툴팁
+- 고정 위치 (화면 좌측 중앙)
 
 #### Footer (`src/components/layout/Footer.tsx`)
 - 로고, 저작권, 소셜 링크 (Notion, GitHub)
@@ -258,100 +331,126 @@ src/
 | ButtonDefault | `common/ButtonDefault.tsx` | 기본 스타일 버튼 |
 | ButtonOrange | `common/ButtonOrange.tsx` | 오렌지 강조 버튼 |
 | Dropdown | `common/Dropdown.tsx` | 키보드 접근성 지원, useClickOutside 활용 |
+| ExploreMasonryGrid | `common/ExploreMasonryGrid.tsx` | Pinterest 스타일 Masonry 그리드, CSS columns 반응형 (2/3/4/5열), Intersection Observer 무한스크롤, Picsum Photos API 데모 이미지 |
 | Pagination | `common/Pagination.tsx` | 4종 variant (square, circle, text, minimal) |
 | Modal | `common/Modal.tsx` | 아이콘/이미지 지원, 액션 버튼 |
 | Alert | `common/Alert.tsx` | 알림 컴포넌트 |
-| TabToggle | `common/TabToggle.tsx` | 슬라이딩 인디케이터 애니메이션 |
+| TabToggle | `common/TabToggle.tsx` | 제네릭 타입 `<T extends string>`, 슬라이딩 인디케이터 애니메이션 |
 | ProfileDropdown | `common/ProfileDropdown.tsx` | 프로필 메뉴, useClickOutside 활용 |
+
+### Vibe Feature 컴포넌트
+
+| 컴포넌트 | 파일 | 설명 |
+|---------|------|------|
+| StepIndicator | `features/vibe/components/StepIndicator.tsx` | 1-2-3 단계 진행 표시 (완료 체크마크, brand/primary/surface 색상) |
+| StepNavigation | `features/vibe/components/StepNavigation.tsx` | PREV/NEXT/RESET/SUBMIT 조건부 렌더링 |
+| MoodMindMap | `features/vibe/components/step1/MoodMindMap.tsx` | 방사형 무드 칩 배치 + 장식 SVG 두들 |
+| MoodCloudChip | `features/vibe/components/step1/MoodCloudChip.tsx` | 비대칭 border-radius 구름형 칩 |
+| MoodInputBubble | `features/vibe/components/step1/MoodInputBubble.tsx` | 중앙 커스텀 무드 입력 (최대 3개) |
+| AnalogClock | `features/vibe/components/step2/AnalogClock.tsx` | SVG 섹터 시계 (AM/PM, 시간 마커, 호버/클릭 선택) |
+| WeatherSelector | `features/vibe/components/step2/WeatherSelector.tsx` | 날씨 카드 단일 선택 |
+| TimeWeatherPanel | `features/vibe/components/step2/TimeWeatherPanel.tsx` | 시간+날씨 2열 레이아웃 |
+| PlaceSelector | `features/vibe/components/step3/PlaceSelector.tsx` | 공간 선택 카드 |
+| CompanionSelector | `features/vibe/components/step3/CompanionSelector.tsx` | 동반자 선택 카드 |
+| SelectionCard | `features/vibe/components/step3/SelectionCard.tsx` | 재사용 가능 선택 카드 |
+| PlaceCompanionPanel | `features/vibe/components/step3/PlaceCompanionPanel.tsx` | 공간+동반자 2열 + 프리뷰 |
 
 ### 커스텀 훅
 
 | 훅 | 파일 | 설명 |
 |---|------|------|
 | AppModeContext | `hooks/AppModeContext.tsx` | SidebarMode 상태 관리 Provider |
-| useAppMode | `hooks/useAppMode.ts` | AppModeContext 소비 훅 |
+| useAppMode | `hooks/useAppMode.ts` | AppModeContext 소비 훅 (`switchToExplore`, `switchToProfile`) |
 | useClickOutside | `hooks/useClickOutside.ts` | 외부 클릭 감지 (Dropdown, ProfileDropdown에서 사용) |
+| useVibeFlow | `features/vibe/hooks/useVibeFlow.ts` | Vibe 3단계 useReducer 상태 관리 (11개 액션, `canProceed` 검증) |
 
 ---
 
 ## 핵심 기능 상세
 
-### 1. Vibe 생성 플로우 (3단계) — 미구현
+### 1. Vibe 생성 플로우 (3단계) — UI 구현 완료, 백엔드 미연동
 
-Vibe 플로우는 앱의 **핵심 경험**이다. 각 단계를 비동기로 전환하며 서버에 중간 저장한다.
+Vibe 플로우는 앱의 **핵심 경험**이다. UI/상태 관리는 구현 완료. 서버 연동(중간 저장, AI 생성)은 미구현.
 
-#### Step 1 — 무드 선택 (마인드맵 UI)
-- **UI**: 마인드맵 형태의 인터랙티브 키워드 맵
-- 중앙 노드에서 기분 형용사 키워드가 방사형으로 배치
-- 복수 선택 가능 (선택 시 시각적 하이라이트)
-- 직접 입력 가능 (커스텀 키워드 추가)
-- **데이터**: `mood_keywords` 테이블에서 키워드 목록 로드 (다국어 대응)
-- **상태**: `vibeFlowStore.selectedMoods: string[]`
+#### Step 1 — 무드 선택 (마인드맵 UI) ✅
+- **UI**: MoodMindMap — 방사형 배치 구름 칩 + 장식 SVG 두들
+- MoodCloudChip: 비대칭 `border-radius` 구름형 키워드 칩
+- MoodInputBubble: 중앙 커스텀 키워드 입력 (최대 3개, `MAX_CUSTOM_MOODS`)
+- 복수 선택 가능 (최대 5개, `MAX_MOOD_SELECTIONS`)
+- 프리셋 6개 키워드 (각각 고유 색상), 커스텀 추가 가능
+- **데이터**: 현재 `constants.ts` 하드코딩 → 추후 `mood_keywords` API 연동
+- **상태**: `vibeFlowState.selectedMoods: string[]`
 
-#### Step 2 — 시간 + 날씨 선택
-- **시간**: 아날로그 시계 UI로 시간대 선택 (드래그 또는 탭)
-  - `time_options` 테이블 기반 (새벽/아침/낮/저녁/밤)
-- **날씨**: 카드 선택 UI (단일 선택)
-  - `weather_options` 테이블 기반 (맑음/흐림/비/눈 등)
-- **상태**: `vibeFlowStore.selectedTime`, `vibeFlowStore.selectedWeather`
+#### Step 2 — 시간 + 날씨 선택 ✅
+- **시간**: AnalogClock — SVG 섹터 기반 아날로그 시계
+  - 12시간 마커 + 분 점, AM/PM TabToggle 전환
+  - 섹터별 색상 (새벽: 보라, 아침: 노랑, 낮: 하늘, 저녁: 주황, 밤: 남색)
+  - 클릭/호버 선택, 선택 시 시계 바늘 업데이트
+- **날씨**: WeatherSelector — 카드 선택 UI (단일 선택, 4종)
+- TimeWeatherPanel로 2열 레이아웃 조합
+- **데이터**: 현재 `constants.ts` 하드코딩 → 추후 API 연동
+- **상태**: `vibeFlowState.selectedTime`, `vibeFlowState.selectedWeather`
 
-#### Step 3 — 공간 + 동반자 선택
-- **공간**: 카드 선택 UI (단일 선택)
-  - `place_options` 테이블 기반 (집/카페/사무실/야외 등)
-- **동반자**: 카드 선택 UI (단일 선택)
-  - `companion_options` 테이블 기반 (혼자/친구/연인/가족 등)
-- **상태**: `vibeFlowStore.selectedPlace`, `vibeFlowStore.selectedCompanion`
+#### Step 3 — 공간 + 동반자 선택 ✅
+- **공간**: PlaceSelector — SelectionCard 기반 (5종)
+- **동반자**: CompanionSelector — SelectionCard 기반 (5종)
+- PlaceCompanionPanel: 2열 레이아웃 + 프리뷰 영역
+- **데이터**: 현재 `constants.ts` 하드코딩 → 추후 API 연동
+- **상태**: `vibeFlowState.selectedPlace`, `vibeFlowState.selectedCompanion`
 
 #### 단계 전환 동작
-1. 각 단계 완료 시 → 서버에 `vibe_sessions` 중간 저장 (비동기)
-2. 마지막 단계 완료 → 최종 프롬프트 조합 → AI 분석 요청
-3. AI 응답 대기 중 → 로딩 애니메이션 (분위기 있는 트랜지션)
-4. 결과 생성 완료 → 결과 페이지로 이동
+1. VibeConnector가 방향 인식 슬라이드 애니메이션으로 단계 전환
+2. 각 단계의 `canProceed` 검증 통과 시 NEXT 활성화
+3. 마지막 단계 SUBMIT → `/vibe/loading`으로 네비게이션
+4. VibeConnectorLoading: 시뮬레이션 프로그레스 → 완료 시 `/vibe/result/demo`로 이동
+5. VibeConnectorResult: 모의 데이터 기반 결과 표시
 
-#### Vibe 플로우 Zustand Store 설계
+#### Vibe 플로우 useReducer 상태 (현재 구현)
 
 ```typescript
+// features/vibe/types.ts
 interface VibeFlowState {
-  currentStep: 1 | 2 | 3;
-  sessionId: string | null;
-
-  // Step 1
+  currentStep: VibeStep; // 1 | 2 | 3
   selectedMoods: string[];
-
-  // Step 2
+  customMoods: string[];
   selectedTime: string | null;
   selectedWeather: string | null;
-
-  // Step 3
   selectedPlace: string | null;
   selectedCompanion: string | null;
-
-  // Actions
-  setMoods: (moods: string[]) => void;
-  setTime: (time: string) => void;
-  setWeather: (weather: string) => void;
-  setPlace: (place: string) => void;
-  setCompanion: (companion: string) => void;
-  nextStep: () => void;
-  prevStep: () => void;
-  reset: () => void;
 }
+
+// 11개 액션 타입
+type VibeAction =
+  | { type: 'NEXT_STEP' }
+  | { type: 'PREV_STEP' }
+  | { type: 'RESET' }
+  | { type: 'TOGGLE_MOOD'; payload: string }
+  | { type: 'ADD_CUSTOM_MOOD'; payload: string }
+  | { type: 'REMOVE_CUSTOM_MOOD'; payload: string }
+  | { type: 'SET_TIME'; payload: string }
+  | { type: 'SET_WEATHER'; payload: string }
+  | { type: 'SET_PLACE'; payload: string }
+  | { type: 'SET_COMPANION'; payload: string }
+  | { type: 'CLEAR_STEP'; payload: VibeStep };
 ```
 
-### 2. 결과 페이지 — 미구현
+> **참고**: Zustand는 아직 미설치. 현재 `useReducer` 기반. 추후 Zustand 마이그레이션 시 동일 상태 구조 유지 예정.
 
-결과 페이지는 AI 분석 결과를 시각적으로 표현한다.
+### 2. 결과 페이지 — UI 구현 완료 (모의 데이터)
 
-#### 구성 요소
-- **한 문장 요약**: AI가 생성한 Vibe 설명 텍스트
+결과 페이지는 AI 분석 결과를 시각적으로 표현한다. 현재 모의 데이터로 UI 완성됨.
+
+#### 구현된 UI (`pages/vibe/VibeConnectorResult.tsx`)
+- **2열 레이아웃**: 왼쪽 AI 이미지 + 오른쪽 아이템 패널
+- **ITEMS USED 패널**: 카테고리 아이콘별 추천 아이템 4종
+  - LIGHT (조명), TV SHOW (콘텐츠), FRAGRANCE (향), PLAYLIST (음악)
+- Playlist 아이템 호버 → 재생 버튼 표시
+- **하단 바**: 한 문장 Vibe 설명 카드 + EDIT/CONNECT 액션 버튼
+- 무드 컬러 인디케이터
+
+#### 미구현 (백엔드 연동 필요)
 - **AI 생성 이미지**: 비동기로 생성되며 완료 시 표시 (WebSocket 또는 polling)
-- **추천 아이템 리스트** (도메인별 그룹):
-  - 음악: Spotify 플레이리스트 (앨범아트, 곡명, 아티스트)
-  - 커피: 네스프레소 캡슐 (이미지, 이름, 풍미 노트)
-  - 조명: K 온도 + 밝기 추천 (색상 프리뷰)
-  - 콘텐츠: 영화/드라마 추천 (포스터, 제목, 장르)
-- 각 아이템 hover → 상세 정보 팝오버
-- **액션 버튼**: 저장, 공유, 재생성, 외부 서비스 연동
+- **실제 추천 데이터**: API 연동
 
 #### 이미지 생성 비동기 처리
 ```
@@ -500,8 +599,12 @@ interface VibeFlowState {
 | 토큰 | 값 | 용도 |
 |------|-----|------|
 | `--shadow-card` | `0 2px 8px rgba(0, 0, 0, 0.08)` | 카드 그림자 |
+| `--color-vibe-bg` | `#FFF8F0` | Vibe 플로우 배경 (따뜻한 피치 톤) |
 | `--animate-fade-in` | `fade-in 0.2s ease-out` | 페이드인 애니메이션 |
 | `animate-smooth` | `transition: all 300ms ease-out` | 부드러운 트랜지션 (@utility) |
+| `animate-slide-right` | `slide-in-right 0.3s ease-out` | 오른쪽 슬라이드 인 (@utility) |
+| `animate-slide-left` | `slide-in-left 0.3s ease-out` | 왼쪽 슬라이드 인 (@utility) |
+| `.vibe-slider` | 커스텀 range input | Vibe 플로우용 슬라이더 스타일 (webkit/moz thumb) |
 
 ---
 
@@ -557,6 +660,7 @@ Desktop: > 1024px   (lg)
 | Store | 역할 | 구현 |
 |-------|------|------|
 | `AppModeContext` | 사이드바 모드 (explore/profile), 프로필 활성 페이지 | React Context |
+| `useVibeFlow` | Vibe 3단계 입력 상태, 현재 단계, canProceed 검증 | useReducer (11개 액션) |
 
 ### 예정 Zustand Store
 

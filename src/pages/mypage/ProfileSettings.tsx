@@ -1,6 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput, Dropdown } from '@/components/common';
+import { getMyProfile, updateProfile } from '@/api/user';
+import { getSettings, updateSettings } from '@/api/user';
+import type { UserProfileResponse, UserSettingsResponse } from '@/api/user';
+import { useAuthStore } from '@/store/authStore';
 
 const genderOptions = [
   { value: 'male', label: 'Male' },
@@ -33,12 +37,58 @@ const timezoneOptions = [
 ];
 
 export default function ProfileSettings() {
+  // [BEFORE INTEGRATION] 하드코딩된 'Alexa Rawles', 'alexarawles@gmail.com'
+  // [AFTER INTEGRATION] API에서 프로필 + 설정 데이터 로드
+  const authUser = useAuthStore((s) => s.user);
+  const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [settings, setSettingsState] = useState<UserSettingsResponse | null>(null);
   const [fullName, setFullName] = useState('');
   const [nickName, setNickName] = useState('');
   const [gender, setGender] = useState('');
   const [country, setCountry] = useState('');
   const [language, setLanguage] = useState('');
   const [timezone, setTimezone] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getMyProfile()
+      .then((res: UserProfileResponse) => {
+        setProfile(res);
+        setFullName(res.name ?? '');
+        setNickName(res.nickname ?? '');
+        setGender(res.gender ?? '');
+      })
+      .catch(() => {/* 폴백: authStore 데이터 사용 */});
+
+    getSettings()
+      .then((res: UserSettingsResponse) => setSettingsState(res))
+      .catch(() => {});
+  }, []);
+
+  const displayName = profile?.nickname ?? authUser?.nickname ?? 'Alexa Rawles';
+  const displayEmail = profile?.email ?? authUser?.email ?? 'alexarawles@gmail.com';
+  const displayAvatar = profile?.profileImageUrl ?? authUser?.profileImageUrl ?? null;
+
+  const handleSave = () => {
+    setSaving(true);
+    const profilePromise = updateProfile({
+      name: fullName || undefined,
+      nickname: nickName || undefined,
+      gender: gender || undefined,
+    })
+      .then((res) => setProfile(res))
+      .catch(() => {});
+
+    const settingsPromise = settings
+      ? updateSettings({
+          pushEnabled: settings.pushEnabled,
+          emailNotification: settings.emailNotification,
+        }).catch(() => {})
+      : Promise.resolve();
+
+    Promise.all([profilePromise, settingsPromise])
+      .finally(() => setSaving(false));
+  };
 
   return (
     <PageContainer className="flex items-start justify-center">
@@ -46,21 +96,25 @@ export default function ProfileSettings() {
       {/* Profile Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {/* Avatar placeholder */}
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-disabled" />
+          {/* Avatar */}
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-disabled">
+            {displayAvatar && (
+              <img src={displayAvatar} alt={displayName} className="h-full w-full object-cover" />
+            )}
+          </div>
 
           <div>
             <p className="text-[18px] font-semibold tracking-[-1px] text-high-emphasis">
-              Alexa Rawles
+              {displayName}
             </p>
             <p className="text-[14px] tracking-[-0.5px] text-caption">
-              alexarawles@gmail.com
+              {displayEmail}
             </p>
           </div>
         </div>
 
-        <ButtonDefault shape="rect" onClick={() => alert('Edit 기능은 준비 중입니다.')}>
-          Edit
+        <ButtonDefault shape="rect" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save'}
         </ButtonDefault>
       </div>
 
@@ -75,7 +129,7 @@ export default function ProfileSettings() {
         />
         <TextInput
           label="Nick Name"
-          placeholder="Your First Name"
+          placeholder="Your Nick Name"
           value={nickName}
           onChange={(e) => setNickName(e.target.value)}
         />
@@ -83,14 +137,14 @@ export default function ProfileSettings() {
         {/* Row 2: Gender / Country */}
         <Dropdown
           label="Gender"
-          placeholder="Your First Name"
+          placeholder="Select Gender"
           options={genderOptions}
           value={gender}
           onChange={setGender}
         />
         <Dropdown
           label="Country"
-          placeholder="Your First Name"
+          placeholder="Select Country"
           options={countryOptions}
           value={country}
           onChange={setCountry}
@@ -99,19 +153,52 @@ export default function ProfileSettings() {
         {/* Row 3: Language / Time Zone */}
         <Dropdown
           label="Language"
-          placeholder="Your First Name"
+          placeholder="Select Language"
           options={languageOptions}
           value={language}
           onChange={setLanguage}
         />
         <Dropdown
           label="Time Zone"
-          placeholder="Your First Name"
+          placeholder="Select Time Zone"
           options={timezoneOptions}
           value={timezone}
           onChange={setTimezone}
         />
       </div>
+
+      {/* Notification Settings */}
+      {settings && (
+        <div className="mt-10">
+          <h2 className="text-[16px] font-semibold tracking-[-1px] text-high-emphasis">
+            Notification Settings
+          </h2>
+          <div className="mt-4 space-y-3">
+            <label className="flex items-center gap-3 text-[14px] text-high-emphasis">
+              <input
+                type="checkbox"
+                checked={settings.pushEnabled}
+                onChange={(e) =>
+                  setSettingsState({ ...settings, pushEnabled: e.target.checked })
+                }
+                className="h-4 w-4 rounded"
+              />
+              Push 알림
+            </label>
+            <label className="flex items-center gap-3 text-[14px] text-high-emphasis">
+              <input
+                type="checkbox"
+                checked={settings.emailNotification}
+                onChange={(e) =>
+                  setSettingsState({ ...settings, emailNotification: e.target.checked })
+                }
+                className="h-4 w-4 rounded"
+              />
+              이메일 알림
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* My email Address */}
       <div className="mt-10">
@@ -136,10 +223,12 @@ export default function ProfileSettings() {
 
           <div>
             <p className="text-[14px] font-medium tracking-[-0.5px] text-high-emphasis">
-              alexarawles@gmail.com
+              {displayEmail}
             </p>
             <p className="text-[12px] tracking-[-0.5px] text-caption">
-              1 month ago
+              {profile?.lastLoginAt
+                ? new Date(profile.lastLoginAt).toLocaleDateString('ko-KR')
+                : '1 month ago'}
             </p>
           </div>
         </div>

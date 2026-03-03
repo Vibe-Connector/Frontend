@@ -93,7 +93,11 @@ export function setupInterceptors(instance: AxiosInstance) {
           } catch {
             rejectPendingRequests();
             getAuthState().logout();
-            window.location.href = '/login';
+            // 이미 /login 또는 /signup 경로에 있으면 리다이렉트하지 않음 (무한 루프 방지)
+            const currentPath = window.location.pathname;
+            if (currentPath !== '/login' && currentPath !== '/signup') {
+              window.location.href = '/login';
+            }
             return Promise.reject(error);
           } finally {
             isRefreshing = false;

@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom';
 import PublicLayout from '@/components/layout/PublicLayout';
 import AppLayout from '@/components/layout/AppLayout';
+import ProtectedRoute from '@/components/route/ProtectedRoute';
+import PublicOnlyRoute from '@/components/route/PublicOnlyRoute';
 
 import Home from '@/pages/home/Home';
 import Login from '@/pages/auth/Login';
@@ -20,41 +22,51 @@ import Archive from '@/pages/archive/Archive';
 import ArchiveDetail from '@/pages/archive/ArchiveDetail';
 
 export const router = createBrowserRouter([
-  // -- Public (비인증) --
+  // -- Public (비인증 전용: 이미 로그인 시 / 로 리다이렉트) --
   {
-    element: <PublicLayout />,
+    element: <PublicOnlyRoute />,
     children: [
-      { path: '/login', element: <Login /> },
-      { path: '/signup', element: <SignUp /> },
+      {
+        element: <PublicLayout />,
+        children: [
+          { path: '/login', element: <Login /> },
+          { path: '/signup', element: <SignUp /> },
+        ],
+      },
     ],
   },
 
-  // -- App (인증, Sidebar 포함) --
+  // -- App (인증 필요: 미로그인 시 /login으로 리다이렉트) --
   {
-    element: <AppLayout />,
+    element: <ProtectedRoute />,
     children: [
-      { path: '/', element: <Home /> },
+      {
+        element: <AppLayout />,
+        children: [
+          { path: '/', element: <Home /> },
 
-      // Explore
-      { path: '/explore', element: <Explore /> },
-      { path: '/feed', element: <Feed /> },
-      { path: '/feed/:feedId', element: <FeedDetail /> },
+          // Explore
+          { path: '/explore', element: <Explore /> },
+          { path: '/feed', element: <Feed /> },
+          { path: '/feed/:feedId', element: <FeedDetail /> },
 
-      // VibeConnector
-      { path: '/vibe', element: <VibeConnector /> },
-      { path: '/vibe/connect', element: <VibeConnectorConnect /> },
-      { path: '/vibe/edit', element: <VibeConnectorEdit /> },
-      { path: '/vibe/loading', element: <VibeConnectorLoading /> },
-      { path: '/vibe/result/:sessionId', element: <VibeConnectorResult /> },
+          // VibeConnector
+          { path: '/vibe', element: <VibeConnector /> },
+          { path: '/vibe/connect', element: <VibeConnectorConnect /> },
+          { path: '/vibe/edit', element: <VibeConnectorEdit /> },
+          { path: '/vibe/loading', element: <VibeConnectorLoading /> },
+          { path: '/vibe/result/:sessionId', element: <VibeConnectorResult /> },
 
-      // Profile (Sidebar: profile 모드)
-      { path: '/profile', element: <Profile /> },
-      { path: '/profile/settings', element: <ProfileSettings /> },
-      { path: '/profile/report', element: <ProfileAnalysisReport /> },
+          // Profile (Sidebar: profile 모드)
+          { path: '/profile', element: <Profile /> },
+          { path: '/profile/settings', element: <ProfileSettings /> },
+          { path: '/profile/report', element: <ProfileAnalysisReport /> },
 
-      // Archive (Sidebar: profile 모드)
-      { path: '/archive', element: <Archive /> },
-      { path: '/archive/:folderId', element: <ArchiveDetail /> },
+          // Archive (Sidebar: profile 모드)
+          { path: '/archive', element: <Archive /> },
+          { path: '/archive/:folderId', element: <ArchiveDetail /> },
+        ],
+      },
     ],
   },
 

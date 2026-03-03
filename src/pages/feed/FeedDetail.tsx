@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
+import { getFeed, getComments, toggleReaction, createComment } from '@/api/feed';
+import type { FeedResponse, CommentResponse } from '@/api/types';
 
 /* ---------- Mock Data ---------- */
+// [BEFORE INTEGRATION] 하드코딩된 Mock 데이터
+// const MOCK_FEED = { id: 'feed-1', user: { nickname: 'Nickname', avatar: '' }, ... };
 
-const MOCK_FEED = {
+// [AFTER INTEGRATION] API 실패 시 폴백
+const FALLBACK_FEED = {
   id: 'feed-1',
   user: { nickname: 'Nickname', avatar: '' },
   image: 'https://picsum.photos/seed/vibe-main/800/1000',
@@ -124,17 +130,101 @@ function BookmarkIcon({ filled }: { filled?: boolean }) {
 /* ---------- Component ---------- */
 
 export default function FeedDetail() {
-  const feed = MOCK_FEED;
+  const { feedId } = useParams<{ feedId: string }>();
+
+  // [BEFORE INTEGRATION] const feed = MOCK_FEED;
+  // [AFTER INTEGRATION] API에서 피드 데이터 로드, 실패 시 폴백
+  const [feed, setFeed] = useState(FALLBACK_FEED);
+  const [apiComments, setApiComments] = useState<
+    { id: string; user: string; text: string; time: string }[]
+  >([]);
   const [liked, setLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!feedId || feedId === 'demo') return;
+    const numId = Number(feedId);
+    if (isNaN(numId)) return;
+
+    getFeed(numId)
+      .then((res: FeedResponse) => {
+        const likeReaction = res.reactions.find((r) => r.reactionType === 'LIKE');
+        setFeed({
+          id: String(res.feedId),
+          user: { nickname: res.nickname, avatar: res.profileImageUrl ?? '' },
+          image: res.generatedImageUrl ?? FALLBACK_FEED.image,
+          description: res.caption ?? res.phrase ?? FALLBACK_FEED.description,
+          moods: [],
+          likes: likeReaction?.count ?? 0,
+          dislikes: 0,
+          views: res.viewCount,
+          comments: [],
+          items: FALLBACK_FEED.items,
+        });
+        setLiked(res.myReactionTypes.includes('LIKE'));
+      })
+      .catch(() => {/* 폴백 유지 */});
+
+    getComments(numId)
+      .then((res) => {
+        const mapped = res.content.map((c: CommentResponse) => ({
+          id: String(c.commentId),
+          user: c.nickname,
+          text: c.content,
+          time: new Date(c.createdAt).toLocaleDateString('ko-KR'),
+        }));
+        setApiComments(mapped);
+      })
+      .catch(() => {/* 폴백 댓글 유지 */});
+  }, [feedId]);
+
+  const displayComments = apiComments.length > 0 ? apiComments : feed.comments;
+
+  const handleToggleLike = () => {
+    const numId = Number(feedId);
+    if (!isNaN(numId)) {
+      toggleReaction(numId, 'LIKE').catch(() => {});
+    }
+    setLiked(!liked);
+  };
+
+  const handleSubmitComment = () => {
+    const numId = Number(feedId);
+    if (!commentText.trim() || isNaN(numId) || submitting) return;
+    setSubmitting(true);
+    createComment(numId, { content: commentText })
+      .then((c: CommentResponse) => {
+        setApiComments((prev) => [
+          ...prev,
+          {
+            id: String(c.commentId),
+            user: c.nickname,
+            text: c.content,
+            time: '방금',
+          },
+        ]);
+        setCommentText('');
+      })
+      .catch(() => {})
+      .finally(() => setSubmitting(false));
+  };
 
   return (
     <PageContainer>
       {/* ===== User Profile ===== */}
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
-          <UserIcon />
+          {feed.user.avatar ? (
+            <img
+              src={feed.user.avatar}
+              alt={feed.user.nickname}
+              className="h-full w-full rounded-full object-cover"
+            />
+          ) : (
+            <UserIcon />
+          )}
         </div>
         <span className="text-base font-semibold text-high-emphasis">
           {feed.user.nickname}
@@ -161,21 +251,23 @@ export default function FeedDetail() {
             </p>
 
             {/* Mood Tags */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              {feed.moods.map((mood) => (
-                <span
-                  key={mood}
-                  className="rounded-pill bg-white px-3 py-1 text-xs font-medium text-caption"
-                >
-                  #{mood}
-                </span>
-              ))}
-            </div>
+            {feed.moods.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {feed.moods.map((mood) => (
+                  <span
+                    key={mood}
+                    className="rounded-pill bg-white px-3 py-1 text-xs font-medium text-caption"
+                  >
+                    #{mood}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Stats + Actions */}
             <div className="mt-4 flex items-center gap-4 border-t border-stroke pt-4">
               <button
-                onClick={() => setLiked(!liked)}
+                onClick={handleToggleLike}
                 className={`flex items-center gap-1 text-sm transition-colors ${liked ? 'text-accent' : 'text-caption hover:text-accent'}`}
               >
                 <HeartIcon filled={liked} />
@@ -207,7 +299,7 @@ export default function FeedDetail() {
                 댓글
               </h3>
               <ul className="space-y-2">
-                {feed.comments.map((c) => (
+                {displayComments.map((c) => (
                   <li key={c.id} className="text-sm">
                     <span className="font-medium text-high-emphasis">
                       {c.user}
@@ -226,8 +318,13 @@ export default function FeedDetail() {
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="댓글을 입력하세요..."
                   className="flex-1 rounded-control bg-input px-3 py-2 text-sm text-high-emphasis placeholder:text-low-emphasis focus:outline-none focus:ring-1 focus:ring-accent"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
                 />
-                <button className="rounded-control bg-brand px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90">
+                <button
+                  onClick={handleSubmitComment}
+                  disabled={submitting}
+                  className="rounded-control bg-brand px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
                   게시
                 </button>
               </div>

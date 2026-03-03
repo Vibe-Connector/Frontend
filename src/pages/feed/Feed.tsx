@@ -1,15 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
+import { getFeeds } from '@/api/feed';
+import { getFolders } from '@/api/archive';
+import { useAuthStore } from '@/store/authStore';
+import type { FeedResponse } from '@/api/types';
+import type { FolderResponse } from '@/api/archive';
 
-// --- Mock Data ---
-const MOCK_USER = {
-  nickname: 'Nickname',
-  avatarUrl: null as string | null,
-  isFollowing: false,
-};
+// [BEFORE INTEGRATION] Mock Data (하드코딩)
+// const MOCK_USER = {
+//   nickname: 'Nickname',
+//   avatarUrl: null as string | null,
+//   isFollowing: false,
+// };
+// const MOCK_FEED_IMAGES = Array.from({ length: 10 }, (_, i) => ({
+//   id: `feed-${i + 1}`,
+//   imageUrl: `https://picsum.photos/seed/vibe${i + 1}/400/500`,
+//   alt: `Vibe ${i + 1}`,
+// }));
+// const MOCK_COLLECTIONS: Collection[] = [ ... ];
 
-const MOCK_FEED_IMAGES = Array.from({ length: 10 }, (_, i) => ({
+// [AFTER INTEGRATION] Fallback mock data (API 실패 시 사용)
+const FALLBACK_FEED_IMAGES = Array.from({ length: 10 }, (_, i) => ({
   id: `feed-${i + 1}`,
   imageUrl: `https://picsum.photos/seed/vibe${i + 1}/400/500`,
   alt: `Vibe ${i + 1}`,
@@ -24,7 +37,7 @@ interface Collection {
   createdAt: string;
 }
 
-const MOCK_COLLECTIONS: Collection[] = [
+const FALLBACK_COLLECTIONS: Collection[] = [
   {
     id: 'col-1',
     name: 'MyItems',
@@ -285,36 +298,85 @@ function CollectionsSection({
 
 // --- Main Component ---
 export default function Feed() {
-  const [isFollowing, setIsFollowing] = useState(MOCK_USER.isFollowing);
+  // [BEFORE INTEGRATION] const [isFollowing, setIsFollowing] = useState(MOCK_USER.isFollowing);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const navigate = useNavigate();
+  const authUser = useAuthStore((s) => s.user);
+
+  // [AFTER INTEGRATION] API에서 피드 이미지 로드
+  const [feedImages, setFeedImages] = useState<
+    { id: string; imageUrl: string; alt: string }[]
+  >([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [useApi, setUseApi] = useState(true);
+
+  useEffect(() => {
+    getFeeds(undefined, 20)
+      .then((res) => {
+        const mapped = res.content.map((f: FeedResponse) => ({
+          id: String(f.feedId),
+          imageUrl: f.generatedImageUrl ?? `https://picsum.photos/seed/vibe${f.feedId}/400/500`,
+          alt: f.caption ?? `Vibe ${f.feedId}`,
+        }));
+        setFeedImages(mapped.length > 0 ? mapped : FALLBACK_FEED_IMAGES);
+      })
+      .catch(() => {
+        setFeedImages(FALLBACK_FEED_IMAGES);
+        setUseApi(false);
+      });
+
+    getFolders()
+      .then((folders: FolderResponse[]) => {
+        const mapped: Collection[] = folders.map((f) => ({
+          id: String(f.folderId),
+          name: f.folderName,
+          pinCount: f.archiveCount,
+          isPrivate: false,
+          thumbnailUrl: f.thumbnailUrl,
+          createdAt: new Date(f.createdAt).toLocaleDateString('ko-KR'),
+        }));
+        setCollections(mapped.length > 0 ? mapped : FALLBACK_COLLECTIONS);
+      })
+      .catch(() => setCollections(FALLBACK_COLLECTIONS));
+  }, []);
+
+  const user = {
+    nickname: authUser?.nickname ?? 'Nickname',
+    avatarUrl: authUser?.profileImageUrl ?? null,
+    isFollowing,
+  };
 
   const handleToggleFollow = () => {
     setIsFollowing((prev) => !prev);
   };
 
   const handleImageClick = (id: string) => {
-    console.log('Feed image clicked:', id);
+    // [BEFORE INTEGRATION] console.log('Feed image clicked:', id);
+    navigate(`/feed/${id}`);
   };
 
   const handleCollectionClick = (id: string) => {
-    console.log('Collection clicked:', id);
+    // [BEFORE INTEGRATION] console.log('Collection clicked:', id);
+    navigate(`/archive/${id}`);
   };
 
   const handleCreateCollection = () => {
-    console.log('Create collection clicked');
+    // [BEFORE INTEGRATION] console.log('Create collection clicked');
+    navigate('/archive');
   };
 
   return (
     <PageContainer>
       {/* Profile Section */}
       <ProfileSection
-        user={MOCK_USER}
+        user={user}
         isFollowing={isFollowing}
         onToggleFollow={handleToggleFollow}
       />
 
       {/* Photo Grid */}
       <section className="mt-6">
-        <PhotoGrid images={MOCK_FEED_IMAGES} onImageClick={handleImageClick} />
+        <PhotoGrid images={feedImages} onImageClick={handleImageClick} />
       </section>
 
       {/* Divider */}
@@ -322,7 +384,7 @@ export default function Feed() {
 
       {/* Collections Section */}
       <CollectionsSection
-        collections={MOCK_COLLECTIONS}
+        collections={collections}
         onCollectionClick={handleCollectionClick}
         onCreateClick={handleCreateCollection}
       />

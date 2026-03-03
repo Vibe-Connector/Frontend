@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
+import { getFolders, createFolder } from '@/api/archive';
+import type { FolderResponse } from '@/api/archive';
 
 interface ArchiveFolder {
   id: string;
@@ -7,9 +10,17 @@ interface ArchiveFolder {
   pinCount: number;
   timeLabel: string;
   isPrivate?: boolean;
+  thumbnailUrl?: string | null;
 }
 
-const dummyFolders: ArchiveFolder[] = [
+// [BEFORE INTEGRATION] 하드코딩된 dummyFolders
+// const dummyFolders: ArchiveFolder[] = [
+//   { id: '1', title: 'MyItems', pinCount: 0, timeLabel: '방금' },
+//   { id: '2', title: 'MyPlaces', pinCount: 0, timeLabel: '방금', isPrivate: true },
+// ];
+
+// [AFTER INTEGRATION] API 실패 시 폴백
+const FALLBACK_FOLDERS: ArchiveFolder[] = [
   { id: '1', title: 'MyItems', pinCount: 0, timeLabel: '방금' },
   { id: '2', title: 'MyPlaces', pinCount: 0, timeLabel: '방금', isPrivate: true },
 ];
@@ -59,6 +70,44 @@ function ThumbnailGrid() {
 export default function Archive() {
   const navigate = useNavigate();
 
+  // [AFTER INTEGRATION] API에서 폴더 목록 로드
+  const [folders, setFolders] = useState<ArchiveFolder[]>([]);
+
+  useEffect(() => {
+    getFolders()
+      .then((res: FolderResponse[]) => {
+        const mapped: ArchiveFolder[] = res.map((f) => ({
+          id: String(f.folderId),
+          title: f.folderName,
+          pinCount: f.archiveCount,
+          timeLabel: new Date(f.createdAt).toLocaleDateString('ko-KR'),
+          isPrivate: false,
+          thumbnailUrl: f.thumbnailUrl,
+        }));
+        setFolders(mapped.length > 0 ? mapped : FALLBACK_FOLDERS);
+      })
+      .catch(() => setFolders(FALLBACK_FOLDERS));
+  }, []);
+
+  const handleCreateFolder = () => {
+    const name = prompt('새 폴더 이름을 입력하세요:');
+    if (!name) return;
+    createFolder({ folderName: name, folderType: 'VIBE' })
+      .then((res: FolderResponse) => {
+        setFolders((prev) => [
+          ...prev,
+          {
+            id: String(res.folderId),
+            title: res.folderName,
+            pinCount: 0,
+            timeLabel: '방금',
+            thumbnailUrl: res.thumbnailUrl,
+          },
+        ]);
+      })
+      .catch(() => alert('폴더 생성에 실패했습니다.'));
+  };
+
   return (
     <PageContainer className="mx-auto mt-6 max-w-[760px]">
       {/* Top bar: filter icon + group tag */}
@@ -79,7 +128,7 @@ export default function Archive() {
       {/* Card grid */}
       <div className="mt-6 grid grid-cols-3 gap-6">
         {/* Folder cards */}
-        {dummyFolders.map((folder) => (
+        {folders.map((folder) => (
           <div
             key={folder.id}
             className="cursor-pointer"
@@ -87,7 +136,15 @@ export default function Archive() {
           >
             {/* Thumbnail */}
             <div className="relative aspect-square overflow-hidden rounded-card bg-surface">
-              <ThumbnailGrid />
+              {folder.thumbnailUrl ? (
+                <img
+                  src={folder.thumbnailUrl}
+                  alt={folder.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <ThumbnailGrid />
+              )}
 
               {folder.isPrivate && (
                 <div className="absolute top-3 left-3">
@@ -111,7 +168,7 @@ export default function Archive() {
           <button
             type="button"
             className="cursor-pointer rounded-control bg-white px-5 py-2.5 text-[16px] font-medium tracking-[-1px] text-default shadow-card transition-opacity duration-150 hover:opacity-80 font-pretendard"
-            onClick={() => alert('만들기 기능은 준비 중입니다.')}
+            onClick={handleCreateFolder}
           >
             만들기
           </button>

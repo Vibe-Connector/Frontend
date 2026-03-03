@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TabToggle from '../common/TabToggle';
 import ProfileDropdown from '../common/ProfileDropdown';
 import { useAppMode } from '../../hooks/useAppMode';
+import { getUnreadCount } from '@/api/notification';
+import { useAuthStore } from '@/store/authStore';
 
 type Tab = 'generate' | 'explore';
 
@@ -72,6 +75,27 @@ const Header = () => {
   const location = useLocation();
   const { sidebarMode, profilePage, switchToExplore } = useAppMode();
 
+  // [AFTER INTEGRATION] 알림 미읽음 수 로드 (인증된 경우에만)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    getUnreadCount()
+      .then((res) => setUnreadCount(res.unreadCount))
+      .catch(() => {/* 실패 시 0 유지 */});
+
+    // 60초마다 미읽음 수 폴링
+    const interval = setInterval(() => {
+      getUnreadCount()
+        .then((res) => setUnreadCount(res.unreadCount))
+        .catch(() => {});
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   /** URL 기반 탭 활성 상태 동기화 */
   const activeTab: Tab = location.pathname.startsWith('/vibe') ? 'generate' : 'explore';
 
@@ -113,8 +137,15 @@ const Header = () => {
 
         {/* Right Section — ProfileDropdown으로 교체 */}
         <div className="flex-1 flex items-center justify-end gap-5">
-          <button className="cursor-pointer">
+          {/* [BEFORE INTEGRATION] <button className="cursor-pointer"><BellIcon /></button> */}
+          {/* [AFTER INTEGRATION] 알림 뱃지 추가 */}
+          <button className="relative cursor-pointer" onClick={() => navigate('/notifications')}>
             <BellIcon />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
           <ProfileDropdown />
         </div>

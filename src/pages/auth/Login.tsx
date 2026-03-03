@@ -2,14 +2,32 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput } from '@/components/common';
+import { login } from '@/api/auth';
+import { useAuthStore } from '@/store/authStore';
 
 export default function Login() {
   const navigate = useNavigate();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const authLogin = useAuthStore((s) => s.login);
 
-  const handleLogin = () => {
-    // TODO: implement login API
+  const handleLogin = async () => {
+    // [BEFORE INTEGRATION] 빈 TODO 함수
+    // [AFTER INTEGRATION] 백엔드 API 연동
+    setError('');
+    setLoading(true);
+    try {
+      const data = await login({ email: id, password });
+      authLogin(data);
+      navigate('/');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '로그인에 실패했습니다.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,9 +82,14 @@ export default function Login() {
             autoComplete="current-password"
           />
 
+          {/* Error message */}
+          {error && (
+            <p className="text-sm text-accent">{error}</p>
+          )}
+
           {/* LOG IN button */}
-          <ButtonDefault shape="rect" type="submit" className="w-full">
-            LOG IN
+          <ButtonDefault shape="rect" type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Loading...' : 'LOG IN'}
           </ButtonDefault>
         </form>
 
