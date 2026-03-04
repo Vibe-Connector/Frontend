@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { ButtonDefault } from '@/components/common';
-import { getFeeds } from '@/api/feed';
+import { getUserFeeds } from '@/api/feed';
 import { getFolders } from '@/api/archive';
 import { useAuthStore } from '@/store/authStore';
 import type { FeedResponse } from '@/api/types';
@@ -211,11 +211,12 @@ export default function Feed() {
   const [collections, setCollections] = useState<Collection[]>([]);
 
   const fetchFeeds = useCallback((cursor?: string) => {
+    if (!authUser?.userId) return;
     const isInitial = !cursor;
     if (isInitial) setFeedLoading(true);
     else setFeedLoadingMore(true);
 
-    getFeeds(cursor, 20)
+    getUserFeeds(authUser.userId, cursor, 20)
       .then((res) => {
         setFeeds((prev) => (isInitial ? res.content : [...prev, ...res.content]));
         setFeedCursor(res.nextCursor);
@@ -228,7 +229,7 @@ export default function Feed() {
         if (isInitial) setFeedLoading(false);
         else setFeedLoadingMore(false);
       });
-  }, []);
+  }, [authUser?.userId]);
 
   useEffect(() => {
     fetchFeeds();
