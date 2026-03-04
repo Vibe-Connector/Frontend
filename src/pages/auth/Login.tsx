@@ -22,7 +22,7 @@ export default function Login() {
     try {
       const data = await login({ email: id, password });
       authLogin(data);
-      navigate('/');
+      navigate('/explore');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '로그인에 실패했습니다.';
       setError(message);

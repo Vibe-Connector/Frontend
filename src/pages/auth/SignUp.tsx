@@ -141,7 +141,7 @@ export default function SignUp() {
         const data = await signup({ email, password, nickname });
         authLogin(data);
       }
-      navigate('/');
+      navigate('/explore');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '회원가입에 실패했습니다.';
       setError(message);

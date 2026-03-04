@@ -116,12 +116,12 @@ const Header = () => {
         {/* Logo — 클릭 시 '/'로 이동 + Explore 모드 복귀 */}
         <div className="flex-1">
           <a
-            href="/"
+            href="/explore"
             className="shrink-0 inline-block"
             onClick={(e) => {
               e.preventDefault();
               switchToExplore();
-              navigate('/');
+              navigate('/explore');
             }}
           >
             <VibelinkLogo />

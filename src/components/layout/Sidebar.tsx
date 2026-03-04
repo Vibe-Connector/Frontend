@@ -56,13 +56,13 @@ const Sidebar = () => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const exploreItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/'); } },
+    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/explore'); } },
     { icon: <FeedIcon />, label: 'My Feed', onClick: () => navigate('/feed') },
     { icon: <ArchiveIcon />, label: 'Archive', onClick: () => navigate('/archive') },
   ];
 
   const profileItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/'); } },
+    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/explore'); } },
     { icon: <MyInfoIcon />, label: 'My Info', onClick: () => { switchToProfile('my-info'); navigate('/profile'); } },
     { icon: <ReportIcon />, label: 'Report', onClick: () => { switchToProfile('report'); navigate('/profile/report'); } },
     { icon: <SettingsIcon />, label: 'Settings', onClick: () => { switchToProfile('settings'); navigate('/profile/settings'); } },
