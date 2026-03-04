@@ -97,7 +97,7 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 font-pretendard"
     >
-      <div className="relative w-full max-w-[360px] overflow-hidden rounded-card bg-white shadow-card">
+      <div className="relative w-full max-w-90px overflow-hidden rounded-card bg-white shadow-card">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4">
           <h2 className="text-base font-bold text-high-emphasis">폴더에 저장</h2>
@@ -114,7 +114,7 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
         </div>
 
         {/* Folder list */}
-        <div className="max-h-[300px] overflow-y-auto">
+        <div className="max-h-75 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-accent" />
