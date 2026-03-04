@@ -62,7 +62,7 @@ export default function OAuthCallback() {
               accessToken: data.accessToken,
               refreshToken: data.refreshToken!,
             });
-            navigate('/', { replace: true });
+            navigate('/explore', { replace: true });
           }
         })
         .catch((err: unknown) => {

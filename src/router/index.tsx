@@ -1,10 +1,9 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import PublicLayout from '@/components/layout/PublicLayout';
 import AppLayout from '@/components/layout/AppLayout';
 import ProtectedRoute from '@/components/route/ProtectedRoute';
 import PublicOnlyRoute from '@/components/route/PublicOnlyRoute';
 
-import Home from '@/pages/home/Home';
 import Login from '@/pages/auth/Login';
 import SignUp from '@/pages/auth/SignUp';
 import Explore from '@/pages/home/Explore';
@@ -37,6 +36,15 @@ export const router = createBrowserRouter([
     ],
   },
 
+  // -- Semi-public (인증 불필요: AppLayout 사용, 비로그인도 접근 가능) --
+  {
+    element: <AppLayout />,
+    children: [
+      { path: '/', element: <Navigate to="/explore" replace /> },
+      { path: '/explore', element: <Explore /> },
+    ],
+  },
+
   // -- App (인증 필요: 미로그인 시 /login으로 리다이렉트) --
   {
     element: <ProtectedRoute />,
@@ -44,10 +52,6 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: '/', element: <Home /> },
-
-          // Explore
-          { path: '/explore', element: <Explore /> },
           { path: '/feed', element: <Feed /> },
           { path: '/feed/:feedId', element: <FeedDetail /> },
 
