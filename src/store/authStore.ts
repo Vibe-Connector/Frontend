@@ -18,6 +18,7 @@ interface AuthUser {
   email: string;
   nickname: string;
   profileImageUrl: string | null;
+  preferredLanguageId: number | null;
 }
 
 interface AuthState {
@@ -29,6 +30,7 @@ interface AuthState {
   login: (response: TokenResponse) => void;
   logout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  updateUser: (partial: Partial<AuthUser>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -48,6 +50,7 @@ export const useAuthStore = create<AuthState>()(
             email: response.email,
             nickname: response.nickname,
             profileImageUrl: response.profileImageUrl,
+            preferredLanguageId: null,
           },
           isAuthenticated: true,
         }),
@@ -62,6 +65,11 @@ export const useAuthStore = create<AuthState>()(
 
       setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
+
+      updateUser: (partial) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...partial } : null,
+        })),
     }),
     {
       name: 'vibelink-auth',

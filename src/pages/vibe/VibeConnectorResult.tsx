@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
-import { getVibeSession } from '@/api/vibe';
+import { getVibeSession, createVibe } from '@/api/vibe';
 import type { VibeResultResponse } from '@/api/vibe';
+import { useOptions } from '@/hooks/useOptions';
 
 // [BEFORE INTEGRATION] const MOCK_RESULT = { ... 하드코딩 mock 데이터 }
 // [AFTER INTEGRATION] 실제 API에서 데이터를 가져옴
@@ -33,11 +34,11 @@ const FALLBACK_RESULT = {
       ],
     },
     {
-      key: 'fragrance',
-      label: 'FRAGRANCE',
+      key: 'coffee',
+      label: 'COFFEE',
       items: [
-        { id: 'f1', name: 'Santal 33', detail: 'Le Labo · 우디 머스크' },
-        { id: 'f2', name: 'Replica Jazz Club', detail: 'Maison Margiela · 스모키' },
+        { id: 'f1', name: 'Ethiopia Yirgacheffe', detail: '플로럴 · 시트러스' },
+        { id: 'f2', name: 'Colombia Supremo', detail: '견과류 · 초콜릿' },
       ],
     },
     {
@@ -122,7 +123,7 @@ function TvIcon() {
   );
 }
 
-function SprayIcon() {
+function CoffeeIcon() {
   return (
     <svg
       width="16"
@@ -134,12 +135,11 @@ function SprayIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <path d="M8 2h4v6H8z" />
-      <path d="M10 8v2" />
-      <path d="M6 12h8v10H6z" />
-      <path d="M16 6h2" />
-      <path d="M18 2h2" />
-      <path d="M20 6h2" />
+      <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+      <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+      <line x1="6" y1="2" x2="6" y2="4" />
+      <line x1="10" y1="2" x2="10" y2="4" />
+      <line x1="14" y1="2" x2="14" y2="4" />
     </svg>
   );
 }
@@ -166,7 +166,7 @@ function MusicIcon() {
 const CATEGORY_ICONS: Record<string, () => React.JSX.Element> = {
   light: LightBulbIcon,
   tvshow: TvIcon,
-  fragrance: SprayIcon,
+  coffee: CoffeeIcon,
   playlist: MusicIcon,
 };
 
@@ -207,14 +207,18 @@ function ItemRow({
 // API 결과를 UI 형식으로 변환
 function mapApiResultToView(apiResult: VibeResultResponse) {
   const CATEGORY_LABELS: Record<string, string> = {
-    movie: 'TV SHOW', music: 'PLAYLIST', lighting: 'LIGHT', coffee: 'FRAGRANCE',
+    movie: 'TV SHOW', music: 'PLAYLIST', lighting: 'LIGHT', coffee: 'COFFEE',
+    light: 'LIGHT', tvshow: 'TV SHOW', playlist: 'PLAYLIST',
   };
   return {
     image: 'https://picsum.photos/seed/vibe-result/800/1100', // AI 이미지 URL은 추후 백엔드에서 제공
     sentence: apiResult.phrase ?? 'Your unique vibe.',
     moodColor: '#C4A882',
     categories: apiResult.recommendations.map((cat) => ({
-      key: cat.categoryKey === 'movie' ? 'tvshow' : cat.categoryKey === 'music' ? 'playlist' : cat.categoryKey,
+      key: cat.categoryKey === 'movie'    ? 'tvshow'    :
+           cat.categoryKey === 'music'    ? 'playlist'  :
+           cat.categoryKey === 'lighting' ? 'light'     :
+           cat.categoryKey,
       label: CATEGORY_LABELS[cat.categoryKey] ?? cat.categoryKey.toUpperCase(),
       items: cat.items.map((item) => ({
         id: String(item.itemId),
@@ -228,19 +232,63 @@ function mapApiResultToView(apiResult: VibeResultResponse) {
 export default function VibeConnectorResult() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
+  const { data: options } = useOptions();
 
   // [AFTER INTEGRATION] API에서 결과 데이터 로드
   const [result, setResult] = useState(FALLBACK_RESULT);
+  const [apiResult, setApiResult] = useState<VibeResultResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     if (!sessionId || sessionId === 'demo') return;
     setLoading(true);
     getVibeSession(Number(sessionId))
-      .then((data) => setResult(mapApiResultToView(data)))
+      .then((data) => {
+        setApiResult(data);
+        setResult(mapApiResultToView(data));
+      })
       .catch(() => setResult(FALLBACK_RESULT))
       .finally(() => setLoading(false));
   }, [sessionId]);
+
+  /** 같은 입력값으로 Vibe 재생성 */
+  const handleRegenerate = async () => {
+    if (!apiResult?.selectedOptions || !options || regenerating) return;
+    const sel = apiResult.selectedOptions;
+
+    const moodKeywordIds = sel.moods
+      .map((label) => options.moods.find((m) => m.label === label || m.keywordValue === label))
+      .filter(Boolean)
+      .map((m) => m!.keywordId);
+
+    const timeOption = options.times.find((t) => t.timeValue === sel.time || t.timeKey === sel.time);
+    const weatherOption = options.weathers.find((w) => w.label === sel.weather || w.weatherKey === sel.weather);
+    const placeOption = options.places.find((p) => p.label === sel.place || p.placeKey === sel.place);
+    const companionOption = options.companions.find((c) => c.label === sel.companion || c.companionKey === sel.companion);
+
+    if (!timeOption || !weatherOption || !placeOption || !companionOption || moodKeywordIds.length === 0) {
+      alert('옵션 매핑에 실패했습니다. 다시 시도해주세요.');
+      return;
+    }
+
+    setRegenerating(true);
+    try {
+      const newResult = await createVibe({
+        moodKeywordIds,
+        timeId: timeOption.timeId,
+        weatherId: weatherOption.weatherId,
+        placeId: placeOption.placeId,
+        companionId: companionOption.companionId,
+      });
+      navigate(`/vibe/result/${newResult.sessionId}`, { replace: true });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '재생성에 실패했습니다.';
+      alert(message);
+    } finally {
+      setRegenerating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -323,15 +371,28 @@ export default function VibeConnectorResult() {
               {result.sentence}
             </p>
             <button
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-caption transition-colors hover:bg-stroke/50 hover:text-high-emphasis"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-caption transition-colors hover:bg-stroke/50 hover:text-high-emphasis disabled:opacity-40"
               aria-label="다시 생성"
+              onClick={handleRegenerate}
+              disabled={regenerating || !apiResult}
             >
-              <ShareIcon />
+              {regenerating ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-caption border-t-brand" />
+              ) : (
+                <ShareIcon />
+              )}
             </button>
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3">
+            <ButtonDefault
+              shape="rect"
+              className="min-w-[120px]"
+              onClick={() => navigate(`/feed/create?sessionId=${sessionId}`)}
+            >
+              SHARE
+            </ButtonDefault>
             <ButtonDefault
               shape="rect"
               className="min-w-[120px]"

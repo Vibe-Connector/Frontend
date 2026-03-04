@@ -1,17 +1,27 @@
 import { COMPANION_OPTIONS } from '../../constants';
 import SelectionCard from './SelectionCard';
 
+interface CompanionOption {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+}
+
 interface CompanionSelectorProps {
   selectedId: string | null;
   onChange: (id: string) => void;
+  companions?: CompanionOption[];
 }
 
-export default function CompanionSelector({ selectedId, onChange }: CompanionSelectorProps) {
+export default function CompanionSelector({ selectedId, onChange, companions }: CompanionSelectorProps) {
+  const items = companions ?? COMPANION_OPTIONS;
+
   return (
     <div>
       <h3 className="mb-3 text-sm font-medium text-high-emphasis">누구와 함께인가요?</h3>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {COMPANION_OPTIONS.map((companion) => (
+        {items.map((companion) => (
           <SelectionCard
             key={companion.id}
             label={companion.label}

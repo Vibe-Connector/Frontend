@@ -5,6 +5,7 @@ interface MoodCloudChipProps {
   onClick: () => void;
   isCustom?: boolean;
   onRemove?: () => void;
+  disabled?: boolean;
 }
 
 export default function MoodCloudChip({
@@ -14,16 +15,18 @@ export default function MoodCloudChip({
   onClick,
   isCustom,
   onRemove,
+  disabled = false,
 }: MoodCloudChipProps) {
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={isSelected}
-      onClick={onClick}
-      className="group relative animate-smooth cursor-pointer select-none"
+      onClick={disabled ? undefined : onClick}
+      className={`group relative animate-smooth select-none ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
       style={{
         transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+        opacity: disabled ? 0.4 : 1,
       }}
     >
       <div

@@ -3,12 +3,20 @@ import aiClient from './aiClient';
 
 // ── Vibe 생성 요청 ──
 
+export interface WeatherIntensityDto {
+  weatherId: number;
+  intensity: number;
+}
+
 export interface VibeCreateRequest {
   moodKeywordIds: number[];
   timeId: number;
   weatherId: number;
   placeId: number;
   companionId: number;
+  hour?: number;
+  minute?: number;
+  weatherIntensities?: WeatherIntensityDto[];
 }
 
 // ── 선택 옵션 요약 ──
@@ -54,6 +62,18 @@ export interface VibeResultResponse {
   createdAt: string;
 }
 
+// ── 프롬프트 제출 응답 ──
+
+export interface VibePromptSubmitResponse {
+  sessionId: number;
+  phrase: string | null;
+  analysis: string | null;
+  selectedOptions: SelectedOptions;
+  recommendations: CategoryRecommendation[];
+  processingTimeMs: number | null;
+  createdAt: string;
+}
+
 // ── 세션 생성 응답 ──
 
 export interface VibeSessionCreateResponse {
@@ -78,13 +98,19 @@ export interface VibeHistoryResponse {
 
 // ── API 함수 ──
 
-// POST /api/v1/vibes — 통합 Vibe 생성 (AI 호출 포함, 시간이 걸림)
-export const createVibe = (data: VibeCreateRequest): Promise<VibeResultResponse> =>
-  aiClient.post('/vibes', data);
-
-// POST /api/v1/vibes/sessions — 세션만 생성
+// POST /api/v1/vibes/sessions — 세션 생성
 export const createSession = (): Promise<VibeSessionCreateResponse> =>
   client.post('/vibes/sessions');
+
+// POST /api/v1/vibes/sessions/{sessionId}/prompt — 프롬프트 제출 (AI + 아이템 추천)
+export const submitPrompt = (sessionId: number, data: VibeCreateRequest): Promise<VibePromptSubmitResponse> =>
+  aiClient.post(`/vibes/sessions/${sessionId}/prompt`, data);
+
+// 통합 Vibe 생성: 세션 생성 → 프롬프트 제출 (아이템 추천 포함)
+export const createVibe = async (data: VibeCreateRequest): Promise<VibePromptSubmitResponse> => {
+  const session = await createSession();
+  return submitPrompt(session.sessionId, data);
+};
 
 // GET /api/v1/vibes/sessions/{sessionId} — 세션 상세 (결과 포함)
 export const getVibeSession = (sessionId: number): Promise<VibeResultResponse> =>

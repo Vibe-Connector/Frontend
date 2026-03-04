@@ -1,11 +1,27 @@
 import PlaceSelector from './PlaceSelector';
 import CompanionSelector from './CompanionSelector';
 
+interface PlaceOption {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+}
+
+interface CompanionOption {
+  id: string;
+  label: string;
+  emoji: string;
+  description: string;
+}
+
 interface PlaceCompanionPanelProps {
   selectedPlace: string | null;
   selectedCompanion: string | null;
   onPlaceChange: (id: string) => void;
   onCompanionChange: (id: string) => void;
+  places?: PlaceOption[];
+  companions?: CompanionOption[];
 }
 
 export default function PlaceCompanionPanel({
@@ -13,6 +29,8 @@ export default function PlaceCompanionPanel({
   selectedCompanion,
   onPlaceChange,
   onCompanionChange,
+  places,
+  companions,
 }: PlaceCompanionPanelProps) {
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -30,8 +48,8 @@ export default function PlaceCompanionPanel({
 
       {/* Right: Selectors */}
       <div className="flex flex-col gap-8">
-        <PlaceSelector selectedId={selectedPlace} onChange={onPlaceChange} />
-        <CompanionSelector selectedId={selectedCompanion} onChange={onCompanionChange} />
+        <PlaceSelector selectedId={selectedPlace} onChange={onPlaceChange} places={places} />
+        <CompanionSelector selectedId={selectedCompanion} onChange={onCompanionChange} companions={companions} />
       </div>
     </div>
   );
