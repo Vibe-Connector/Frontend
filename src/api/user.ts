@@ -11,6 +11,8 @@ export interface UserProfileResponse {
   birthYear: number | null;
   profileImageUrl: string | null;
   preferredLanguageId: number | null;
+  country: string | null;
+  timezone: string | null;
   lastLoginAt: string | null;
   createdAt: string;
 }
@@ -28,6 +30,8 @@ export interface UpdateProfileRequest {
   birthYear?: number;
   profileImageUrl?: string;
   preferredLanguageId?: number;
+  country?: string;
+  timezone?: string;
 }
 
 export interface UserSettingsResponse {
