@@ -201,10 +201,12 @@ export default function Explore() {
           <div className="columns-2 gap-4 sm:columns-3 md:columns-4 lg:columns-5">
             {vibes.map((vibe) => (
               <div key={vibe.feedId} className="mb-4 break-inside-avoid">
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   className="group relative w-full cursor-pointer text-left"
                   onClick={() => handleCardClick(vibe.feedId)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(vibe.feedId); }}
                 >
                   <div className="overflow-hidden rounded-card bg-surface transition-shadow hover:shadow-card">
                     {/* 이미지 + 책갈피 버튼 */}
@@ -254,7 +256,7 @@ export default function Explore() {
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               </div>
             ))}
           </div>
