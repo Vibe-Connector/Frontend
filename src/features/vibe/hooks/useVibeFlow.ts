@@ -8,8 +8,9 @@ const initialState: VibeFlowState = {
   selectedMoods: [],
   customMoods: [],
   selectedAmPm: 'AM',
-  selectedTimeSlot: null,
-  selectedWeather: null,
+  selectedHour: null,
+  selectedMinute: 0,
+  weatherIntensities: {},
   selectedPlace: null,
   selectedCompanion: null,
 };
@@ -28,6 +29,7 @@ function vibeReducer(state: VibeFlowState, action: VibeAction): VibeFlowState {
       const trimmed = action.label.trim();
       if (!trimmed || state.customMoods.includes(trimmed)) return state;
       if (state.customMoods.length >= MAX_CUSTOM_MOODS) return state;
+      if (state.selectedMoods.length >= MAX_MOOD_SELECTIONS) return state;
       return {
         ...state,
         customMoods: [...state.customMoods, trimmed],
@@ -43,13 +45,19 @@ function vibeReducer(state: VibeFlowState, action: VibeAction): VibeFlowState {
     }
     case 'SET_AMPM':
       return { ...state, selectedAmPm: action.value };
-    case 'SET_TIME_SLOT':
-      return { ...state, selectedTimeSlot: action.timeId };
-    case 'SET_WEATHER':
+    case 'SET_HOUR':
+      return { ...state, selectedHour: action.hour };
+    case 'SET_MINUTE':
+      return { ...state, selectedMinute: action.minute };
+    case 'SET_WEATHER_INTENSITY': {
       return {
         ...state,
-        selectedWeather: state.selectedWeather === action.weatherId ? null : action.weatherId,
+        weatherIntensities: {
+          ...state.weatherIntensities,
+          [action.weatherId]: action.intensity,
+        },
       };
+    }
     case 'SET_PLACE':
       return { ...state, selectedPlace: action.placeId };
     case 'SET_COMPANION':
@@ -67,7 +75,7 @@ function vibeReducer(state: VibeFlowState, action: VibeAction): VibeFlowState {
         case 1:
           return { ...state, selectedMoods: [], customMoods: [] };
         case 2:
-          return { ...state, selectedAmPm: 'AM', selectedTimeSlot: null, selectedWeather: null };
+          return { ...state, selectedAmPm: 'AM', selectedHour: null, selectedMinute: 0, weatherIntensities: {} };
         case 3:
           return { ...state, selectedPlace: null, selectedCompanion: null };
         default:
@@ -87,13 +95,13 @@ export function useVibeFlow() {
       case 1:
         return state.selectedMoods.length > 0;
       case 2:
-        return state.selectedTimeSlot !== null && state.selectedWeather !== null;
+        return state.selectedHour !== null && Object.values(state.weatherIntensities).some((v) => v > 0);
       case 3:
         return state.selectedPlace !== null && state.selectedCompanion !== null;
       default:
         return false;
     }
-  }, [state.currentStep, state.selectedMoods, state.selectedTimeSlot, state.selectedWeather, state.selectedPlace, state.selectedCompanion]);
+  }, [state.currentStep, state.selectedMoods, state.selectedHour, state.weatherIntensities, state.selectedPlace, state.selectedCompanion]);
 
   const actions = useMemo(
     () => ({
@@ -101,8 +109,10 @@ export function useVibeFlow() {
       addCustomMood: (label: string) => dispatch({ type: 'ADD_CUSTOM_MOOD', label }),
       removeCustomMood: (label: string) => dispatch({ type: 'REMOVE_CUSTOM_MOOD', label }),
       setAmPm: (value: 'AM' | 'PM') => dispatch({ type: 'SET_AMPM', value }),
-      setTimeSlot: (timeId: string) => dispatch({ type: 'SET_TIME_SLOT', timeId }),
-      setWeather: (weatherId: string) => dispatch({ type: 'SET_WEATHER', weatherId }),
+      setHour: (hour: number) => dispatch({ type: 'SET_HOUR', hour }),
+      setMinute: (minute: number) => dispatch({ type: 'SET_MINUTE', minute }),
+      setWeatherIntensity: (weatherId: string, intensity: number) =>
+        dispatch({ type: 'SET_WEATHER_INTENSITY', weatherId, intensity }),
       setPlace: (placeId: string) => dispatch({ type: 'SET_PLACE', placeId }),
       setCompanion: (companionId: string) => dispatch({ type: 'SET_COMPANION', companionId }),
       nextStep: () => dispatch({ type: 'NEXT_STEP' }),

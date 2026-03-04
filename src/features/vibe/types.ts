@@ -41,10 +41,13 @@ export interface VibeFlowState {
   selectedMoods: string[];
   customMoods: string[];
 
-  // Step 2
+  // Step 2 — Time
   selectedAmPm: 'AM' | 'PM';
-  selectedTimeSlot: string | null;
-  selectedWeather: string | null;
+  selectedHour: number | null;
+  selectedMinute: number;
+
+  // Step 2 — Weather (intensity bar)
+  weatherIntensities: Record<string, number>;
 
   // Step 3
   selectedPlace: string | null;
@@ -56,8 +59,9 @@ export type VibeAction =
   | { type: 'ADD_CUSTOM_MOOD'; label: string }
   | { type: 'REMOVE_CUSTOM_MOOD'; label: string }
   | { type: 'SET_AMPM'; value: 'AM' | 'PM' }
-  | { type: 'SET_TIME_SLOT'; timeId: string }
-  | { type: 'SET_WEATHER'; weatherId: string }
+  | { type: 'SET_HOUR'; hour: number }
+  | { type: 'SET_MINUTE'; minute: number }
+  | { type: 'SET_WEATHER_INTENSITY'; weatherId: string; intensity: number }
   | { type: 'SET_PLACE'; placeId: string }
   | { type: 'SET_COMPANION'; companionId: string }
   | { type: 'NEXT_STEP' }

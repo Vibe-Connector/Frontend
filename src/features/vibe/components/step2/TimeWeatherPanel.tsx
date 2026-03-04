@@ -4,11 +4,13 @@ import WeatherSelector from './WeatherSelector';
 
 interface TimeWeatherPanelProps {
   amPm: 'AM' | 'PM';
-  selectedTimeSlot: string | null;
-  selectedWeather: string | null;
+  selectedHour: number | null;
+  selectedMinute: number;
+  weatherIntensities: Record<string, number>;
   onAmPmChange: (v: 'AM' | 'PM') => void;
-  onTimeSlotChange: (id: string) => void;
-  onWeatherChange: (id: string) => void;
+  onHourChange: (hour: number) => void;
+  onMinuteChange: (minute: number) => void;
+  onWeatherIntensityChange: (weatherId: string, intensity: number) => void;
 }
 
 const AM_PM_TABS = [
@@ -18,11 +20,13 @@ const AM_PM_TABS = [
 
 export default function TimeWeatherPanel({
   amPm,
-  selectedTimeSlot,
-  selectedWeather,
+  selectedHour,
+  selectedMinute,
+  weatherIntensities,
   onAmPmChange,
-  onTimeSlotChange,
-  onWeatherChange,
+  onHourChange,
+  onMinuteChange,
+  onWeatherIntensityChange,
 }: TimeWeatherPanelProps) {
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -31,12 +35,21 @@ export default function TimeWeatherPanel({
         <div className="w-fit">
           <TabToggle tabs={AM_PM_TABS} activeTab={amPm} onChange={onAmPmChange} />
         </div>
-        <AnalogClock amPm={amPm} selectedTimeSlot={selectedTimeSlot} onTimeSlotSelect={onTimeSlotChange} />
+        <AnalogClock
+          amPm={amPm}
+          selectedHour={selectedHour}
+          selectedMinute={selectedMinute}
+          onHourChange={onHourChange}
+          onMinuteChange={onMinuteChange}
+        />
       </div>
 
       {/* Right: Weather */}
       <div className="flex flex-col justify-center">
-        <WeatherSelector selectedWeather={selectedWeather} onWeatherChange={onWeatherChange} />
+        <WeatherSelector
+          weatherIntensities={weatherIntensities}
+          onWeatherIntensityChange={onWeatherIntensityChange}
+        />
       </div>
     </div>
   );

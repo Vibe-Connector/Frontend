@@ -1,12 +1,12 @@
 import { WEATHER_OPTIONS } from '../../constants';
 
 interface WeatherSelectorProps {
-  selectedWeather: string | null;
-  onWeatherChange: (id: string) => void;
+  weatherIntensities: Record<string, number>;
+  onWeatherIntensityChange: (weatherId: string, intensity: number) => void;
 }
 
-function WeatherIcon({ icon, isSelected }: { icon: string; isSelected: boolean }) {
-  const color = isSelected ? 'var(--color-primary)' : 'var(--color-caption)';
+function WeatherIcon({ icon, isActive }: { icon: string; isActive: boolean }) {
+  const color = isActive ? 'var(--color-primary)' : 'var(--color-caption)';
 
   switch (icon) {
     case 'sun':
@@ -52,7 +52,7 @@ function WeatherIcon({ icon, isSelected }: { icon: string; isSelected: boolean }
   }
 }
 
-export default function WeatherSelector({ selectedWeather, onWeatherChange }: WeatherSelectorProps) {
+export default function WeatherSelector({ weatherIntensities, onWeatherIntensityChange }: WeatherSelectorProps) {
   return (
     <div className="rounded-card bg-surface p-6">
       <h3 className="mb-4 text-center text-sm font-medium text-high-emphasis">
@@ -60,37 +60,38 @@ export default function WeatherSelector({ selectedWeather, onWeatherChange }: We
       </h3>
       <div className="flex flex-col gap-4">
         {WEATHER_OPTIONS.map((weather) => {
-          const isSelected = selectedWeather === weather.id;
+          const intensity = weatherIntensities[weather.id] ?? 0;
+          const isActive = intensity > 0;
 
           return (
-            <button
+            <div
               key={weather.id}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => onWeatherChange(weather.id)}
-              className={`flex items-center gap-4 rounded-control p-3 animate-smooth cursor-pointer ${
-                isSelected
-                  ? 'bg-white shadow-card'
-                  : 'bg-transparent hover:bg-white/50'
+              className={`flex items-center gap-4 rounded-control p-3 animate-smooth ${
+                isActive ? 'bg-white shadow-card' : 'bg-transparent'
               }`}
             >
-              <WeatherIcon icon={weather.icon} isSelected={isSelected} />
-              <span className={`text-sm font-medium animate-smooth ${isSelected ? 'text-high-emphasis' : 'text-caption'}`}>
+              <div className="flex-shrink-0">
+                <WeatherIcon icon={weather.icon} isActive={isActive} />
+              </div>
+              <span className={`w-10 text-sm font-medium animate-smooth ${isActive ? 'text-high-emphasis' : 'text-caption'}`}>
                 {weather.label}
               </span>
-              <div className="ml-auto h-2 flex-1 max-w-[120px] overflow-hidden rounded-pill bg-disabled">
-                <div
-                  className="h-full rounded-pill animate-smooth"
-                  style={{
-                    width: isSelected ? '100%' : '0%',
-                    background: isSelected
-                      ? 'linear-gradient(90deg, #FFD6E0, #F1863B)'
-                      : 'transparent',
-                  }}
+              <div className="flex flex-1 items-center gap-2">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={intensity}
+                  onChange={(e) => onWeatherIntensityChange(weather.id, Number(e.target.value))}
+                  className="vibe-slider h-2 flex-1 cursor-pointer appearance-none rounded-pill bg-disabled"
+                  aria-label={`${weather.label} 강도`}
                 />
+                <span className={`w-10 text-right text-xs font-medium tabular-nums ${isActive ? 'text-high-emphasis' : 'text-caption'}`}>
+                  {intensity}%
+                </span>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

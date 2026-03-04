@@ -1,4 +1,6 @@
-import { MOOD_KEYWORDS, MAX_CUSTOM_MOODS } from '../../constants';
+import { useMemo } from 'react';
+import { MOOD_KEYWORDS, MAX_CUSTOM_MOODS, MAX_MOOD_SELECTIONS } from '../../constants';
+import type { MoodKeyword } from '../../types';
 import MoodCloudChip from './MoodCloudChip';
 import MoodInputBubble from './MoodInputBubble';
 
@@ -8,18 +10,26 @@ interface MoodMindMapProps {
   onToggleMood: (moodId: string) => void;
   onAddCustomMood: (label: string) => void;
   onRemoveCustomMood: (label: string) => void;
+  moods?: MoodKeyword[];
+  isLimitReached?: boolean;
 }
 
 const CUSTOM_CLOUD_COLORS = ['#E8D5FF', '#D5F0E8', '#FFE8D5'];
 
-const RADIAL_POSITIONS = [
-  { top: '8%', left: '30%' },
-  { top: '8%', left: '65%' },
-  { top: '38%', left: '10%' },
-  { top: '38%', left: '82%' },
-  { top: '68%', left: '25%' },
-  { top: '68%', left: '60%' },
-];
+/** N개 아이템을 중심 주위로 타원형 배치 */
+function computeRadialPositions(count: number) {
+  const positions: { top: string; left: string }[] = [];
+  for (let i = 0; i < count; i++) {
+    const angle = (2 * Math.PI * i) / count - Math.PI / 2;
+    const rx = 32;
+    const ry = 28;
+    positions.push({
+      top: `${50 + ry * Math.sin(angle)}%`,
+      left: `${50 + rx * Math.cos(angle)}%`,
+    });
+  }
+  return positions;
+}
 
 export default function MoodMindMap({
   selectedMoods,
@@ -27,7 +37,16 @@ export default function MoodMindMap({
   onToggleMood,
   onAddCustomMood,
   onRemoveCustomMood,
+  moods,
+  isLimitReached = false,
 }: MoodMindMapProps) {
+  const displayMoods = moods ?? MOOD_KEYWORDS;
+
+  const positions = useMemo(
+    () => computeRadialPositions(displayMoods.length),
+    [displayMoods.length],
+  );
+
   return (
     <div className="relative w-full overflow-hidden rounded-card bg-vibe-bg" style={{ minHeight: '480px' }}>
       {/* Decorative doodles */}
@@ -48,6 +67,15 @@ export default function MoodMindMap({
         <path d="M 650 300 L 670 295 L 665 310" fill="none" stroke="var(--color-caption)" strokeWidth="1.2" opacity="0.2" />
       </svg>
 
+      {/* Limit reached notice */}
+      {isLimitReached && (
+        <div className="absolute top-4 left-1/2 z-20 -translate-x-1/2">
+          <p className="rounded-pill bg-brand/90 px-4 py-1.5 text-xs font-medium text-white">
+            최대 {MAX_MOOD_SELECTIONS}개까지 선택 가능합니다
+          </p>
+        </div>
+      )}
+
       {/* Center input bubble */}
       <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
         <MoodInputBubble
@@ -57,45 +85,53 @@ export default function MoodMindMap({
         />
       </div>
 
-      {/* Preset mood clouds */}
-      {MOOD_KEYWORDS.map((mood, i) => (
-        <div
-          key={mood.id}
-          className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-          style={{
-            top: RADIAL_POSITIONS[i].top,
-            left: RADIAL_POSITIONS[i].left,
-          }}
-        >
-          <MoodCloudChip
-            label={mood.label}
-            color={mood.color}
-            isSelected={selectedMoods.includes(mood.id)}
-            onClick={() => onToggleMood(mood.id)}
-          />
-        </div>
-      ))}
+      {/* Preset mood clouds — 동적 배치 */}
+      {displayMoods.map((mood, i) => {
+        const isSelected = selectedMoods.includes(mood.id);
+        return (
+          <div
+            key={mood.id}
+            className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
+            style={{
+              top: positions[i].top,
+              left: positions[i].left,
+            }}
+          >
+            <MoodCloudChip
+              label={mood.label}
+              color={mood.color}
+              isSelected={isSelected}
+              onClick={() => onToggleMood(mood.id)}
+              disabled={isLimitReached && !isSelected}
+            />
+          </div>
+        );
+      })}
 
       {/* Custom mood clouds */}
-      {customMoods.map((mood, i) => (
-        <div
-          key={`custom:${mood}`}
-          className="absolute z-10"
-          style={{
-            bottom: `${12 + i * 8}%`,
-            right: `${10 + i * 15}%`,
-          }}
-        >
-          <MoodCloudChip
-            label={mood}
-            color={CUSTOM_CLOUD_COLORS[i % CUSTOM_CLOUD_COLORS.length]}
-            isSelected={selectedMoods.includes(`custom:${mood}`)}
-            onClick={() => onToggleMood(`custom:${mood}`)}
-            isCustom
-            onRemove={() => onRemoveCustomMood(mood)}
-          />
-        </div>
-      ))}
+      {customMoods.map((mood, i) => {
+        const isSelected = selectedMoods.includes(`custom:${mood}`);
+        return (
+          <div
+            key={`custom:${mood}`}
+            className="absolute z-10"
+            style={{
+              bottom: `${12 + i * 8}%`,
+              right: `${10 + i * 15}%`,
+            }}
+          >
+            <MoodCloudChip
+              label={mood}
+              color={CUSTOM_CLOUD_COLORS[i % CUSTOM_CLOUD_COLORS.length]}
+              isSelected={isSelected}
+              onClick={() => onToggleMood(`custom:${mood}`)}
+              disabled={isLimitReached && !isSelected}
+              isCustom
+              onRemove={() => onRemoveCustomMood(mood)}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
