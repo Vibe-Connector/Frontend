@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
@@ -56,8 +56,11 @@ function BookmarkFilledIcon() {
 
 export default function Explore() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [period, setPeriod] = useState<ExplorePeriod>('WEEK');
+
+  const periodParam = searchParams.get('period') as ExplorePeriod | null;
+  const period: ExplorePeriod = periodParam && ['DAY', 'WEEK', 'MONTH'].includes(periodParam) ? periodParam : 'WEEK';
   const [vibes, setVibes] = useState<ExploreVibeResponse[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasNext, setHasNext] = useState(false);
@@ -125,7 +128,7 @@ export default function Explore() {
 
   const handlePeriodChange = (newPeriod: ExplorePeriod) => {
     if (newPeriod === period) return;
-    setPeriod(newPeriod);
+    setSearchParams({ period: newPeriod }, { replace: true });
   };
 
   const handleBookmarkClick = async (e: React.MouseEvent, vibe: ExploreVibeResponse) => {
