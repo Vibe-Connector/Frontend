@@ -234,7 +234,7 @@ export default function FeedDetail() {
       {/* ===== Main Content (2-column) ===== */}
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Left — Main Image */}
-        <div className="flex-shrink-0 lg:w-[420px]">
+        <div className="shrink-0 lg:w-105">
           <img
             src={feed.image}
             alt="Vibe 메인 이미지"
@@ -345,7 +345,7 @@ export default function FeedDetail() {
                     loading="lazy"
                     className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
                   />
-                  <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover/item:opacity-100">
+                  <div className="pointer-events-none absolute inset-0 flex items-end bg-linear-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover/item:opacity-100">
                     <span className="px-2 pb-1.5 text-xs font-medium text-white">
                       {item.label}
                     </span>

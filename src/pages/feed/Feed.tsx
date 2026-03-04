@@ -113,31 +113,13 @@ function LockIcon() {
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
-
 // --- Sub Components ---
 function ProfileSection({
   user,
   isFollowing,
   onToggleFollow,
 }: {
-  user: typeof MOCK_USER;
+  user: { nickname: string; avatarUrl: string | null; isFollowing: boolean };
   isFollowing: boolean;
   onToggleFollow: () => void;
 }) {
@@ -159,7 +141,7 @@ function ProfileSection({
       </span>
       <ButtonDefault
         shape="pill"
-        className="!px-5 !py-2 !text-[14px]"
+        className="px-5! py-2! text-[14px]!"
         onClick={onToggleFollow}
       >
         {isFollowing ? '팔로잉' : '팔로우'}
@@ -172,7 +154,7 @@ function PhotoGrid({
   images,
   onImageClick,
 }: {
-  images: typeof MOCK_FEED_IMAGES;
+  images: { id: string; imageUrl: string; alt: string }[];
   onImageClick: (id: string) => void;
 }) {
   return (
@@ -181,7 +163,7 @@ function PhotoGrid({
         <button
           key={img.id}
           type="button"
-          className="group relative aspect-[4/5] cursor-pointer overflow-hidden rounded-control bg-surface"
+          className="group relative aspect-4/5 cursor-pointer overflow-hidden rounded-control bg-surface"
           onClick={() => onImageClick(img.id)}
         >
           <img
@@ -206,10 +188,10 @@ function CollectionCard({
   return (
     <button
       type="button"
-      className="w-[180px] cursor-pointer text-left"
+      className="w-45 cursor-pointer text-left"
       onClick={onClick}
     >
-      <div className="relative flex h-[130px] w-full items-center justify-center overflow-hidden rounded-card bg-surface">
+      <div className="relative flex h-32.5 w-full items-center justify-center overflow-hidden rounded-card bg-surface">
         {collection.thumbnailUrl ? (
           <img
             src={collection.thumbnailUrl}
@@ -217,7 +199,7 @@ function CollectionCard({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-[1px] p-4 opacity-30">
+          <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px p-4 opacity-30">
             <div className="rounded-sm bg-stroke" />
             <div className="rounded-sm bg-stroke" />
             <div className="rounded-sm bg-stroke" />
@@ -244,10 +226,10 @@ function CreateCollectionCard({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
-      className="w-[180px] cursor-pointer text-left"
+      className="w-45 cursor-pointer text-left"
       onClick={onClick}
     >
-      <div className="flex h-[130px] w-full items-center justify-center overflow-hidden rounded-card bg-surface transition-colors hover:bg-disabled">
+      <div className="flex h-32.5 w-full items-center justify-center overflow-hidden rounded-card bg-surface transition-colors hover:bg-disabled">
         <span className="rounded-control border border-stroke bg-white px-4 py-1.5 text-[13px] font-medium text-high-emphasis">
           만들기
         </span>
@@ -308,8 +290,6 @@ export default function Feed() {
     { id: string; imageUrl: string; alt: string }[]
   >([]);
   const [collections, setCollections] = useState<Collection[]>([]);
-  const [useApi, setUseApi] = useState(true);
-
   useEffect(() => {
     getFeeds(undefined, 20)
       .then((res) => {
@@ -320,10 +300,7 @@ export default function Feed() {
         }));
         setFeedImages(mapped.length > 0 ? mapped : FALLBACK_FEED_IMAGES);
       })
-      .catch(() => {
-        setFeedImages(FALLBACK_FEED_IMAGES);
-        setUseApi(false);
-      });
+      .catch(() => setFeedImages(FALLBACK_FEED_IMAGES));
 
     getFolders()
       .then((folders: FolderResponse[]) => {
