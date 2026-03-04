@@ -104,3 +104,14 @@ export const updateSettings = (data: UpdateSettingsRequest): Promise<UserSetting
 // GET /api/v1/users/me/social
 export const getSocialAccounts = (): Promise<SocialAccountResponse[]> =>
   client.get('/users/me/social');
+
+// POST /api/v1/users/me/social/{provider}
+export const linkSocialAccount = (
+  provider: string,
+  data: { authorizationCode: string; redirectUri: string },
+): Promise<SocialAccountResponse> =>
+  client.post(`/users/me/social/${provider}`, data);
+
+// DELETE /api/v1/users/me/social/{provider}
+export const unlinkSocialAccount = (provider: string): Promise<void> =>
+  client.delete(`/users/me/social/${provider}`);

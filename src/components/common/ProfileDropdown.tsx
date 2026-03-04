@@ -2,6 +2,8 @@ import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { useAppMode } from '../../hooks/useAppMode';
+import { useAuthStore } from '@/store/authStore';
+import { logout } from '@/api/auth';
 import type { ProfilePage } from '../../types/app-mode';
 
 /**
@@ -62,6 +64,7 @@ const ProfileDropdown = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { switchToProfile } = useAppMode();
+  const authLogout = useAuthStore((s) => s.logout);
 
   /** 바깥 클릭 시 드롭다운 닫기 — useClickOutside 훅 사용 */
   const close = useCallback(() => setIsOpen(false), []);
@@ -70,7 +73,9 @@ const ProfileDropdown = () => {
   /** 메뉴 항목 클릭 핸들러 */
   const handleItemClick = (action: ProfileMenuItem['action']) => {
     if (action === 'logout') {
-      // TODO: 로그아웃 로직 구현
+      logout().catch(() => {});
+      authLogout();
+      navigate('/login');
     } else {
       switchToProfile(action);
       navigate(PROFILE_ROUTES[action]);
@@ -99,7 +104,7 @@ const ProfileDropdown = () => {
         className="flex items-center gap-2 cursor-pointer"
       >
         <UserIcon />
-        <span className="text-brand text-sm">Nickname</span>
+        <span className="text-brand text-sm">{useAuthStore((s) => s.user?.nickname) ?? 'Guest'}</span>
       </button>
 
       {/* 드롭다운 메뉴 — Dropdown.tsx와 동일한 스타일 토큰 사용 */}

@@ -46,3 +46,38 @@ export const verifyCode = (email: string, code: string): Promise<{ verified: boo
 // POST /api/v1/auth/logout
 export const logout = (): Promise<void> =>
   client.post('/auth/logout');
+
+// ── 소셜 로그인 ──
+// POST /api/v1/auth/social/{provider}
+export interface SocialLoginRequest {
+  authorizationCode: string;
+  redirectUri: string;
+}
+
+export interface SocialLoginResponse {
+  userId: number | null;
+  email: string | null;
+  nickname: string | null;
+  profileImageUrl: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  isNewUser: boolean;
+  socialSignupToken: string | null;
+}
+
+export const socialLogin = (
+  provider: string,
+  data: SocialLoginRequest,
+): Promise<SocialLoginResponse> =>
+  client.post(`/auth/social/${provider}`, data);
+
+// ── 소셜 회원가입 ──
+// POST /api/v1/auth/social-signup
+export interface SocialSignupRequest {
+  socialSignupToken: string;
+  nickname: string;
+  password: string;
+}
+
+export const socialSignup = (data: SocialSignupRequest): Promise<TokenResponse> =>
+  client.post('/auth/social-signup', data);

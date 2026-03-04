@@ -20,6 +20,7 @@ import ProfileSettings from '@/pages/mypage/ProfileSettings';
 import ProfileAnalysisReport from '@/pages/mypage/ProfileAnalysisReport';
 import Archive from '@/pages/archive/Archive';
 import ArchiveDetail from '@/pages/archive/ArchiveDetail';
+import OAuthCallback from '@/pages/auth/OAuthCallback';
 
 export const router = createBrowserRouter([
   // -- Public (비인증 전용: 이미 로그인 시 / 로 리다이렉트) --
@@ -69,6 +70,9 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // -- OAuth 콜백 (인증 가드 불필요) --
+  { path: '/auth/callback/:provider', element: <OAuthCallback /> },
 
   // 404
   {
