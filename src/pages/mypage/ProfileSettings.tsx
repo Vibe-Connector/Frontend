@@ -42,6 +42,7 @@ export default function ProfileSettings() {
   // [BEFORE INTEGRATION] 하드코딩된 'Alexa Rawles', 'alexarawles@gmail.com'
   // [AFTER INTEGRATION] API에서 프로필 + 설정 데이터 로드
   const authUser = useAuthStore((s) => s.user);
+  const updateAuthUser = useAuthStore((s) => s.updateUser);
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [settings, setSettingsState] = useState<UserSettingsResponse | null>(null);
   const [fullName, setFullName] = useState('');
@@ -60,7 +61,13 @@ export default function ProfileSettings() {
         setProfile(res);
         setFullName(res.name ?? '');
         setNickName(res.nickname ?? '');
-        setGender(res.gender ?? '');
+        // BE는 대문자 MALE/FEMALE/OTHER를 저장하므로, FE 드롭다운 value(소문자)로 변환
+        setGender(res.gender ? res.gender.toLowerCase() : '');
+        setCountry(res.country ?? '');
+        setTimezone(res.timezone ?? '');
+        // preferredLanguageId → language 코드 변환
+        const langMap: Record<number, string> = { 1: 'ko', 2: 'en', 3: 'ja', 4: 'zh' };
+        setLanguage(res.preferredLanguageId ? (langMap[res.preferredLanguageId] ?? '') : '');
       })
       .catch(() => {/* 폴백: authStore 데이터 사용 */});
 
@@ -73,18 +80,36 @@ export default function ProfileSettings() {
       .catch(() => {});
   }, []);
 
-  const displayName = profile?.nickname ?? authUser?.nickname ?? 'Alexa Rawles';
-  const displayEmail = profile?.email ?? authUser?.email ?? 'alexarawles@gmail.com';
+  const displayName = profile?.nickname ?? authUser?.nickname ?? '';
+  const displayEmail = profile?.email ?? authUser?.email ?? '';
   const displayAvatar = profile?.profileImageUrl ?? authUser?.profileImageUrl ?? null;
 
   const handleSave = () => {
     setSaving(true);
+
+    // gender: 소문자 → 대문자 변환, 'prefer-not'은 전송하지 않음
+    const genderValue = gender && gender !== 'prefer-not' ? gender.toUpperCase() : undefined;
+
+    // language 코드 → preferredLanguageId 변환
+    const langIdMap: Record<string, number> = { ko: 1, en: 2, ja: 3, zh: 4 };
+    const preferredLanguageId = language ? langIdMap[language] : undefined;
+
     const profilePromise = updateProfile({
       name: fullName || undefined,
       nickname: nickName || undefined,
-      gender: gender || undefined,
+      gender: genderValue,
+      preferredLanguageId,
+      country: country || undefined,
+      timezone: timezone || undefined,
     })
-      .then((res) => setProfile(res))
+      .then((res) => {
+        setProfile(res);
+        updateAuthUser({
+          nickname: res.nickname,
+          profileImageUrl: res.profileImageUrl,
+          preferredLanguageId: res.preferredLanguageId,
+        });
+      })
       .catch(() => {});
 
     const settingsPromise = settings

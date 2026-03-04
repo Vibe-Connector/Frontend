@@ -5,6 +5,7 @@ import { ApiError } from './types';
 let getAuthState: () => {
   accessToken: string | null;
   refreshToken: string | null;
+  user: { preferredLanguageId: number | null } | null;
   setTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
 };
@@ -36,8 +37,11 @@ export function setupInterceptors(instance: AxiosInstance) {
     }
 
     // 백엔드 LanguageInterceptor가 Accept-Language를 파싱하여 languageId 결정
-    // MVP에서는 'ko' 고정, 향후 언어 설정 스토어에서 읽도록 확장
-    config.headers['Accept-Language'] = 'ko';
+    // authStore의 preferredLanguageId 기반 동적 설정
+    const langMap: Record<number, string> = { 1: 'ko', 2: 'en', 3: 'ja', 4: 'zh' };
+    const authState = getAuthState();
+    const langId = authState?.user?.preferredLanguageId;
+    config.headers['Accept-Language'] = (langId && langMap[langId]) || 'ko';
 
     return config;
   });
