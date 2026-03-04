@@ -19,7 +19,7 @@ export default function VibeConnector() {
   const handleSubmit = async () => {
     // [BEFORE INTEGRATION] navigate('/vibe/loading');
     // [AFTER INTEGRATION] 백엔드 Vibe 생성 API 호출
-    if (!options) return;
+    if (submitting || !options) return;
 
     // Frontend string ID → Backend number ID 변환
     const moodKeywordIds = flow.selectedMoods
