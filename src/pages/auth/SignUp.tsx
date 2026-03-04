@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput } from '@/components/common';
-import { signup, checkEmail, checkNickname } from '@/api/auth';
+import { signup, checkEmail, sendVerificationCode, verifyCode } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 
 const secondaryBtnClass =
   'w-[110px] shrink-0 cursor-pointer whitespace-nowrap rounded-control bg-surface px-4 py-3 text-[16px] leading-[24px] font-medium tracking-[-1px] text-default transition-opacity duration-150 hover:opacity-80 active:opacity-70 font-pretendard';
+
+const disabledBtnClass =
+  'w-[110px] shrink-0 whitespace-nowrap rounded-control bg-disabled px-4 py-3 text-[16px] leading-[24px] font-medium tracking-[-1px] text-low-emphasis font-pretendard cursor-not-allowed';
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -14,45 +17,73 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCodeInput, setVerificationCodeInput] = useState('');
   const [error, setError] = useState('');
   const [emailStatus, setEmailStatus] = useState('');
+  const [verifyStatus, setVerifyStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const authLogin = useAuthStore((s) => s.login);
 
   const handleSendCode = async () => {
-    // [BEFORE INTEGRATION] 빈 TODO 함수
-    // [AFTER INTEGRATION] 이메일 중복 확인 API
+    if (!email) {
+      setEmailStatus('이메일을 입력해 주세요.');
+      return;
+    }
+    setCodeSending(true);
+    setEmailStatus('');
     try {
+      // 1. 이메일 중복 확인
       const result = await checkEmail(email);
-      if (result.available) {
-        setEmailStatus('사용 가능한 이메일입니다.');
-      } else {
+      if (!result.available) {
         setEmailStatus('이미 사용 중인 이메일입니다.');
+        return;
       }
-    } catch {
-      setEmailStatus('이메일 확인에 실패했습니다.');
+      // 2. 인증 코드 발송
+      await sendVerificationCode(email);
+      setCodeSent(true);
+      setEmailVerified(false);
+      setVerifyStatus('');
+      setVerificationCodeInput('');
+      setEmailStatus('인증 코드가 발송되었습니다. 이메일을 확인해 주세요.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '인증 코드 발송에 실패했습니다.';
+      setEmailStatus(message);
+    } finally {
+      setCodeSending(false);
     }
   };
 
   const handleVerify = async () => {
-    // [BEFORE INTEGRATION] 빈 TODO 함수
-    // [AFTER INTEGRATION] 닉네임 중복 확인 API
+    if (!verificationCodeInput) {
+      setVerifyStatus('인증 코드를 입력해 주세요.');
+      return;
+    }
+    setVerifying(true);
+    setVerifyStatus('');
     try {
-      const result = await checkNickname(nickname);
-      if (result.available) {
-        alert('사용 가능한 닉네임입니다.');
-      } else {
-        alert('이미 사용 중인 닉네임입니다.');
+      const result = await verifyCode(email, verificationCodeInput);
+      if (result.verified) {
+        setEmailVerified(true);
+        setVerifyStatus('이메일 인증이 완료되었습니다.');
+        setEmailStatus('');
       }
-    } catch {
-      alert('닉네임 확인에 실패했습니다.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '인증 코드 확인에 실패했습니다.';
+      setVerifyStatus(message);
+    } finally {
+      setVerifying(false);
     }
   };
 
   const handleRegister = async () => {
-    // [BEFORE INTEGRATION] 빈 TODO 함수
-    // [AFTER INTEGRATION] 회원가입 API 연동
+    if (!emailVerified) {
+      setError('이메일 인증을 완료해 주세요.');
+      return;
+    }
     if (password !== passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
@@ -134,18 +165,35 @@ export default function SignUp() {
               <div className="flex gap-2">
                 <TextInput
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    // 이메일 변경 시 인증 상태 리셋
+                    if (emailVerified || codeSent) {
+                      setEmailVerified(false);
+                      setCodeSent(false);
+                      setEmailStatus('');
+                      setVerifyStatus('');
+                      setVerificationCodeInput('');
+                    }
+                  }}
                   type="email"
                   autoComplete="email"
+                  readOnly={emailVerified}
                 />
                 <button
                   type="button"
-                  className={secondaryBtnClass}
+                  className={emailVerified ? disabledBtnClass : secondaryBtnClass}
                   onClick={handleSendCode}
+                  disabled={codeSending || emailVerified}
                 >
-                  SEND CODE
+                  {codeSending ? '...' : codeSent ? 'RE-SEND' : 'SEND CODE'}
                 </button>
               </div>
+              {emailStatus && (
+                <p className={`mt-1 text-xs ${emailVerified ? 'text-green-600' : codeSent ? 'text-blue-600' : 'text-accent'}`}>
+                  {emailStatus}
+                </p>
+              )}
             </div>
 
             <TextInput
@@ -165,22 +213,29 @@ export default function SignUp() {
               </label>
               <div className="flex gap-2">
                 <TextInput
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
+                  value={verificationCodeInput}
+                  onChange={(e) => setVerificationCodeInput(e.target.value)}
+                  readOnly={emailVerified}
+                  placeholder={codeSent ? '6자리 코드 입력' : ''}
                 />
                 <button
                   type="button"
-                  className={secondaryBtnClass}
+                  className={emailVerified || !codeSent ? disabledBtnClass : secondaryBtnClass}
                   onClick={handleVerify}
+                  disabled={verifying || emailVerified || !codeSent}
                 >
-                  VERIFY
+                  {verifying ? '...' : emailVerified ? 'VERIFIED' : 'VERIFY'}
                 </button>
               </div>
+              {verifyStatus && (
+                <p className={`mt-1 text-xs ${emailVerified ? 'text-green-600' : 'text-accent'}`}>
+                  {verifyStatus}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col items-end gap-2">
               {error && <p className="text-sm text-accent">{error}</p>}
-              {emailStatus && <p className="text-sm text-caption">{emailStatus}</p>}
               <ButtonDefault
                 shape="rect"
                 type="submit"

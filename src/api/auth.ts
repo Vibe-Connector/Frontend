@@ -32,6 +32,16 @@ export const checkEmail = (email: string): Promise<{ available: boolean }> =>
 export const checkNickname = (nickname: string): Promise<{ available: boolean }> =>
   client.get('/auth/check-nickname', { params: { nickname } });
 
+// ── 이메일 인증 코드 발송 ──
+// POST /api/v1/auth/send-verification-code
+export const sendVerificationCode = (email: string): Promise<void> =>
+  client.post('/auth/send-verification-code', { email });
+
+// ── 이메일 인증 코드 검증 ──
+// POST /api/v1/auth/verify-code
+export const verifyCode = (email: string, code: string): Promise<{ verified: boolean }> =>
+  client.post('/auth/verify-code', { email, code });
+
 // ── 로그아웃 ──
 // POST /api/v1/auth/logout
 export const logout = (): Promise<void> =>
