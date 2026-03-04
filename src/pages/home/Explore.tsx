@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
+import BookmarkModal from '@/components/common/BookmarkModal';
 import { getExploreVibes } from '@/api/explore';
 import type { ExploreVibeResponse, ExplorePeriod } from '@/api/explore';
+import { useAuthStore } from '@/store/authStore';
 
 const PERIOD_TABS: { key: ExplorePeriod; label: string }[] = [
   { key: 'DAY', label: 'Today' },
@@ -33,8 +35,27 @@ function SkeletonGrid() {
   );
 }
 
+/* 책갈피 아이콘 (빈) */
+function BookmarkOutlineIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+/* 책갈피 아이콘 (채움) */
+function BookmarkFilledIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 export default function Explore() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [period, setPeriod] = useState<ExplorePeriod>('WEEK');
   const [vibes, setVibes] = useState<ExploreVibeResponse[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -43,6 +64,9 @@ export default function Explore() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [apiFailed, setApiFailed] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // BookmarkModal state
+  const [bookmarkTarget, setBookmarkTarget] = useState<{ resultId: number; feedId: number } | null>(null);
 
   const fetchVibes = useCallback(
     (cursor?: string) => {
@@ -103,6 +127,26 @@ export default function Explore() {
     setPeriod(newPeriod);
   };
 
+  const handleBookmarkClick = (e: React.MouseEvent, vibe: ExploreVibeResponse) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setBookmarkTarget({ resultId: vibe.resultId, feedId: vibe.feedId });
+  };
+
+  const handleArchived = (archiveId: number) => {
+    if (!bookmarkTarget) return;
+    setVibes((prev) =>
+      prev.map((v) =>
+        v.feedId === bookmarkTarget.feedId
+          ? { ...v, isArchived: true, archiveId }
+          : v,
+      ),
+    );
+  };
+
   return (
     <PageContainer>
       {/* 기간 필터 탭 */}
@@ -141,15 +185,41 @@ export default function Explore() {
               <div key={vibe.feedId} className="mb-4 break-inside-avoid">
                 <button
                   type="button"
-                  className="group w-full cursor-pointer text-left"
+                  className="group relative w-full cursor-pointer text-left"
                   onClick={() => handleCardClick(vibe.feedId)}
                 >
                   <div className="overflow-hidden rounded-card bg-surface transition-shadow hover:shadow-card">
-                    <ImageWithFallback
-                      src={vibe.generatedImageUrl}
-                      alt={vibe.caption ?? 'Vibe'}
-                      className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+                    {/* 이미지 + 책갈피 버튼 */}
+                    <div className="relative">
+                      <ImageWithFallback
+                        src={vibe.generatedImageUrl}
+                        alt={vibe.caption ?? 'Vibe'}
+                        className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+
+                      {/* 책갈피 버튼 */}
+                      <div
+                        className={`absolute top-2 right-2 transition-opacity ${
+                          vibe.isArchived
+                            ? 'opacity-100'
+                            : 'opacity-0 group-hover:opacity-100'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => handleBookmarkClick(e, vibe)}
+                          className={`flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
+                            vibe.isArchived
+                              ? 'bg-brand/80 text-white'
+                              : 'bg-black/30 text-white hover:bg-black/50'
+                          }`}
+                          aria-label={vibe.isArchived ? '아카이브됨' : '아카이브에 저장'}
+                        >
+                          {vibe.isArchived ? <BookmarkFilledIcon /> : <BookmarkOutlineIcon />}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="p-2">
                       <p className="truncate text-xs font-medium text-high-emphasis">
                         {vibe.authorNickname}
@@ -160,6 +230,7 @@ export default function Explore() {
                         </p>
                       )}
                       <div className="mt-1 flex items-center gap-2 text-[10px] text-low-emphasis">
+                        <span>{vibe.viewCount} views</span>
                         <span>{vibe.reactionCount} reactions</span>
                         <span>{vibe.commentCount} comments</span>
                       </div>
@@ -177,6 +248,16 @@ export default function Explore() {
             )}
           </div>
         </>
+      )}
+
+      {/* BookmarkModal */}
+      {bookmarkTarget && (
+        <BookmarkModal
+          open={!!bookmarkTarget}
+          onClose={() => setBookmarkTarget(null)}
+          resultId={bookmarkTarget.resultId}
+          onArchived={handleArchived}
+        />
       )}
     </PageContainer>
   );

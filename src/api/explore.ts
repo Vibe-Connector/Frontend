@@ -5,6 +5,7 @@ import type { PageResponse } from './types';
 
 export interface ExploreVibeResponse {
   feedId: number;
+  resultId: number;
   generatedImageUrl: string | null;
   caption: string | null;
   authorId: number;
@@ -15,6 +16,8 @@ export interface ExploreVibeResponse {
   commentCount: number;
   popularityScore: number;
   createdAt: string;
+  isArchived: boolean;
+  archiveId: number | null;
 }
 
 export type ExplorePeriod = 'DAY' | 'WEEK' | 'MONTH';
