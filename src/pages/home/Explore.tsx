@@ -6,6 +6,7 @@ import ImageWithFallback from '@/components/common/ImageWithFallback';
 import BookmarkModal from '@/components/common/BookmarkModal';
 import { getExploreVibes } from '@/api/explore';
 import type { ExploreVibeResponse, ExplorePeriod } from '@/api/explore';
+import { deleteArchiveVibe } from '@/api/archive';
 import { useAuthStore } from '@/store/authStore';
 
 const PERIOD_TABS: { key: ExplorePeriod; label: string }[] = [
@@ -127,12 +128,29 @@ export default function Explore() {
     setPeriod(newPeriod);
   };
 
-  const handleBookmarkClick = (e: React.MouseEvent, vibe: ExploreVibeResponse) => {
+  const handleBookmarkClick = async (e: React.MouseEvent, vibe: ExploreVibeResponse) => {
     e.stopPropagation();
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
+    // 이미 아카이브된 경우 → 해제
+    if (vibe.isArchived && vibe.archiveId) {
+      try {
+        await deleteArchiveVibe(vibe.archiveId);
+        setVibes((prev) =>
+          prev.map((v) =>
+            v.feedId === vibe.feedId
+              ? { ...v, isArchived: false, archiveId: null }
+              : v,
+          ),
+        );
+      } catch {
+        // TODO: 에러 토스트
+      }
+      return;
+    }
+    // 아카이브 안 된 경우 → 폴더 선택 모달
     setBookmarkTarget({ resultId: vibe.resultId, feedId: vibe.feedId });
   };
 
