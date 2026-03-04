@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
@@ -143,9 +143,12 @@ export default function FeedDetail() {
   const [bookmarked, setBookmarked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const fetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!feedId || feedId === 'demo') return;
+    if (fetchedRef.current === feedId) return;
+    fetchedRef.current = feedId;
     const numId = Number(feedId);
     if (isNaN(numId)) return;
 
