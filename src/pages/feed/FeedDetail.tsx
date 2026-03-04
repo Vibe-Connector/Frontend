@@ -139,6 +139,7 @@ export default function FeedDetail() {
     { id: string; user: string; text: string; time: string }[]
   >([]);
   const [liked, setLiked] = useState(false);
+  const [initialLiked, setInitialLiked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -163,7 +164,9 @@ export default function FeedDetail() {
           comments: [],
           items: FALLBACK_FEED.items,
         });
-        setLiked(res.myReactionTypes.includes('LIKE'));
+        const alreadyLiked = res.myReactionTypes.includes('LIKE');
+        setLiked(alreadyLiked);
+        setInitialLiked(alreadyLiked);
       })
       .catch(() => {/* 폴백 유지 */});
 
@@ -271,7 +274,7 @@ export default function FeedDetail() {
                 className={`flex items-center gap-1 text-sm transition-colors ${liked ? 'text-accent' : 'text-caption hover:text-accent'}`}
               >
                 <HeartIcon filled={liked} />
-                <span>{feed.likes + (liked ? 1 : 0)}</span>
+                <span>{feed.likes + (liked !== initialLiked ? (liked ? 1 : -1) : 0)}</span>
               </button>
 
               <button className="flex items-center gap-1 text-sm text-caption hover:text-high-emphasis">
