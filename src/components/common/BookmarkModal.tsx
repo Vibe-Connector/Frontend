@@ -20,7 +20,17 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
     if (!open) return;
     setLoading(true);
     getFolders('VIBE')
-      .then(setFolders)
+      .then(async (list) => {
+        if (list.length === 0) {
+          const defaultFolder = await createFolder({
+            folderName: '나의 Vibe',
+            folderType: 'VIBE',
+          });
+          setFolders([defaultFolder]);
+        } else {
+          setFolders(list);
+        }
+      })
       .catch(() => setFolders([]))
       .finally(() => setLoading(false));
   }, [open]);
@@ -40,7 +50,7 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
 
   if (!open) return null;
 
-  const handleSelectFolder = async (folderId?: number) => {
+  const handleSelectFolder = async (folderId: number) => {
     if (saving) return;
     setSaving(true);
     try {
@@ -111,17 +121,6 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
             </div>
           ) : (
             <>
-              {/* 폴더 미지정 저장 */}
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => handleSelectFolder()}
-                className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-input disabled:opacity-50"
-              >
-                <span className="text-lg">📁</span>
-                <span className="text-sm text-high-emphasis">폴더 미지정</span>
-              </button>
-
               {folders.map((folder) => (
                 <button
                   key={folder.folderId}
