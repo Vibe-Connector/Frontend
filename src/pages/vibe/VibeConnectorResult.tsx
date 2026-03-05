@@ -172,14 +172,29 @@ const CATEGORY_ICONS: Record<string, () => React.JSX.Element> = {
 
 /* ---------- Sub-Components ---------- */
 
+function PosterFallback({ name, size = 'sm' }: { name: string; size?: 'sm' | 'lg' }) {
+  const cls = size === 'sm'
+    ? 'flex h-12 w-8 items-center justify-center bg-stroke/60 text-[8px]'
+    : 'flex h-full min-h-[300px] w-full items-center justify-center bg-stroke/60 text-sm';
+  return (
+    <div className={cls}>
+      <span className="text-center leading-tight text-caption px-1">{name}</span>
+    </div>
+  );
+}
+
 function ItemRow({
   item,
   categoryKey,
 }: {
-  item: { id: string; name: string; detail: string };
+  item: { id: string; name: string; detail: string; externalLink?: string | null; imageUrl?: string | null };
   categoryKey: string;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [posterOpen, setPosterOpen] = useState(false);
+  const [posterError, setPosterError] = useState(false);
+
+  const hasPoster = categoryKey === 'tvshow' && item.imageUrl && !posterError;
 
   return (
     <div
@@ -187,16 +202,72 @@ function ItemRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* TV SHOW 포스터 썸네일 */}
+      {categoryKey === 'tvshow' && (
+        <button
+          className="flex-shrink-0 overflow-hidden rounded-[4px]"
+          onClick={() => hasPoster && setPosterOpen(true)}
+          title={hasPoster ? '포스터 보기' : undefined}
+        >
+          {hasPoster ? (
+            <img
+              src={item.imageUrl!}
+              alt={`${item.name} 포스터`}
+              className="h-12 w-8 object-cover"
+              onError={() => setPosterError(true)}
+            />
+          ) : (
+            <PosterFallback name={item.name} size="sm" />
+          )}
+        </button>
+      )}
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium text-high-emphasis">
           {item.name}
         </p>
         <p className="truncate text-xs text-caption">{item.detail}</p>
+        {/* COFFEE 구입처 링크 */}
+        {categoryKey === 'coffee' && item.externalLink && (
+          <a
+            href={item.externalLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-block text-xs font-medium text-accent hover:underline"
+          >
+            구입처
+          </a>
+        )}
       </div>
       {categoryKey === 'playlist' && hovered && (
         <button className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand text-white">
           <PlayIcon />
         </button>
+      )}
+
+      {/* TV SHOW 포스터 모달 */}
+      {posterOpen && hasPoster && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setPosterOpen(false)}
+        >
+          <div
+            className="relative max-h-[80vh] max-w-[400px] overflow-hidden rounded-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={item.imageUrl!}
+              alt={`${item.name} 포스터`}
+              className="h-full w-full object-contain"
+            />
+            <button
+              className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+              onClick={() => setPosterOpen(false)}
+              aria-label="닫기"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -207,7 +278,7 @@ function ItemRow({
 // API 결과를 UI 형식으로 변환
 function mapApiResultToView(apiResult: VibeResultResponse) {
   const CATEGORY_LABELS: Record<string, string> = {
-    movie: 'TV SHOW', music: 'PLAYLIST', lighting: 'LIGHT', coffee: 'COFFEE',
+    movie: 'TV SHOW', video: 'TV SHOW', music: 'PLAYLIST', lighting: 'LIGHT', coffee: 'COFFEE',
     light: 'LIGHT', tvshow: 'TV SHOW', playlist: 'PLAYLIST',
   };
   return {
@@ -216,6 +287,7 @@ function mapApiResultToView(apiResult: VibeResultResponse) {
     moodColor: '#C4A882',
     categories: apiResult.recommendations.map((cat) => ({
       key: cat.categoryKey === 'movie'    ? 'tvshow'    :
+           cat.categoryKey === 'video'    ? 'tvshow'    :
            cat.categoryKey === 'music'    ? 'playlist'  :
            cat.categoryKey === 'lighting' ? 'light'     :
            cat.categoryKey,
@@ -224,6 +296,8 @@ function mapApiResultToView(apiResult: VibeResultResponse) {
         id: String(item.itemId),
         name: item.itemName ?? item.itemKey,
         detail: [item.brand, item.recommendReason].filter(Boolean).join(' · ') || cat.categoryKey,
+        externalLink: item.externalLink ?? null,
+        imageUrl: item.imageUrl ?? null,
       })),
     })),
   };
