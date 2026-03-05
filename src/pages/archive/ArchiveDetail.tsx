@@ -22,18 +22,17 @@ function PinIcon({ filled }: { filled?: boolean }) {
   );
 }
 
-function TrashIcon() {
+function BookmarkIcon({ filled }: { filled?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
 
 // ── 삭제 확인 모달 ──
 
-function DeleteConfirmModal({
+function UnbookmarkModal({
   open,
   onClose,
   onConfirm,
@@ -51,10 +50,10 @@ function DeleteConfirmModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-center text-base font-semibold text-high-emphasis">
-          아카이브 삭제
+          책갈피 해제
         </h3>
         <p className="mt-2 text-center text-sm text-caption">
-          이 항목을 아카이브에서 삭제하시겠습니까?
+          이 폴더에서 제거하시겠습니까?
         </p>
         <div className="mt-5 flex gap-3">
           <button
@@ -69,7 +68,7 @@ function DeleteConfirmModal({
             onClick={onConfirm}
             className="flex-1 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
           >
-            삭제
+            해제
           </button>
         </div>
       </div>
@@ -114,23 +113,25 @@ function VibeCard({
             <p className="mt-1 line-clamp-2 text-xs text-caption">{vibe.memo}</p>
           )}
 
-          {/* 액션 버튼 — 즐겨찾기 체크 시 항상 표시 */}
-          <div className={`mt-2 flex items-center gap-2 transition-opacity ${vibe._favorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-            <button
-              type="button"
-              onClick={() => onToggleFavorite(vibe.archiveId)}
-              className={`rounded-full p-1 transition-colors ${vibe._favorite ? 'text-accent' : 'text-caption hover:text-accent/70'}`}
-              aria-label={vibe._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-            >
-              <PinIcon filled={vibe._favorite} />
-            </button>
+          {/* 액션 버튼 */}
+          <div className="mt-2 flex items-center gap-2">
+            {/* 책갈피 — 항상 표시 (아카이브 상태) */}
             <button
               type="button"
               onClick={() => onDelete(vibe.archiveId)}
-              className="rounded-full p-1 text-caption transition-colors hover:text-red-500"
-              aria-label="아카이브 삭제"
+              className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
+              aria-label="책갈피 해제"
             >
-              <TrashIcon />
+              <BookmarkIcon filled />
+            </button>
+            {/* 즐겨찾기 — 체크 시 항상, 미체크 시 호버 */}
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(vibe.archiveId)}
+              className={`rounded-full p-1 transition-all ${vibe._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
+              aria-label={vibe._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            >
+              <PinIcon filled={vibe._favorite} />
             </button>
           </div>
         </div>
@@ -185,23 +186,25 @@ function ItemCard({
             <p className="mt-1 line-clamp-2 text-xs text-caption">{item.memo}</p>
           )}
 
-          {/* 액션 버튼 — 즐겨찾기 체크 시 항상 표시 */}
-          <div className={`mt-2 flex items-center gap-2 transition-opacity ${item._favorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-            <button
-              type="button"
-              onClick={() => onToggleFavorite(item.archiveItemId)}
-              className={`rounded-full p-1 transition-colors ${item._favorite ? 'text-accent' : 'text-caption hover:text-accent/70'}`}
-              aria-label={item._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-            >
-              <PinIcon filled={item._favorite} />
-            </button>
+          {/* 액션 버튼 */}
+          <div className="mt-2 flex items-center gap-2">
+            {/* 책갈피 — 항상 표시 (아카이브 상태) */}
             <button
               type="button"
               onClick={() => onDelete(item.archiveItemId)}
-              className="rounded-full p-1 text-caption transition-colors hover:text-red-500"
-              aria-label="아카이브 삭제"
+              className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
+              aria-label="책갈피 해제"
             >
-              <TrashIcon />
+              <BookmarkIcon filled />
+            </button>
+            {/* 즐겨찾기 — 체크 시 항상, 미체크 시 호버 */}
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(item.archiveItemId)}
+              className={`rounded-full p-1 transition-all ${item._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
+              aria-label={item._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            >
+              <PinIcon filled={item._favorite} />
             </button>
           </div>
         </div>
@@ -430,7 +433,7 @@ export default function ArchiveDetail() {
       )}
 
       {/* 삭제 확인 모달 */}
-      <DeleteConfirmModal
+      <UnbookmarkModal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
