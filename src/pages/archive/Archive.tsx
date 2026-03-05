@@ -360,7 +360,9 @@ export default function Archive() {
   const navigate = useNavigate();
 
   const [folders, setFolders] = useState<ArchiveFolder[]>([]);
-  const [sortMode, setSortMode] = useState<SortMode>('CREATED');
+  const [sortMode, setSortMode] = useState<SortMode>(
+    () => (sessionStorage.getItem('archive-sort') as SortMode) || 'CREATED',
+  );
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [editTarget, setEditTarget] = useState<ArchiveFolder | null>(null);
 
@@ -382,6 +384,7 @@ export default function Archive() {
 
   const handleSortChange = (mode: SortMode) => {
     setSortMode(mode);
+    sessionStorage.setItem('archive-sort', mode);
     setShowSortDropdown(false);
   };
 
