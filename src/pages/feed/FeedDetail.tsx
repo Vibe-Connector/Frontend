@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
-import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import { getFeed } from '@/api/feed';
+import { getExploreVibes } from '@/api/explore';
+import type { ExploreVibeResponse } from '@/api/explore';
 import type { FeedResponse, ReactionSummary } from '@/api/types';
 
 /* ---------- Mock Data ---------- */
@@ -94,7 +95,12 @@ export default function FeedDetail() {
   const [apiReactions, setApiReactions] = useState<ReactionSummary[]>([]);
   const [apiMyReactionTypes, setApiMyReactionTypes] = useState<string[]>([]);
   const [bookmarked, setBookmarked] = useState(false);
+  const [similarFeeds, setSimilarFeeds] = useState<ExploreVibeResponse[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+  const [similarCursor, setSimilarCursor] = useState<string | undefined>();
+  const [similarHasNext, setSimilarHasNext] = useState(true);
   const fetchedRef = useRef<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!feedId || feedId === 'demo') return;
@@ -119,6 +125,28 @@ export default function FeedDetail() {
       })
       .catch(() => {/* 폴백 유지 */});
   }, [feedId]);
+
+  // 비슷한 무드 추천 피드 로드
+  const loadSimilarFeeds = useCallback(async (cursor?: string) => {
+    setSimilarLoading(true);
+    try {
+      const res = await getExploreVibes('MONTH', cursor, 12);
+      const numId = Number(feedId);
+      const filtered = res.content.filter((v) => v.feedId !== numId);
+      setSimilarFeeds((prev) => cursor ? [...prev, ...filtered] : filtered);
+      setSimilarCursor(res.nextCursor ?? undefined);
+      setSimilarHasNext(res.hasNext);
+    } catch {
+      /* 무시 */
+    } finally {
+      setSimilarLoading(false);
+    }
+  }, [feedId]);
+
+  useEffect(() => {
+    if (!feedId || feedId === 'demo') return;
+    loadSimilarFeeds();
+  }, [feedId, loadSimilarFeeds]);
 
   const numFeedId = Number(feedId);
 
@@ -241,7 +269,55 @@ export default function FeedDetail() {
         <h2 className="mb-6 text-center text-lg font-semibold text-high-emphasis">
           비슷한 무드의 이미지 추천
         </h2>
-        <ExploreMasonryGrid seedOffset={100} />
+
+        {similarFeeds.length === 0 && !similarLoading ? (
+          <p className="py-8 text-center text-sm text-low-emphasis">추천 피드가 없습니다.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+            {similarFeeds.map((vibe) => (
+              <div
+                key={vibe.feedId}
+                onClick={() => navigate(`/feed/${vibe.feedId}`)}
+                className="group cursor-pointer"
+              >
+                <div className="relative overflow-hidden rounded-card bg-surface">
+                  <img
+                    src={vibe.generatedImageUrl ?? `https://picsum.photos/seed/vibe${vibe.feedId}/600/600`}
+                    alt={vibe.caption ?? `Vibe ${vibe.feedId}`}
+                    loading="lazy"
+                    className="w-full rounded-card object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="pointer-events-none absolute inset-0 rounded-card bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
+                  {/* 호버 시 정보 오버레이 */}
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-linear-to-t from-black/50 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <div className="text-white">
+                      <p className="truncate text-xs font-medium">{vibe.authorNickname}</p>
+                      {vibe.caption && (
+                        <p className="mt-0.5 line-clamp-2 text-xs opacity-80">{vibe.caption}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 더보기 버튼 */}
+        {similarHasNext && (
+          <div className="flex justify-center py-6">
+            {similarLoading ? (
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-accent" />
+            ) : (
+              <button
+                onClick={() => loadSimilarFeeds(similarCursor)}
+                className="rounded-control bg-surface px-6 py-2 text-sm font-medium text-caption transition-colors hover:bg-input hover:text-high-emphasis"
+              >
+                더보기
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </PageContainer>
   );
