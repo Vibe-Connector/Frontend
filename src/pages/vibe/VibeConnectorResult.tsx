@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
@@ -211,7 +211,7 @@ function mapApiResultToView(apiResult: VibeResultResponse) {
     light: 'LIGHT', tvshow: 'TV SHOW', playlist: 'PLAYLIST',
   };
   return {
-    image: 'https://picsum.photos/seed/vibe-result/800/1100', // AI 이미지 URL은 추후 백엔드에서 제공
+    image: apiResult.generatedImageUrl ?? null,
     sentence: apiResult.phrase ?? 'Your unique vibe.',
     moodColor: '#C4A882',
     categories: apiResult.recommendations.map((cat) => ({
@@ -240,6 +240,51 @@ export default function VibeConnectorResult() {
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
+  // 이미지 폴링 상태
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageTimedOut, setImageTimedOut] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  // 이미지 폴링 시작
+  const startImagePolling = useCallback((sid: number) => {
+    setImageLoading(true);
+    setImageTimedOut(false);
+    pollCountRef.current = 0;
+
+    pollingRef.current = setInterval(async () => {
+      pollCountRef.current += 1;
+      if (pollCountRef.current > 12) {
+        stopPolling();
+        setImageLoading(false);
+        setImageTimedOut(true);
+        return;
+      }
+      try {
+        const data = await getVibeSession(sid);
+        if (data.generatedImageUrl) {
+          setImageUrl(data.generatedImageUrl);
+          setImageLoading(false);
+          stopPolling();
+        }
+      } catch {
+        // 폴링 중 에러는 무시, 다음 시도에서 재시도
+      }
+    }, 10000);
+  }, [stopPolling]);
+
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
   useEffect(() => {
     if (!sessionId || sessionId === 'demo') return;
     setLoading(true);
@@ -247,10 +292,16 @@ export default function VibeConnectorResult() {
       .then((data) => {
         setApiResult(data);
         setResult(mapApiResultToView(data));
+
+        if (data.generatedImageUrl) {
+          setImageUrl(data.generatedImageUrl);
+        } else {
+          startImagePolling(Number(sessionId));
+        }
       })
       .catch(() => setResult(FALLBACK_RESULT))
       .finally(() => setLoading(false));
-  }, [sessionId]);
+  }, [sessionId, startImagePolling]);
 
   /** 같은 입력값으로 Vibe 재생성 */
   const handleRegenerate = async () => {
@@ -306,11 +357,34 @@ export default function VibeConnectorResult() {
           {/* Left — AI Generated Image */}
           <div className="flex flex-1 items-start justify-center lg:justify-start">
             <div className="relative w-full max-w-[560px] overflow-hidden rounded-card">
-              <img
-                src={result.image}
-                alt={`Vibe 결과 이미지 (세션: ${sessionId})`}
-                className="w-full object-cover"
-              />
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={`Vibe 결과 이미지 (세션: ${sessionId})`}
+                  className="w-full object-cover"
+                />
+              ) : imageLoading ? (
+                <div className="flex aspect-[8/11] w-full flex-col items-center justify-center gap-4 bg-surface">
+                  <span className="h-10 w-10 animate-spin rounded-full border-4 border-stroke border-t-brand" />
+                  <p className="text-sm text-caption">AI 이미지를 생성하고 있습니다...</p>
+                </div>
+              ) : imageTimedOut ? (
+                <div className="flex aspect-[8/11] w-full flex-col items-center justify-center gap-3 bg-surface">
+                  <p className="text-sm text-caption">이미지를 생성할 수 없었습니다</p>
+                  <button
+                    className="rounded-control bg-brand px-4 py-2 text-sm text-white"
+                    onClick={() => {
+                      if (sessionId) startImagePolling(Number(sessionId));
+                    }}
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              ) : (
+                <div className="flex aspect-[8/11] w-full items-center justify-center bg-surface">
+                  <p className="text-sm text-caption">이미지 없음</p>
+                </div>
+              )}
             </div>
           </div>
 
