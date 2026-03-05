@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toggleCommentLike, createComment, updateComment, deleteComment } from '@/api/feed';
 import type { CommentResponse } from '@/api/types';
 import { useAuthStore } from '@/store/authStore';
@@ -55,6 +56,7 @@ interface CommentItemProps {
 /* ---------- Component ---------- */
 
 export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, onCommentUpdated, onCommentDeleted }: CommentItemProps) {
+  const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?.userId);
   const isOwner = currentUserId === comment.userId;
 
@@ -153,7 +155,10 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
     <div className={depth > 0 ? 'ml-8 mt-2' : ''}>
       <div className="flex gap-2">
         {/* 프로필 이미지 */}
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface">
+        <div
+          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-surface"
+          onClick={() => navigate(`/feed?userId=${comment.userId}`)}
+        >
           {comment.profileImageUrl ? (
             <img
               src={comment.profileImageUrl}
@@ -199,7 +204,10 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
             /* 일반 표시 모드 */
             <div className="flex items-start justify-between gap-1">
               <div className="text-sm">
-                <span className="font-medium text-high-emphasis">{comment.nickname}</span>{' '}
+                <span
+                  className="cursor-pointer font-medium text-high-emphasis hover:underline"
+                  onClick={() => navigate(`/feed?userId=${comment.userId}`)}
+                >{comment.nickname}</span>{' '}
                 <span className="text-high-emphasis">{comment.content}</span>
               </div>
 

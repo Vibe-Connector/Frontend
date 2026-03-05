@@ -19,7 +19,7 @@ import type { FeedResponse, ReactionSummary } from '@/api/types';
 // [AFTER INTEGRATION] API 실패 시 폴백
 const FALLBACK_FEED = {
   id: 'feed-1',
-  user: { nickname: 'Nickname', avatar: '' },
+  user: { userId: null as number | null, nickname: 'Nickname', avatar: '' },
   image: 'https://picsum.photos/seed/vibe-main/800/1000',
   description:
     '따뜻한 오후, 빈티지 가구와 식물이 어우러진 아늑한 공간에서 느끼는 편안한 무드. 레트로 감성과 자연의 조화가 만들어낸 나만의 Vibe.',
@@ -136,7 +136,7 @@ export default function FeedDetail() {
       .then((res: FeedResponse) => {
         setFeed({
           id: String(res.feedId),
-          user: { nickname: res.nickname, avatar: res.profileImageUrl ?? '' },
+          user: { userId: res.userId, nickname: res.nickname, avatar: res.profileImageUrl ?? '' },
           image: res.generatedImageUrl ?? FALLBACK_FEED.image,
           description: res.phrase ?? FALLBACK_FEED.description,
           caption: res.caption ?? null,
@@ -186,7 +186,13 @@ export default function FeedDetail() {
   return (
     <PageContainer>
       {/* ===== User Profile ===== */}
-      <div className="mb-6 flex items-center gap-3">
+      <div
+        className="mb-6 flex w-fit cursor-pointer items-center gap-3"
+        onClick={() => {
+          if (feed.user.userId == null) return;
+          navigate(`/feed?userId=${feed.user.userId}`);
+        }}
+      >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
           {feed.user.avatar ? (
             <img
@@ -198,7 +204,7 @@ export default function FeedDetail() {
             <UserIcon />
           )}
         </div>
-        <span className="text-base font-semibold text-high-emphasis">
+        <span className="text-base font-semibold text-high-emphasis hover:underline">
           {feed.user.nickname}
         </span>
       </div>
