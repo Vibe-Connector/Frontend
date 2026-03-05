@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
 import ReactionBar from '@/components/feed/ReactionBar';
-import { getFeed, getComments, createComment } from '@/api/feed';
-import type { FeedResponse, CommentResponse, ReactionSummary } from '@/api/types';
+import CommentSection from '@/components/feed/CommentSection';
+import { getFeed } from '@/api/feed';
+import type { FeedResponse, ReactionSummary } from '@/api/types';
 
 /* ---------- Mock Data ---------- */
 // [BEFORE INTEGRATION] 하드코딩된 Mock 데이터
@@ -19,16 +20,6 @@ const FALLBACK_FEED = {
     '따뜻한 오후, 빈티지 가구와 식물이 어우러진 아늑한 공간에서 느끼는 편안한 무드. 레트로 감성과 자연의 조화가 만들어낸 나만의 Vibe.',
   moods: ['아늑한', '따뜻한', '레트로'],
   views: 1024,
-  comments: [
-    { id: 'c1', user: 'user_a', text: '분위기 너무 좋다!', time: '2시간 전' },
-    {
-      id: 'c2',
-      user: 'user_b',
-      text: '이런 공간에서 일하고 싶어요',
-      time: '1시간 전',
-    },
-    { id: 'c3', user: 'user_c', text: '조명이 예술이네', time: '30분 전' },
-  ],
   items: Array.from({ length: 8 }, (_, i) => ({
     id: `item-${i}`,
     image: `https://picsum.photos/seed/item${i}/200/200`,
@@ -100,14 +91,9 @@ export default function FeedDetail() {
   // [BEFORE INTEGRATION] const feed = MOCK_FEED;
   // [AFTER INTEGRATION] API에서 피드 데이터 로드, 실패 시 폴백
   const [feed, setFeed] = useState(FALLBACK_FEED);
-  const [apiComments, setApiComments] = useState<
-    { id: string; user: string; text: string; time: string }[]
-  >([]);
   const [apiReactions, setApiReactions] = useState<ReactionSummary[]>([]);
   const [apiMyReactionTypes, setApiMyReactionTypes] = useState<string[]>([]);
   const [bookmarked, setBookmarked] = useState(false);
-  const [commentText, setCommentText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const fetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -126,51 +112,15 @@ export default function FeedDetail() {
           description: res.caption ?? res.phrase ?? FALLBACK_FEED.description,
           moods: [],
           views: res.viewCount,
-          comments: [],
           items: FALLBACK_FEED.items,
         });
         setApiReactions(res.reactions);
         setApiMyReactionTypes(res.myReactionTypes);
       })
       .catch(() => {/* 폴백 유지 */});
-
-    getComments(numId)
-      .then((res) => {
-        const mapped = res.content.map((c: CommentResponse) => ({
-          id: String(c.commentId),
-          user: c.nickname,
-          text: c.content,
-          time: new Date(c.createdAt).toLocaleDateString('ko-KR'),
-        }));
-        setApiComments(mapped);
-      })
-      .catch(() => {/* 폴백 댓글 유지 */});
   }, [feedId]);
 
-  const displayComments = apiComments.length > 0 ? apiComments : feed.comments;
-
   const numFeedId = Number(feedId);
-
-  const handleSubmitComment = () => {
-    const numId = Number(feedId);
-    if (!commentText.trim() || isNaN(numId) || submitting) return;
-    setSubmitting(true);
-    createComment(numId, { content: commentText })
-      .then((c: CommentResponse) => {
-        setApiComments((prev) => [
-          ...prev,
-          {
-            id: String(c.commentId),
-            user: c.nickname,
-            text: c.content,
-            time: '방금',
-          },
-        ]);
-        setCommentText('');
-      })
-      .catch(() => {})
-      .finally(() => setSubmitting(false));
-  };
 
   return (
     <PageContainer>
@@ -250,41 +200,7 @@ export default function FeedDetail() {
             </div>
 
             {/* Comments */}
-            <div className="mt-4 border-t border-stroke pt-4">
-              <h3 className="mb-3 text-sm font-semibold text-high-emphasis">
-                댓글
-              </h3>
-              <ul className="space-y-2">
-                {displayComments.map((c) => (
-                  <li key={c.id} className="text-sm">
-                    <span className="font-medium text-high-emphasis">
-                      {c.user}
-                    </span>{' '}
-                    <span className="text-high-emphasis">{c.text}</span>
-                    <span className="ml-2 text-xs text-low-emphasis">
-                      {c.time}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 flex gap-2">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="댓글을 입력하세요..."
-                  className="flex-1 rounded-control bg-input px-3 py-2 text-sm text-high-emphasis placeholder:text-low-emphasis focus:outline-none focus:ring-1 focus:ring-accent"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
-                />
-                <button
-                  onClick={handleSubmitComment}
-                  disabled={submitting}
-                  className="rounded-control bg-brand px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                >
-                  게시
-                </button>
-              </div>
-            </div>
+            {!isNaN(numFeedId) && <CommentSection feedId={numFeedId} />}
           </div>
 
           {/* Recommended Items Grid */}
