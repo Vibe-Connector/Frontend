@@ -355,6 +355,94 @@ function FolderEditModal({
   );
 }
 
+// ── Folder Create Modal ──
+
+function FolderCreateModal({
+  folderType,
+  onClose,
+  onCreate,
+}: {
+  folderType: 'VIBE' | 'ITEM';
+  onClose: () => void;
+  onCreate: (name: string, type: 'VIBE' | 'ITEM') => void;
+}) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState<'VIBE' | 'ITEM'>(folderType);
+  const [saving, setSaving] = useState(false);
+
+  const handleCreate = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    onCreate(trimmed, type);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative z-10 w-80 rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-bold text-high-emphasis">새 폴더 만들기</h3>
+
+        <label className="mt-4 block text-sm font-medium text-default">폴더 이름</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleCreate();
+            if (e.key === 'Escape') onClose();
+          }}
+          className="mt-1 w-full rounded-lg border border-stroke px-3 py-2 text-sm text-high-emphasis outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+          placeholder="폴더 이름을 입력하세요"
+          maxLength={100}
+          autoFocus
+          disabled={saving}
+        />
+
+        <label className="mt-3 block text-sm font-medium text-default">폴더 유형</label>
+        <div className="mt-1 flex gap-2">
+          {(['VIBE', 'ITEM'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                type === t
+                  ? 'border-high-emphasis bg-high-emphasis text-white'
+                  : 'border-stroke text-default hover:bg-gray-50'
+              }`}
+              onClick={() => setType(t)}
+              disabled={saving}
+            >
+              {t === 'VIBE' ? 'Vibe' : 'Item'}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            className="flex-1 cursor-pointer rounded-lg border border-stroke px-4 py-2 text-sm font-medium text-default transition-colors hover:bg-gray-50"
+            onClick={onClose}
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            className="flex-1 cursor-pointer rounded-lg bg-high-emphasis px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+            onClick={handleCreate}
+            disabled={saving || !name.trim()}
+          >
+            만들기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ──
 
 const SORT_LABELS: Record<SortMode, string> = {
@@ -373,6 +461,7 @@ export default function Archive() {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('ALL');
   const [editTarget, setEditTarget] = useState<ArchiveFolder | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -427,13 +516,11 @@ export default function Archive() {
     [],
   );
 
-  const handleCreateFolder = () => {
-    const name = prompt('새 폴더 이름을 입력하세요:');
-    if (!name) return;
-    const type = filterType === 'ITEM' ? 'ITEM' : 'VIBE';
+  const handleCreateFolder = (name: string, type: 'VIBE' | 'ITEM') => {
     createFolder({ folderName: name, folderType: type })
       .then((res: FolderResponse) => {
         setFolders((prev) => [...prev, mapFolderResponse(res)]);
+        setShowCreateModal(false);
       })
       .catch(() => alert('폴더 생성에 실패했습니다.'));
   };
@@ -472,7 +559,7 @@ export default function Archive() {
       <button
         type="button"
         className="cursor-pointer rounded-control bg-white px-5 py-2.5 text-[16px] font-medium tracking-[-1px] text-default shadow-card transition-opacity duration-150 hover:opacity-80 font-pretendard"
-        onClick={handleCreateFolder}
+        onClick={() => setShowCreateModal(true)}
       >
         만들기
       </button>
@@ -538,7 +625,7 @@ export default function Archive() {
       {sortMode === 'CUSTOM' ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={displayedFolders.map((f) => f.id)} strategy={rectSortingStrategy}>
-            <div className="mt-6 grid grid-cols-3 gap-6">
+            <div className="mt-6 grid grid-cols-4 gap-4">
               {displayedFolders.map((folder) => (
                 <SortableFolderCard
                   key={folder.id}
@@ -552,7 +639,7 @@ export default function Archive() {
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="mt-6 grid grid-cols-3 gap-6">
+        <div className="mt-6 grid grid-cols-4 gap-4">
           {displayedFolders.map((folder) => (
             <PlainFolderCard
               key={folder.id}
@@ -572,6 +659,15 @@ export default function Archive() {
           onClose={() => setEditTarget(null)}
           onRename={handleRename}
           onDelete={handleDelete}
+        />
+      )}
+
+      {/* Folder Create Modal */}
+      {showCreateModal && (
+        <FolderCreateModal
+          folderType={filterType === 'ITEM' ? 'ITEM' : 'VIBE'}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateFolder}
         />
       )}
     </PageContainer>
