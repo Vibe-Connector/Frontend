@@ -50,11 +50,18 @@ export type ErrorDomain =
 // 근거: Backend domain/feed/dto/*.java
 // ══════════════════════════════════════════════════════════════
 
-export type ReactionType = 'LIKE' | 'LOVE' | 'WOW' | 'COZY';
+export type ReactionType = 'LIKE' | 'DISLIKE' | 'WOW' | 'LOVE';
 
 export interface ReactionSummary {
   reactionType: string;
   count: number;
+}
+
+export interface ReactionUserResponse {
+  userId: number;
+  nickname: string;
+  profileImageUrl: string | null;
+  reactionType: string;
 }
 
 export interface FeedResponse {

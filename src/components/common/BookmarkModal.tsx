@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { getFolders, archiveVibe, createFolder } from '@/api/archive';
+import { getFolders, archiveVibe, archiveItem, createFolder } from '@/api/archive';
 import type { FolderResponse } from '@/api/archive';
 
 interface BookmarkModalProps {
   open: boolean;
   onClose: () => void;
-  resultId: number;
+  resultId?: number;
+  itemId?: number;
   onArchived: (archiveId: number) => void;
 }
 
-export default function BookmarkModal({ open, onClose, resultId, onArchived }: BookmarkModalProps) {
+export default function BookmarkModal({ open, onClose, resultId, itemId, onArchived }: BookmarkModalProps) {
+  const folderType = itemId ? 'ITEM' : 'VIBE';
   const [folders, setFolders] = useState<FolderResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -19,12 +21,12 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    getFolders('VIBE')
+    getFolders(folderType)
       .then(async (list) => {
         if (list.length === 0) {
           const defaultFolder = await createFolder({
-            folderName: '나의 Vibe',
-            folderType: 'VIBE',
+            folderName: folderType === 'ITEM' ? '나의 아이템' : '나의 Vibe',
+            folderType,
           });
           setFolders([defaultFolder]);
         } else {
@@ -54,8 +56,13 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
     if (saving) return;
     setSaving(true);
     try {
-      const result = await archiveVibe({ resultId, folderId });
-      onArchived(result.archiveId);
+      if (itemId) {
+        const result = await archiveItem({ itemId, folderId });
+        onArchived(result.archiveItemId);
+      } else if (resultId) {
+        const result = await archiveVibe({ resultId, folderId });
+        onArchived(result.archiveId);
+      }
       onClose();
     } catch {
       // TODO: 에러 토스트
@@ -70,14 +77,19 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
     try {
       const folder = await createFolder({
         folderName: newFolderName.trim(),
-        folderType: 'VIBE',
+        folderType,
       });
       setFolders((prev) => [...prev, folder]);
       setNewFolderName('');
       setCreatingFolder(false);
       // 생성된 폴더에 바로 아카이브
-      const result = await archiveVibe({ resultId, folderId: folder.folderId });
-      onArchived(result.archiveId);
+      if (itemId) {
+        const result = await archiveItem({ itemId, folderId: folder.folderId });
+        onArchived(result.archiveItemId);
+      } else if (resultId) {
+        const result = await archiveVibe({ resultId, folderId: folder.folderId });
+        onArchived(result.archiveId);
+      }
       onClose();
     } catch {
       // TODO: 에러 토스트
@@ -97,7 +109,7 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 font-pretendard"
     >
-      <div className="relative w-full max-w-90px overflow-hidden rounded-card bg-white shadow-card">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-card bg-white shadow-card">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4">
           <h2 className="text-base font-bold text-high-emphasis">폴더에 저장</h2>

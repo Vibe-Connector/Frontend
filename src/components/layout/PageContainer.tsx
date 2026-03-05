@@ -6,7 +6,7 @@ interface PageContainerProps {
 export default function PageContainer({ children, className }: PageContainerProps) {
   return (
     <div
-      className={`mx-auto w-full max-w-[1200px] px-[var(--spacing-page-x)] py-8${className ? ` ${className}` : ''}`}
+      className={`mx-auto w-full max-w-300 px--spacing-page-x py-8${className ? ` ${className}` : ''}`}
     >
       {children}
     </div>

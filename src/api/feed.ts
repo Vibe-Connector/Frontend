@@ -8,6 +8,7 @@ import type {
   CommentUpdateRequest,
   ReactionSummary,
   ReactionType,
+  ReactionUserResponse,
   PageResponse,
 } from './types';
 
@@ -42,6 +43,10 @@ export const getUserFeeds = (userId: number, cursor?: string, size = 20): Promis
 // POST /api/v1/feeds/{feedId}/reactions
 export const toggleReaction = (feedId: number, reactionType: ReactionType): Promise<ReactionSummary> =>
   client.post(`/feeds/${feedId}/reactions`, null, { params: { reactionType } });
+
+// GET /api/v1/feeds/{feedId}/reactions/users
+export const getReactionUsers = (feedId: number): Promise<ReactionUserResponse[]> =>
+  client.get(`/feeds/${feedId}/reactions/users`);
 
 // ── 댓글 ──
 

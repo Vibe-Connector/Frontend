@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { ButtonDefault } from '@/components/common';
@@ -198,6 +198,10 @@ export default function Feed() {
   const [isFollowing, setIsFollowing] = useState(false);
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
+  const [searchParams] = useSearchParams();
+  const targetUserId = searchParams.get('userId')
+    ? Number(searchParams.get('userId'))
+    : authUser?.userId;
 
   // Feed 데이터 — cursor pagination
   const [feeds, setFeeds] = useState<FeedResponse[]>([]);
@@ -211,12 +215,12 @@ export default function Feed() {
   const [collections, setCollections] = useState<Collection[]>([]);
 
   const fetchFeeds = useCallback((cursor?: string) => {
-    if (!authUser?.userId) return;
+    if (!targetUserId) return;
     const isInitial = !cursor;
     if (isInitial) setFeedLoading(true);
     else setFeedLoadingMore(true);
 
-    getUserFeeds(authUser.userId, cursor, 20)
+    getUserFeeds(targetUserId, cursor, 20)
       .then((res) => {
         setFeeds((prev) => (isInitial ? res.content : [...prev, ...res.content]));
         setFeedCursor(res.nextCursor);
@@ -229,7 +233,7 @@ export default function Feed() {
         if (isInitial) setFeedLoading(false);
         else setFeedLoadingMore(false);
       });
-  }, [authUser?.userId]);
+  }, [targetUserId]);
 
   useEffect(() => {
     fetchFeeds();
@@ -247,7 +251,7 @@ export default function Feed() {
         setCollections(mapped.length > 0 ? mapped : FALLBACK_COLLECTIONS);
       })
       .catch(() => setCollections(FALLBACK_COLLECTIONS));
-  }, [fetchFeeds]);
+  }, [fetchFeeds, targetUserId]);
 
   // 무한스크롤 for feeds
   useEffect(() => {
@@ -267,9 +271,11 @@ export default function Feed() {
     return () => observer.disconnect();
   }, [feedHasNext, feedLoadingMore, feedCursor, fetchFeeds]);
 
+  const isOwnProfile = !searchParams.get('userId') || targetUserId === authUser?.userId;
+  const feedOwner = !isOwnProfile && feeds.length > 0 ? feeds[0] : null;
   const user = {
-    nickname: authUser?.nickname ?? 'Nickname',
-    avatarUrl: authUser?.profileImageUrl ?? null,
+    nickname: feedOwner?.nickname ?? authUser?.nickname ?? 'Nickname',
+    avatarUrl: feedOwner?.profileImageUrl ?? authUser?.profileImageUrl ?? null,
     isFollowing,
   };
 
