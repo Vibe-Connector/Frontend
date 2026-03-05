@@ -23,6 +23,8 @@ const FALLBACK_FEED = {
   image: 'https://picsum.photos/seed/vibe-main/800/1000',
   description:
     '따뜻한 오후, 빈티지 가구와 식물이 어우러진 아늑한 공간에서 느끼는 편안한 무드. 레트로 감성과 자연의 조화가 만들어낸 나만의 Vibe.',
+  caption: null as string | null,
+  createdAt: null as string | null,
   moods: ['아늑한', '따뜻한', '레트로'],
   views: 1024,
   items: Array.from({ length: 8 }, (_, i) => ({
@@ -88,6 +90,16 @@ function BookmarkIcon({ filled }: { filled?: boolean }) {
   );
 }
 
+/* ---------- Helpers ---------- */
+
+function formatDate(isoString: string): string {
+  return new Date(isoString).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 /* ---------- Component ---------- */
 
 export default function FeedDetail() {
@@ -126,7 +138,9 @@ export default function FeedDetail() {
           id: String(res.feedId),
           user: { nickname: res.nickname, avatar: res.profileImageUrl ?? '' },
           image: res.generatedImageUrl ?? FALLBACK_FEED.image,
-          description: res.caption ?? res.phrase ?? FALLBACK_FEED.description,
+          description: res.phrase ?? FALLBACK_FEED.description,
+          caption: res.caption ?? null,
+          createdAt: res.createdAt ?? null,
           moods: [],
           views: res.viewCount,
           items: FALLBACK_FEED.items,
@@ -191,13 +205,28 @@ export default function FeedDetail() {
 
       {/* ===== Main Content (2-column) ===== */}
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Left — Main Image */}
+        {/* Left — Main Image + Caption */}
         <div className="shrink-0 lg:w-105">
           <img
             src={feed.image}
             alt="Vibe 메인 이미지"
             className="w-full rounded-card object-cover shadow-card"
           />
+          {/* 캡션 + 작성일 */}
+          {(feed.caption || feed.createdAt) && (
+            <div className="mt-3 px-1">
+              {feed.caption && (
+                <p className="text-sm leading-relaxed text-high-emphasis">
+                  {feed.caption}
+                </p>
+              )}
+              {feed.createdAt && (
+                <p className="mt-1 text-xs text-low-emphasis">
+                  {formatDate(feed.createdAt)}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right — Info Panel */}
