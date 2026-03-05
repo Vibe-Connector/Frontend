@@ -27,11 +27,6 @@ const FALLBACK_FEED = {
   createdAt: null as string | null,
   moods: ['아늑한', '따뜻한', '레트로'],
   views: 1024,
-  items: Array.from({ length: 8 }, (_, i) => ({
-    id: `item-${i}`,
-    image: `https://picsum.photos/seed/item${i}/200/200`,
-    label: ['소파', '조명', '테이블', '러그', '화분', '커피', '음악', '향초'][i],
-  })),
 };
 
 /* ---------- Icons ---------- */
@@ -143,7 +138,6 @@ export default function FeedDetail() {
           createdAt: res.createdAt ?? null,
           moods: [],
           views: res.viewCount,
-          items: FALLBACK_FEED.items,
         });
         setResultId(res.resultId);
         setApiReactions(res.reactions);
@@ -321,66 +315,57 @@ export default function FeedDetail() {
 
           {/* Recommended Items Grid */}
           <div className="rounded-card bg-surface p-5">
-            <div className="grid grid-cols-4 gap-3">
-              {(vibeItems.length > 0
-                ? vibeItems.slice(0, 8).map((item) => ({
-                    key: String(item.itemId),
-                    image: item.imageUrl ?? `https://picsum.photos/seed/item${item.itemId}/200/200`,
-                    label: item.itemName,
-                    itemId: item.itemId,
-                  }))
-                : feed.items.slice(0, 8).map((item) => ({
-                    key: item.id,
-                    image: item.image,
-                    label: item.label,
-                    itemId: null as number | null,
-                  }))
-              ).map((item) => {
-                const isArchived = item.itemId != null && item.itemId in itemArchiveMap;
-                return (
-                  <div
-                    key={item.key}
-                    className="group/item relative aspect-square overflow-hidden rounded-control bg-white"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.label}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
-                    />
-                    {/* 호버 시 라벨 오버레이 */}
-                    <div className="pointer-events-none absolute inset-0 flex items-end bg-linear-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover/item:opacity-100">
-                      <span className="px-2 pb-1.5 text-xs font-medium text-white">
-                        {item.label}
-                      </span>
-                    </div>
-                    {/* 호버 시 북마크 버튼 */}
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (item.itemId == null) return;
-                        if (isArchived) {
-                          try {
-                            await deleteArchiveItem(itemArchiveMap[item.itemId]);
-                            setItemArchiveMap((prev) => {
-                              const next = { ...prev };
-                              delete next[item.itemId!];
-                              return next;
-                            });
-                          } catch { /* 에러 무시 */ }
-                        } else {
-                          setItemBookmarkTarget(item.itemId);
-                        }
-                      }}
-                      className={`absolute top-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 transition-opacity duration-200 ${isArchived ? 'text-accent opacity-100' : 'text-caption opacity-0 hover:text-accent group-hover/item:opacity-100'}`}
-                      aria-label="아이템 북마크"
+            <h3 className="mb-3 text-sm font-semibold text-high-emphasis">추천 아이템</h3>
+            {vibeItems.length > 0 ? (
+              <div className="grid grid-cols-4 gap-3">
+                {vibeItems.slice(0, 8).map((item) => {
+                  const isArchived = item.itemId in itemArchiveMap;
+                  return (
+                    <div
+                      key={item.itemId}
+                      className="group/item relative aspect-square overflow-hidden rounded-control bg-white"
                     >
-                      <BookmarkIcon filled={isArchived} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      <img
+                        src={item.imageUrl ?? `https://picsum.photos/seed/item${item.itemId}/200/200`}
+                        alt={item.itemName}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
+                      />
+                      {/* 호버 시 라벨 오버레이 */}
+                      <div className="pointer-events-none absolute inset-0 flex items-end bg-linear-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover/item:opacity-100">
+                        <span className="px-2 pb-1.5 text-xs font-medium text-white">
+                          {item.itemName}
+                        </span>
+                      </div>
+                      {/* 호버 시 북마크 버튼 */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (isArchived) {
+                            try {
+                              await deleteArchiveItem(itemArchiveMap[item.itemId]);
+                              setItemArchiveMap((prev) => {
+                                const next = { ...prev };
+                                delete next[item.itemId];
+                                return next;
+                              });
+                            } catch { /* 에러 무시 */ }
+                          } else {
+                            setItemBookmarkTarget(item.itemId);
+                          }
+                        }}
+                        className={`absolute top-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 transition-opacity duration-200 ${isArchived ? 'text-accent opacity-100' : 'text-caption opacity-0 hover:text-accent group-hover/item:opacity-100'}`}
+                        aria-label="아이템 북마크"
+                      >
+                        <BookmarkIcon filled={isArchived} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="py-6 text-center text-sm text-low-emphasis">추천 아이템이 없습니다.</p>
+            )}
           </div>
         </div>
       </div>
