@@ -56,6 +56,7 @@ export interface VibeResultResponse {
   resultId: number;
   phrase: string | null;
   analysis: string | null;
+  generatedImageUrl: string | null;
   selectedOptions: SelectedOptions;
   recommendations: CategoryRecommendation[];
   processingTimeMs: number | null;
@@ -68,6 +69,7 @@ export interface VibePromptSubmitResponse {
   sessionId: number;
   phrase: string | null;
   analysis: string | null;
+  generatedImageUrl: string | null;
   selectedOptions: SelectedOptions;
   recommendations: CategoryRecommendation[];
   processingTimeMs: number | null;
