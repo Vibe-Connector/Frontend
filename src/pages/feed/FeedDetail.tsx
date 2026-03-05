@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
-import { getFeed, getComments, toggleReaction, createComment } from '@/api/feed';
-import type { FeedResponse, CommentResponse } from '@/api/types';
+import ReactionBar from '@/components/feed/ReactionBar';
+import { getFeed, getComments, createComment } from '@/api/feed';
+import type { FeedResponse, CommentResponse, ReactionSummary } from '@/api/types';
 
 /* ---------- Mock Data ---------- */
 // [BEFORE INTEGRATION] 하드코딩된 Mock 데이터
@@ -17,8 +18,6 @@ const FALLBACK_FEED = {
   description:
     '따뜻한 오후, 빈티지 가구와 식물이 어우러진 아늑한 공간에서 느끼는 편안한 무드. 레트로 감성과 자연의 조화가 만들어낸 나만의 Vibe.',
   moods: ['아늑한', '따뜻한', '레트로'],
-  likes: 128,
-  dislikes: 3,
   views: 1024,
   comments: [
     { id: 'c1', user: 'user_a', text: '분위기 너무 좋다!', time: '2시간 전' },
@@ -54,40 +53,6 @@ function UserIcon() {
     >
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function HeartIcon({ filled }: { filled?: boolean }) {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
-}
-
-function ThumbDownIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17" />
     </svg>
   );
 }
@@ -138,8 +103,8 @@ export default function FeedDetail() {
   const [apiComments, setApiComments] = useState<
     { id: string; user: string; text: string; time: string }[]
   >([]);
-  const [liked, setLiked] = useState(false);
-  const [initialLiked, setInitialLiked] = useState(false);
+  const [apiReactions, setApiReactions] = useState<ReactionSummary[]>([]);
+  const [apiMyReactionTypes, setApiMyReactionTypes] = useState<string[]>([]);
   const [bookmarked, setBookmarked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -154,22 +119,18 @@ export default function FeedDetail() {
 
     getFeed(numId)
       .then((res: FeedResponse) => {
-        const likeReaction = res.reactions.find((r) => r.reactionType === 'LIKE');
         setFeed({
           id: String(res.feedId),
           user: { nickname: res.nickname, avatar: res.profileImageUrl ?? '' },
           image: res.generatedImageUrl ?? FALLBACK_FEED.image,
           description: res.caption ?? res.phrase ?? FALLBACK_FEED.description,
           moods: [],
-          likes: likeReaction?.count ?? 0,
-          dislikes: 0,
           views: res.viewCount,
           comments: [],
           items: FALLBACK_FEED.items,
         });
-        const alreadyLiked = res.myReactionTypes.includes('LIKE');
-        setLiked(alreadyLiked);
-        setInitialLiked(alreadyLiked);
+        setApiReactions(res.reactions);
+        setApiMyReactionTypes(res.myReactionTypes);
       })
       .catch(() => {/* 폴백 유지 */});
 
@@ -188,13 +149,7 @@ export default function FeedDetail() {
 
   const displayComments = apiComments.length > 0 ? apiComments : feed.comments;
 
-  const handleToggleLike = () => {
-    const numId = Number(feedId);
-    if (!isNaN(numId)) {
-      toggleReaction(numId, 'LIKE').catch(() => {});
-    }
-    setLiked(!liked);
-  };
+  const numFeedId = Number(feedId);
 
   const handleSubmitComment = () => {
     const numId = Number(feedId);
@@ -272,18 +227,13 @@ export default function FeedDetail() {
 
             {/* Stats + Actions */}
             <div className="mt-4 flex items-center gap-4 border-t border-stroke pt-4">
-              <button
-                onClick={handleToggleLike}
-                className={`flex items-center gap-1 text-sm transition-colors ${liked ? 'text-accent' : 'text-caption hover:text-accent'}`}
-              >
-                <HeartIcon filled={liked} />
-                <span>{feed.likes + (liked !== initialLiked ? (liked ? 1 : -1) : 0)}</span>
-              </button>
-
-              <button className="flex items-center gap-1 text-sm text-caption hover:text-high-emphasis">
-                <ThumbDownIcon />
-                <span>{feed.dislikes}</span>
-              </button>
+              {!isNaN(numFeedId) && (
+                <ReactionBar
+                  feedId={numFeedId}
+                  reactions={apiReactions}
+                  myReactionTypes={apiMyReactionTypes}
+                />
+              )}
 
               <span className="flex items-center gap-1 text-sm text-caption">
                 <EyeIcon />
