@@ -16,12 +16,8 @@ interface Collection {
   isPrivate: boolean;
   thumbnailUrl: string | null;
   createdAt: string;
+  folderType: 'VIBE' | 'ITEM';
 }
-
-const FALLBACK_COLLECTIONS: Collection[] = [
-  { id: 'col-1', name: 'MyItems', pinCount: 0, isPrivate: false, thumbnailUrl: null, createdAt: '방금' },
-  { id: 'col-2', name: 'MyPlaces', pinCount: 0, isPrivate: true, thumbnailUrl: null, createdAt: '방금' },
-];
 
 // --- Icons ---
 function UserIcon({ className }: { className?: string }) {
@@ -29,16 +25,6 @@ function UserIcon({ className }: { className?: string }) {
     <svg className={className} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
-function FilterIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="4" y1="6" x2="20" y2="6" />
-      <line x1="8" y1="12" x2="16" y2="12" />
-      <line x1="11" y1="18" x2="13" y2="18" />
     </svg>
   );
 }
@@ -166,29 +152,72 @@ function CreateCollectionCard({ onClick }: { onClick: () => void }) {
   );
 }
 
+type ArchiveFilter = 'ALL' | 'VIBE' | 'ITEM';
+
 function CollectionsSection({
   collections,
   onCollectionClick,
   onCreateClick,
+  isOwnProfile,
 }: {
   collections: Collection[];
-  onCollectionClick: (id: string) => void;
+  onCollectionClick: (col: Collection) => void;
   onCreateClick: () => void;
+  isOwnProfile: boolean;
 }) {
+  const [filter, setFilter] = useState<ArchiveFilter>('ALL');
+
+  const filtered = filter === 'ALL' ? collections : collections.filter((c) => c.folderType === filter);
+
+  const tabs: { key: ArchiveFilter; label: string }[] = [
+    { key: 'ALL', label: '전체' },
+    { key: 'VIBE', label: 'Vibe' },
+    { key: 'ITEM', label: 'Item' },
+  ];
+
   return (
     <div>
-      <div className="mb-4 flex items-center gap-2">
-        <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full text-high-emphasis transition-colors hover:bg-surface" aria-label="필터">
-          <FilterIcon />
-        </button>
-        <span className="rounded-pill border border-stroke px-3 py-1 text-[13px] font-medium text-high-emphasis">그룹</span>
+      {/* 헤더 */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[16px] font-semibold text-high-emphasis">Archives</h2>
       </div>
-      <div className="flex gap-5">
-        {collections.map((col) => (
-          <CollectionCard key={col.id} collection={col} onClick={() => onCollectionClick(col.id)} />
+
+      {/* 필터 탭 */}
+      <div className="mb-4 flex gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setFilter(tab.key)}
+            className={`rounded-pill px-3 py-1 text-[13px] font-medium transition-colors ${
+              filter === tab.key
+                ? 'bg-high-emphasis text-background'
+                : 'border border-stroke text-caption hover:text-high-emphasis'
+            }`}
+          >
+            {tab.label}
+          </button>
         ))}
-        <CreateCollectionCard onClick={onCreateClick} />
       </div>
+
+      {/* 폴더 목록 */}
+      {filtered.length > 0 ? (
+        <div className="flex gap-5 overflow-x-auto pb-2">
+          {filtered.map((col) => (
+            <CollectionCard key={col.id} collection={col} onClick={() => onCollectionClick(col)} />
+          ))}
+          {isOwnProfile && <CreateCollectionCard onClick={onCreateClick} />}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-10 text-caption">
+          <p className="text-sm">아카이브 폴더가 없습니다</p>
+          {isOwnProfile && (
+            <button type="button" onClick={onCreateClick} className="mt-2 text-sm text-accent hover:underline">
+              폴더 만들기
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -247,10 +276,11 @@ export default function Feed() {
           isPrivate: false,
           thumbnailUrl: f.thumbnailUrl,
           createdAt: new Date(f.createdAt).toLocaleDateString('ko-KR'),
+          folderType: (f.folderType === 'ITEM' ? 'ITEM' : 'VIBE') as 'VIBE' | 'ITEM',
         }));
-        setCollections(mapped.length > 0 ? mapped : FALLBACK_COLLECTIONS);
+        setCollections(mapped.length > 0 ? mapped : []);
       })
-      .catch(() => setCollections(FALLBACK_COLLECTIONS));
+      .catch(() => setCollections([]));
   }, [fetchFeeds, targetUserId]);
 
   // 무한스크롤 for feeds
@@ -302,8 +332,9 @@ export default function Feed() {
       {/* Collections Section */}
       <CollectionsSection
         collections={collections}
-        onCollectionClick={(id) => navigate(`/archive/${id}`)}
+        onCollectionClick={(col) => navigate(`/archive/${col.id}`, { state: { folderType: col.folderType, folderName: col.name } })}
         onCreateClick={() => navigate('/archive')}
+        isOwnProfile={isOwnProfile}
       />
     </PageContainer>
   );
