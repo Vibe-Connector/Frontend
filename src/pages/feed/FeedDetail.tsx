@@ -117,6 +117,7 @@ export default function FeedDetail() {
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarCursor, setSimilarCursor] = useState<string | undefined>();
   const [similarHasNext, setSimilarHasNext] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
   const fetchedRef = useRef<string | null>(null);
   const navigate = useNavigate();
 
@@ -174,7 +175,10 @@ export default function FeedDetail() {
           })
           .catch(() => {/* 폴백 유지 */});
       })
-      .catch(() => {/* 폴백 유지 */});
+      .catch((err) => {
+        if (err?.response?.status === 403) setForbidden(true);
+        /* 그 외 폴백 유지 */
+      });
   }, [feedId]);
 
   // 비슷한 무드 추천 피드 로드
@@ -200,6 +204,28 @@ export default function FeedDetail() {
   }, [feedId, loadSimilarFeeds]);
 
   const numFeedId = Number(feedId);
+
+  if (forbidden) {
+    return (
+      <PageContainer>
+        <div className="flex flex-col items-center justify-center py-20 text-caption">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-4 text-disabled">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <p className="text-lg font-medium text-high-emphasis">비공개 피드입니다</p>
+          <p className="mt-1 text-sm">이 피드는 작성자만 볼 수 있습니다</p>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="mt-6 rounded-card bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent/90"
+          >
+            돌아가기
+          </button>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
