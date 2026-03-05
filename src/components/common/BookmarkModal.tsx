@@ -97,7 +97,7 @@ export default function BookmarkModal({ open, onClose, resultId, onArchived }: B
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 font-pretendard"
     >
-      <div className="relative w-full max-w-90px overflow-hidden rounded-card bg-white shadow-card">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-card bg-white shadow-card">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4">
           <h2 className="text-base font-bold text-high-emphasis">폴더에 저장</h2>

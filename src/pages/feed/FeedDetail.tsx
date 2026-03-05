@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
+import BookmarkModal from '@/components/common/BookmarkModal';
 import { getFeed } from '@/api/feed';
+import { deleteArchiveVibe } from '@/api/archive';
 import { getExploreVibes } from '@/api/explore';
 import type { ExploreVibeResponse } from '@/api/explore';
 import type { FeedResponse, ReactionSummary } from '@/api/types';
@@ -95,6 +97,9 @@ export default function FeedDetail() {
   const [apiReactions, setApiReactions] = useState<ReactionSummary[]>([]);
   const [apiMyReactionTypes, setApiMyReactionTypes] = useState<string[]>([]);
   const [bookmarked, setBookmarked] = useState(false);
+  const [archiveId, setArchiveId] = useState<number | null>(null);
+  const [resultId, setResultId] = useState<number | null>(null);
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [similarFeeds, setSimilarFeeds] = useState<ExploreVibeResponse[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarCursor, setSimilarCursor] = useState<string | undefined>();
@@ -120,6 +125,7 @@ export default function FeedDetail() {
           views: res.viewCount,
           items: FALLBACK_FEED.items,
         });
+        setResultId(res.resultId);
         setApiReactions(res.reactions);
         setApiMyReactionTypes(res.myReactionTypes);
       })
@@ -219,7 +225,17 @@ export default function FeedDetail() {
               </span>
 
               <button
-                onClick={() => setBookmarked(!bookmarked)}
+                onClick={async () => {
+                  if (bookmarked && archiveId) {
+                    try {
+                      await deleteArchiveVibe(archiveId);
+                      setBookmarked(false);
+                      setArchiveId(null);
+                    } catch { /* 에러 무시 */ }
+                  } else if (resultId) {
+                    setShowBookmarkModal(true);
+                  }
+                }}
                 className={`ml-auto transition-colors ${bookmarked ? 'text-accent' : 'text-caption hover:text-accent'}`}
                 aria-label="북마크"
               >
@@ -319,6 +335,18 @@ export default function FeedDetail() {
           </div>
         )}
       </div>
+      {/* ===== Bookmark Modal ===== */}
+      {resultId && (
+        <BookmarkModal
+          open={showBookmarkModal}
+          onClose={() => setShowBookmarkModal(false)}
+          resultId={resultId}
+          onArchived={(id) => {
+            setArchiveId(id);
+            setBookmarked(true);
+          }}
+        />
+      )}
     </PageContainer>
   );
 }
