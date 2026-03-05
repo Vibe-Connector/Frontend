@@ -44,6 +44,36 @@ export default function CommentSection({ feedId }: CommentSectionProps) {
     );
   }, []);
 
+  // 댓글 수정 콜백
+  const handleCommentUpdated = useCallback((commentId: number, newContent: string) => {
+    setComments((prev) =>
+      prev.map((c) => {
+        if (c.commentId === commentId) return { ...c, content: newContent };
+        if (c.replies.some((r) => r.commentId === commentId)) {
+          return { ...c, replies: c.replies.map((r) => r.commentId === commentId ? { ...r, content: newContent } : r) };
+        }
+        return c;
+      }),
+    );
+  }, []);
+
+  // 댓글 삭제 콜백
+  const handleCommentDeleted = useCallback((commentId: number, parentId: number | null) => {
+    if (parentId) {
+      // 대댓글 삭제: 부모 댓글의 replies에서 제거
+      setComments((prev) =>
+        prev.map((c) =>
+          c.commentId === parentId
+            ? { ...c, replies: c.replies.filter((r) => r.commentId !== commentId) }
+            : c,
+        ),
+      );
+    } else {
+      // 루트 댓글 삭제
+      setComments((prev) => prev.filter((c) => c.commentId !== commentId));
+    }
+  }, []);
+
   // 새 댓글 작성
   const handleSubmit = async () => {
     if (!newText.trim() || submitting) return;
@@ -77,6 +107,8 @@ export default function CommentSection({ feedId }: CommentSectionProps) {
               comment={c}
               feedId={feedId}
               onReplyAdded={handleReplyAdded}
+              onCommentUpdated={handleCommentUpdated}
+              onCommentDeleted={handleCommentDeleted}
             />
           ))}
         </div>
