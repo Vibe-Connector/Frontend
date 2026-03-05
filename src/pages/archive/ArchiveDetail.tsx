@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import {
   getArchiveVibes,
@@ -82,26 +82,30 @@ function VibeCard({
   vibe,
   onToggleFavorite,
   onDelete,
+  onClick,
 }: {
   vibe: ArchiveVibeResponse & { _favorite: boolean };
   onToggleFavorite: (archiveId: number) => void;
   onDelete: (archiveId: number) => void;
+  onClick: () => void;
 }) {
   return (
     <div className="group mb-4 break-inside-avoid">
       <div className="overflow-hidden rounded-card bg-surface">
-        {vibe.generatedImageUrl ? (
-          <img
-            src={vibe.generatedImageUrl}
-            alt={vibe.phrase ?? 'Archived Vibe'}
-            className="w-full object-cover transition-transform duration-200 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex aspect-square items-center justify-center bg-disabled text-caption">
-            No Image
-          </div>
-        )}
+        <div className={vibe.feedId ? 'cursor-pointer' : ''} onClick={onClick}>
+          {vibe.generatedImageUrl ? (
+            <img
+              src={vibe.generatedImageUrl}
+              alt={vibe.phrase ?? 'Archived Vibe'}
+              className="w-full object-cover transition-transform duration-200 group-hover:scale-105"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex aspect-square items-center justify-center bg-disabled text-caption">
+              No Image
+            </div>
+          )}
+        </div>
 
         <div className="p-3">
           {vibe.phrase && (
@@ -218,6 +222,7 @@ function ItemCard({
 export default function ArchiveDetail() {
   const { folderId } = useParams<{ folderId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const state = location.state as { folderType?: string; folderName?: string } | null;
 
   const folderType: 'VIBE' | 'ITEM' = state?.folderType === 'ITEM' ? 'ITEM' : 'VIBE';
@@ -403,6 +408,7 @@ export default function ArchiveDetail() {
               vibe={vibe}
               onToggleFavorite={handleVibeToggleFavorite}
               onDelete={(id) => setDeleteTarget({ type: 'vibe', id })}
+              onClick={() => { if (vibe.feedId) navigate(`/feed/${vibe.feedId}`); }}
             />
           ))}
         </div>
