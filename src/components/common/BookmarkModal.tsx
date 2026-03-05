@@ -23,19 +23,21 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
     setLoading(true);
     getFolders(folderType)
       .then(async (list) => {
-        if (list.length === 0) {
+        // 백엔드 필터링 보완: 클라이언트에서도 folderType 일치하는 것만 필터
+        const filtered = list.filter((f) => f.folderType === folderType);
+        if (filtered.length === 0) {
           const defaultFolder = await createFolder({
             folderName: folderType === 'ITEM' ? '나의 아이템' : '나의 Vibe',
             folderType,
           });
           setFolders([defaultFolder]);
         } else {
-          setFolders(list);
+          setFolders(filtered);
         }
       })
       .catch(() => setFolders([]))
       .finally(() => setLoading(false));
-  }, [open]);
+  }, [open, folderType]);
 
   useEffect(() => {
     if (!open) return;

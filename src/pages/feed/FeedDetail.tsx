@@ -5,7 +5,7 @@ import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import BookmarkModal from '@/components/common/BookmarkModal';
 import { getFeed } from '@/api/feed';
-import { deleteArchiveVibe, deleteArchiveItem } from '@/api/archive';
+import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getExploreVibes } from '@/api/explore';
 import { getVibeResultItems } from '@/api/vibe';
 import type { RecommendedItemResponse } from '@/api/vibe';
@@ -148,11 +148,35 @@ export default function FeedDetail() {
         setResultId(res.resultId);
         setApiReactions(res.reactions);
         setApiMyReactionTypes(res.myReactionTypes);
-        // 추천 아이템 로드
+        // Vibe 아카이브 상태 확인
+        getArchiveVibes(undefined, undefined, 200)
+          .then((archivePage) => {
+            const match = archivePage.content.find((a) => a.resultId === res.resultId);
+            if (match) {
+              setBookmarked(true);
+              setArchiveId(match.archiveId);
+            }
+          })
+          .catch(() => {/* 무시 */});
+        // 추천 아이템 로드 + 아카이브 상태 초기화
         getVibeResultItems(res.resultId)
           .then((categories) => {
             const flat = categories.flatMap((c) => c.items);
             setVibeItems(flat);
+            // 아이템 아카이브 상태 로드
+            const itemIds = new Set(flat.map((item) => item.itemId));
+            if (itemIds.size === 0) return;
+            getArchiveItems(undefined, undefined, 200)
+              .then((archivePage) => {
+                const map: Record<number, number> = {};
+                for (const a of archivePage.content) {
+                  if (itemIds.has(a.itemId)) {
+                    map[a.itemId] = a.archiveItemId;
+                  }
+                }
+                setItemArchiveMap(map);
+              })
+              .catch(() => {/* 아카이브 상태 로드 실패 무시 */});
           })
           .catch(() => {/* 폴백 유지 */});
       })
