@@ -5,8 +5,10 @@ import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import BookmarkModal from '@/components/common/BookmarkModal';
 import { getFeed } from '@/api/feed';
-import { deleteArchiveVibe } from '@/api/archive';
+import { deleteArchiveVibe, deleteArchiveItem } from '@/api/archive';
 import { getExploreVibes } from '@/api/explore';
+import { getVibeResultItems } from '@/api/vibe';
+import type { RecommendedItemResponse } from '@/api/vibe';
 import type { ExploreVibeResponse } from '@/api/explore';
 import type { FeedResponse, ReactionSummary } from '@/api/types';
 
@@ -100,6 +102,10 @@ export default function FeedDetail() {
   const [archiveId, setArchiveId] = useState<number | null>(null);
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
+  const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
+  const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
+  const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
   const [similarFeeds, setSimilarFeeds] = useState<ExploreVibeResponse[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
   const [similarCursor, setSimilarCursor] = useState<string | undefined>();
@@ -128,6 +134,13 @@ export default function FeedDetail() {
         setResultId(res.resultId);
         setApiReactions(res.reactions);
         setApiMyReactionTypes(res.myReactionTypes);
+        // 추천 아이템 로드
+        getVibeResultItems(res.resultId)
+          .then((categories) => {
+            const flat = categories.flatMap((c) => c.items);
+            setVibeItems(flat);
+          })
+          .catch(() => {/* 폴백 유지 */});
       })
       .catch(() => {/* 폴백 유지 */});
   }, [feedId]);
@@ -250,31 +263,64 @@ export default function FeedDetail() {
           {/* Recommended Items Grid */}
           <div className="rounded-card bg-surface p-5">
             <div className="grid grid-cols-4 gap-3">
-              {feed.items.slice(0, 7).map((item) => (
-                <div
-                  key={item.id}
-                  className="group/item relative aspect-square overflow-hidden rounded-control bg-white"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.label}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
-                  />
-                  <div className="pointer-events-none absolute inset-0 flex items-end bg-linear-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover/item:opacity-100">
-                    <span className="px-2 pb-1.5 text-xs font-medium text-white">
-                      {item.label}
-                    </span>
+              {(vibeItems.length > 0
+                ? vibeItems.slice(0, 8).map((item) => ({
+                    key: String(item.itemId),
+                    image: item.imageUrl ?? `https://picsum.photos/seed/item${item.itemId}/200/200`,
+                    label: item.itemName,
+                    itemId: item.itemId,
+                  }))
+                : feed.items.slice(0, 8).map((item) => ({
+                    key: item.id,
+                    image: item.image,
+                    label: item.label,
+                    itemId: null as number | null,
+                  }))
+              ).map((item) => {
+                const isArchived = item.itemId != null && item.itemId in itemArchiveMap;
+                return (
+                  <div
+                    key={item.key}
+                    className="group/item relative aspect-square overflow-hidden rounded-control bg-white"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.label}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
+                    />
+                    {/* 호버 시 라벨 오버레이 */}
+                    <div className="pointer-events-none absolute inset-0 flex items-end bg-linear-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover/item:opacity-100">
+                      <span className="px-2 pb-1.5 text-xs font-medium text-white">
+                        {item.label}
+                      </span>
+                    </div>
+                    {/* 호버 시 북마크 버튼 */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (item.itemId == null) return;
+                        if (isArchived) {
+                          try {
+                            await deleteArchiveItem(itemArchiveMap[item.itemId]);
+                            setItemArchiveMap((prev) => {
+                              const next = { ...prev };
+                              delete next[item.itemId!];
+                              return next;
+                            });
+                          } catch { /* 에러 무시 */ }
+                        } else {
+                          setItemBookmarkTarget(item.itemId);
+                        }
+                      }}
+                      className={`absolute top-1.5 right-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 transition-opacity duration-200 ${isArchived ? 'text-accent opacity-100' : 'text-caption opacity-0 hover:text-accent group-hover/item:opacity-100'}`}
+                      aria-label="아이템 북마크"
+                    >
+                      <BookmarkIcon filled={isArchived} />
+                    </button>
                   </div>
-                </div>
-              ))}
-
-              {/* Placeholder card */}
-              <div className="col-span-1 row-span-2 flex items-center justify-center rounded-control bg-disabled/60">
-                <span className="text-center text-xs text-low-emphasis">
-                  추천 아이템
-                </span>
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -304,6 +350,26 @@ export default function FeedDetail() {
                     className="w-full rounded-card object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="pointer-events-none absolute inset-0 rounded-card bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
+                  {/* 호버 시 북마크 버튼 */}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (vibe.isArchived && vibe.archiveId) {
+                        try {
+                          await deleteArchiveVibe(vibe.archiveId);
+                          setSimilarFeeds((prev) =>
+                            prev.map((f) => f.feedId === vibe.feedId ? { ...f, isArchived: false, archiveId: null } : f),
+                          );
+                        } catch { /* 에러 무시 */ }
+                      } else {
+                        setSimilarBookmarkTarget({ feedId: vibe.feedId, resultId: vibe.resultId });
+                      }
+                    }}
+                    className={`absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 transition-opacity duration-200 ${vibe.isArchived ? 'text-accent opacity-100' : 'text-caption opacity-0 hover:text-accent group-hover:opacity-100'}`}
+                    aria-label="북마크"
+                  >
+                    <BookmarkIcon filled={vibe.isArchived} />
+                  </button>
                   {/* 호버 시 정보 오버레이 */}
                   <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-linear-to-t from-black/50 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                     <div className="text-white">
@@ -335,7 +401,7 @@ export default function FeedDetail() {
           </div>
         )}
       </div>
-      {/* ===== Bookmark Modal ===== */}
+      {/* ===== Vibe Bookmark Modal ===== */}
       {resultId && (
         <BookmarkModal
           open={showBookmarkModal}
@@ -344,6 +410,36 @@ export default function FeedDetail() {
           onArchived={(id) => {
             setArchiveId(id);
             setBookmarked(true);
+          }}
+        />
+      )}
+      {/* ===== Item Bookmark Modal ===== */}
+      {itemBookmarkTarget && (
+        <BookmarkModal
+          open={!!itemBookmarkTarget}
+          onClose={() => setItemBookmarkTarget(null)}
+          itemId={itemBookmarkTarget}
+          onArchived={(archiveItemId) => {
+            setItemArchiveMap((prev) => ({ ...prev, [itemBookmarkTarget]: archiveItemId }));
+            setItemBookmarkTarget(null);
+          }}
+        />
+      )}
+      {/* ===== Similar Feed Bookmark Modal ===== */}
+      {similarBookmarkTarget && (
+        <BookmarkModal
+          open={!!similarBookmarkTarget}
+          onClose={() => setSimilarBookmarkTarget(null)}
+          resultId={similarBookmarkTarget.resultId}
+          onArchived={(newArchiveId) => {
+            setSimilarFeeds((prev) =>
+              prev.map((f) =>
+                f.feedId === similarBookmarkTarget.feedId
+                  ? { ...f, isArchived: true, archiveId: newArchiveId }
+                  : f,
+              ),
+            );
+            setSimilarBookmarkTarget(null);
           }}
         />
       )}
