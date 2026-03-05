@@ -22,6 +22,13 @@ import { getFolders, createFolder, updateFolder, deleteFolder } from '@/api/arch
 import type { FolderResponse } from '@/api/archive';
 
 type SortMode = 'CREATED' | 'NAME' | 'CUSTOM';
+type FilterType = 'ALL' | 'VIBE' | 'ITEM';
+
+const FILTER_LABELS: Record<FilterType, string> = {
+  ALL: '전체',
+  VIBE: 'Vibe',
+  ITEM: 'Item',
+};
 
 interface ArchiveFolder {
   id: string;
@@ -364,6 +371,7 @@ export default function Archive() {
     () => (sessionStorage.getItem('archive-sort') as SortMode) || 'CREATED',
   );
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [filterType, setFilterType] = useState<FilterType>('ALL');
   const [editTarget, setEditTarget] = useState<ArchiveFolder | null>(null);
 
   const sensors = useSensors(
@@ -380,7 +388,10 @@ export default function Archive() {
       .catch(() => setFolders(FALLBACK_FOLDERS));
   }, []);
 
-  const displayedFolders = sortFolders(folders, sortMode);
+  const filteredFolders = filterType === 'ALL'
+    ? folders
+    : folders.filter((f) => f.folderType === filterType);
+  const displayedFolders = sortFolders(filteredFolders, sortMode);
 
   const handleSortChange = (mode: SortMode) => {
     setSortMode(mode);
@@ -419,7 +430,8 @@ export default function Archive() {
   const handleCreateFolder = () => {
     const name = prompt('새 폴더 이름을 입력하세요:');
     if (!name) return;
-    createFolder({ folderName: name, folderType: 'VIBE' })
+    const type = filterType === 'ITEM' ? 'ITEM' : 'VIBE';
+    createFolder({ folderName: name, folderType: type })
       .then((res: FolderResponse) => {
         setFolders((prev) => [...prev, mapFolderResponse(res)]);
       })
@@ -469,8 +481,26 @@ export default function Archive() {
 
   return (
     <PageContainer className="mx-auto mt-6 max-w-190">
-      {/* Top bar: sort dropdown */}
-      <div className="flex items-center gap-3">
+      {/* Category tabs */}
+      <div className="flex gap-1 rounded-lg bg-surface p-1">
+        {(Object.keys(FILTER_LABELS) as FilterType[]).map((type) => (
+          <button
+            key={type}
+            type="button"
+            className={`cursor-pointer rounded-md px-4 py-1.5 text-[14px] font-medium tracking-[-0.5px] transition-colors ${
+              filterType === type
+                ? 'bg-white text-high-emphasis shadow-sm'
+                : 'text-caption hover:text-default'
+            }`}
+            onClick={() => setFilterType(type)}
+          >
+            {FILTER_LABELS[type]}
+          </button>
+        ))}
+      </div>
+
+      {/* Sort dropdown */}
+      <div className="mt-4 flex items-center gap-3">
         <div className="relative">
           <button
             type="button"
