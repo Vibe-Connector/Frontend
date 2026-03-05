@@ -36,6 +36,7 @@ export interface ArchiveVibeResponse {
   folderName: string | null;
   memo: string | null;
   isFavorite: boolean;
+  feedId: number | null;
   createdAt: string;
 }
 

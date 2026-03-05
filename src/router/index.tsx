@@ -8,6 +8,7 @@ import Login from '@/pages/auth/Login';
 import SignUp from '@/pages/auth/SignUp';
 import Explore from '@/pages/home/Explore';
 import Feed from '@/pages/feed/Feed';
+import FeedCreate from '@/pages/feed/FeedCreate';
 import FeedDetail from '@/pages/feed/FeedDetail';
 import VibeConnector from '@/pages/vibe/VibeConnector';
 import VibeConnectorConnect from '@/pages/vibe/VibeConnectorConnect';
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/feed', element: <Feed /> },
+          { path: '/feed/create', element: <FeedCreate /> },
           { path: '/feed/:feedId', element: <FeedDetail /> },
 
           // VibeConnector

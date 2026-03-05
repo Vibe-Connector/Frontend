@@ -35,7 +35,7 @@ export default function VibeConnectorLoading() {
   return (
     <PageContainer>
       {/* Loading Card */}
-      <div className="mx-auto max-w-[640px] overflow-hidden rounded-card bg-white shadow-card">
+      <div className="mx-auto max-w-160 overflow-hidden rounded-card bg-white shadow-card">
         {/* Image */}
         <div className="relative h-48 w-full overflow-hidden bg-surface">
           <img
@@ -43,7 +43,7 @@ export default function VibeConnectorLoading() {
             alt="Vibe 생성 중"
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
         </div>
 
         <div className="p-6 text-center">
