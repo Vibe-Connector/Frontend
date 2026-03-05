@@ -24,6 +24,14 @@ function HeartIcon({ filled }: { filled?: boolean }) {
   );
 }
 
+function ThumbsUpIcon({ filled }: { filled?: boolean }) {
+  return (
+    <svg {...iconProps} fill={filled ? 'currentColor' : 'none'}>
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+    </svg>
+  );
+}
+
 function ThumbDownIcon({ filled }: { filled?: boolean }) {
   return (
     <svg {...iconProps} fill={filled ? 'currentColor' : 'none'}>
@@ -66,14 +74,14 @@ const REACTION_CONFIG: {
   label: string;
   activeColor: string;
 }[] = [
-  { type: 'LIKE', Icon: HeartIcon, label: '좋아요', activeColor: 'text-red-500' },
+  { type: 'LIKE', Icon: ThumbsUpIcon, label: '좋아요', activeColor: 'text-red-500' },
   { type: 'DISLIKE', Icon: ThumbDownIcon, label: '싫어요', activeColor: 'text-blue-500' },
   { type: 'WOW', Icon: WowFaceIcon, label: '놀라워요', activeColor: 'text-amber-500' },
   { type: 'LOVE', Icon: DoubleHeartIcon, label: '사랑해요', activeColor: 'text-pink-500' },
 ];
 
 const REACTION_ICON: Record<string, ReactionIconComponent> = {
-  LIKE: HeartIcon,
+  LIKE: ThumbsUpIcon,
   DISLIKE: ThumbDownIcon,
   WOW: WowFaceIcon,
   LOVE: DoubleHeartIcon,
@@ -109,6 +117,14 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
     for (const r of reactions) map[r.reactionType] = r.count;
     return map;
   });
+
+  // props 변경 시 state 동기화 (API 응답이 마운트 이후 도착하는 경우)
+  useEffect(() => {
+    setMyType((myReactionTypes[0] as ReactionType) ?? null);
+    const map: Record<string, number> = {};
+    for (const r of reactions) map[r.reactionType] = r.count;
+    setCounts(map);
+  }, [reactions, myReactionTypes]);
 
   const [pending, setPending] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -238,9 +254,9 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
     setShowUsers(false);
   };
 
-  // 현재 반응에 해당하는 아이콘
-  const CurrentIcon = myType ? REACTION_ICON[myType] : HeartIcon;
-  const currentColor = myType ? REACTION_COLOR[myType] : 'text-caption';
+  // 메인 버튼: 항상 하트 아이콘 (반응 유무에 따라 filled/unfilled)
+  const hasReaction = !!myType;
+  const currentColor = hasReaction ? 'text-red-500' : 'text-caption';
 
   return (
     <div ref={containerRef} className="relative inline-flex items-center">
@@ -258,7 +274,7 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
             : 'text-caption hover:bg-surface'
         } disabled:opacity-50`}
       >
-        <CurrentIcon filled={!!myType} />
+        <HeartIcon filled={hasReaction} />
         <span>{totalCount > 0 ? totalCount : ''}</span>
       </button>
 
