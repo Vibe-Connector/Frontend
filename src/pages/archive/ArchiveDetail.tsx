@@ -1,76 +1,440 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
-import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
-import { getArchiveVibes } from '@/api/archive';
-import type { ArchiveVibeResponse } from '@/api/archive';
+import {
+  getArchiveVibes,
+  getArchiveItems,
+  toggleVibeFavorite,
+  toggleItemFavorite,
+  deleteArchiveVibe,
+  deleteArchiveItem,
+} from '@/api/archive';
+import type { ArchiveVibeResponse, ArchiveItemResponse } from '@/api/archive';
+
+// ── SVG 아이콘 ──
+
+function PinIcon({ filled }: { filled?: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1h.5a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5H8a1 1 0 0 1 1 1z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+// ── 삭제 확인 모달 ──
+
+function DeleteConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="w-full max-w-xs rounded-2xl bg-surface p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-center text-base font-semibold text-high-emphasis">
+          아카이브 삭제
+        </h3>
+        <p className="mt-2 text-center text-sm text-caption">
+          이 항목을 아카이브에서 삭제하시겠습니까?
+        </p>
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-lg bg-disabled px-4 py-2.5 text-sm font-medium text-high-emphasis transition-colors hover:bg-disabled/80"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
+          >
+            삭제
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Vibe 카드 ──
+
+function VibeCard({
+  vibe,
+  onToggleFavorite,
+  onDelete,
+}: {
+  vibe: ArchiveVibeResponse & { _favorite: boolean };
+  onToggleFavorite: (archiveId: number) => void;
+  onDelete: (archiveId: number) => void;
+}) {
+  return (
+    <div className="group mb-4 break-inside-avoid">
+      <div className="overflow-hidden rounded-card bg-surface">
+        {vibe.generatedImageUrl ? (
+          <img
+            src={vibe.generatedImageUrl}
+            alt={vibe.phrase ?? 'Archived Vibe'}
+            className="w-full object-cover transition-transform duration-200 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex aspect-square items-center justify-center bg-disabled text-caption">
+            No Image
+          </div>
+        )}
+
+        <div className="p-3">
+          {vibe.phrase && (
+            <p className="line-clamp-2 text-sm font-medium text-high-emphasis">
+              {vibe.phrase}
+            </p>
+          )}
+          {vibe.memo && (
+            <p className="mt-1 line-clamp-2 text-xs text-caption">{vibe.memo}</p>
+          )}
+
+          {/* 액션 버튼 — 즐겨찾기 체크 시 항상 표시 */}
+          <div className={`mt-2 flex items-center gap-2 transition-opacity ${vibe._favorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(vibe.archiveId)}
+              className={`rounded-full p-1 transition-colors ${vibe._favorite ? 'text-accent' : 'text-caption hover:text-accent/70'}`}
+              aria-label={vibe._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            >
+              <PinIcon filled={vibe._favorite} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(vibe.archiveId)}
+              className="rounded-full p-1 text-caption transition-colors hover:text-red-500"
+              aria-label="아카이브 삭제"
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Item 카드 ──
+
+function ItemCard({
+  item,
+  onToggleFavorite,
+  onDelete,
+}: {
+  item: ArchiveItemResponse & { _favorite: boolean };
+  onToggleFavorite: (archiveItemId: number) => void;
+  onDelete: (archiveItemId: number) => void;
+}) {
+  return (
+    <div className="group mb-4 break-inside-avoid">
+      <div className="overflow-hidden rounded-card bg-surface">
+        {item.imageUrl ? (
+          <div className="relative aspect-square overflow-hidden">
+            <img
+              src={item.imageUrl}
+              alt={item.itemName ?? 'Archived Item'}
+              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+              loading="lazy"
+            />
+            {/* 카테고리 배지 */}
+            <span className="absolute bottom-2 left-2 rounded-full bg-black/50 px-2 py-0.5 text-[10px] font-medium text-white">
+              {item.categoryKey}
+            </span>
+          </div>
+        ) : (
+          <div className="flex aspect-square items-center justify-center bg-disabled text-caption">
+            No Image
+          </div>
+        )}
+
+        <div className="p-3">
+          {item.itemName && (
+            <p className="truncate text-sm font-medium text-high-emphasis">
+              {item.itemName}
+            </p>
+          )}
+          {item.brand && (
+            <p className="truncate text-xs text-caption">{item.brand}</p>
+          )}
+          {item.memo && (
+            <p className="mt-1 line-clamp-2 text-xs text-caption">{item.memo}</p>
+          )}
+
+          {/* 액션 버튼 — 즐겨찾기 체크 시 항상 표시 */}
+          <div className={`mt-2 flex items-center gap-2 transition-opacity ${item._favorite ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(item.archiveItemId)}
+              className={`rounded-full p-1 transition-colors ${item._favorite ? 'text-accent' : 'text-caption hover:text-accent/70'}`}
+              aria-label={item._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+            >
+              <PinIcon filled={item._favorite} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(item.archiveItemId)}
+              className="rounded-full p-1 text-caption transition-colors hover:text-red-500"
+              aria-label="아카이브 삭제"
+            >
+              <TrashIcon />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 메인 컴포넌트 ──
 
 export default function ArchiveDetail() {
   const { folderId } = useParams<{ folderId: string }>();
+  const location = useLocation();
+  const state = location.state as { folderType?: string; folderName?: string } | null;
 
-  // [BEFORE INTEGRATION] <ExploreMasonryGrid seedOffset={...} /> 만 표시
-  // [AFTER INTEGRATION] 실제 아카이브 Vibe 데이터 로드, 실패 시 폴백
-  const [vibes, setVibes] = useState<ArchiveVibeResponse[]>([]);
-  const [useApi, setUseApi] = useState(true);
-  const [folderName, setFolderName] = useState(folderId ?? '');
+  const folderType: 'VIBE' | 'ITEM' = state?.folderType === 'ITEM' ? 'ITEM' : 'VIBE';
+  const [folderName, setFolderName] = useState(state?.folderName ?? '');
 
+  // ── Vibe 상태 ──
+  const [vibes, setVibes] = useState<(ArchiveVibeResponse & { _favorite: boolean })[]>([]);
+  const [vibeCursor, setVibeCursor] = useState<string | null>(null);
+  const [vibeHasNext, setVibeHasNext] = useState(false);
+  const [vibeLoading, setVibeLoading] = useState(false);
+
+  // ── Item 상태 ──
+  const [items, setItems] = useState<(ArchiveItemResponse & { _favorite: boolean })[]>([]);
+  const [itemCursor, setItemCursor] = useState<string | null>(null);
+  const [itemHasNext, setItemHasNext] = useState(false);
+  const [itemLoading, setItemLoading] = useState(false);
+
+  const [initialLoading, setInitialLoading] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // ── 삭제 모달 상태 ──
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'vibe' | 'item'; id: number } | null>(null);
+
+  const numId = Number(folderId);
+  const isValidId = !isNaN(numId);
+
+  // ── Vibe 데이터 로드 ──
+  const fetchVibes = useCallback(
+    (cursor?: string) => {
+      if (!isValidId || vibeLoading) return;
+      setVibeLoading(true);
+      getArchiveVibes(numId, cursor)
+        .then((res) => {
+          const mapped = res.content.map((v) => ({ ...v, _favorite: v.isFavorite }));
+          setVibes((prev) => (cursor ? [...prev, ...mapped] : mapped));
+          setVibeCursor(res.nextCursor);
+          setVibeHasNext(res.hasNext);
+          if (!cursor && res.content.length > 0 && res.content[0].folderName && !state?.folderName) {
+            setFolderName(res.content[0].folderName);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setVibeLoading(false);
+          setInitialLoading(false);
+        });
+    },
+    [isValidId, numId, vibeLoading, state?.folderName],
+  );
+
+  // ── Item 데이터 로드 ──
+  const fetchItems = useCallback(
+    (cursor?: string) => {
+      if (!isValidId || itemLoading) return;
+      setItemLoading(true);
+      getArchiveItems(numId, cursor)
+        .then((res) => {
+          const mapped = res.content.map((i) => ({ ...i, _favorite: i.isFavorite }));
+          setItems((prev) => (cursor ? [...prev, ...mapped] : mapped));
+          setItemCursor(res.nextCursor);
+          setItemHasNext(res.hasNext);
+          if (!cursor && res.content.length > 0 && res.content[0].folderName && !state?.folderName) {
+            setFolderName(res.content[0].folderName);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setItemLoading(false);
+          setInitialLoading(false);
+        });
+    },
+    [isValidId, numId, itemLoading, state?.folderName],
+  );
+
+  // ── 초기 로드 ──
   useEffect(() => {
-    const numId = Number(folderId);
-    if (isNaN(numId)) {
-      setUseApi(false);
+    if (!isValidId) {
+      setInitialLoading(false);
       return;
     }
+    if (folderType === 'VIBE') {
+      fetchVibes();
+    } else {
+      fetchItems();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderId, folderType]);
 
-    getArchiveVibes(numId)
-      .then((res) => {
-        setVibes(res.content);
-        if (res.content.length > 0 && res.content[0].folderName) {
-          setFolderName(res.content[0].folderName);
+  // ── 무한 스크롤 ──
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        if (folderType === 'VIBE' && vibeHasNext && !vibeLoading && vibeCursor) {
+          fetchVibes(vibeCursor);
+        } else if (folderType === 'ITEM' && itemHasNext && !itemLoading && itemCursor) {
+          fetchItems(itemCursor);
         }
+      },
+      { rootMargin: '200px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [folderType, vibeHasNext, vibeLoading, vibeCursor, itemHasNext, itemLoading, itemCursor, fetchVibes, fetchItems]);
+
+  // ── 즐겨찾기 토글 ──
+  const handleVibeToggleFavorite = (archiveId: number) => {
+    toggleVibeFavorite(archiveId)
+      .then((res) => {
+        setVibes((prev) =>
+          prev.map((v) => (v.archiveId === archiveId ? { ...v, _favorite: res.favorited } : v)),
+        );
       })
-      .catch(() => setUseApi(false));
-  }, [folderId]);
+      .catch(() => {});
+  };
+
+  const handleItemToggleFavorite = (archiveItemId: number) => {
+    toggleItemFavorite(archiveItemId)
+      .then((res) => {
+        setItems((prev) =>
+          prev.map((i) => (i.archiveItemId === archiveItemId ? { ...i, _favorite: res.favorited } : i)),
+        );
+      })
+      .catch(() => {});
+  };
+
+  // ── 삭제 ──
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === 'vibe') {
+      deleteArchiveVibe(deleteTarget.id)
+        .then(() => setVibes((prev) => prev.filter((v) => v.archiveId !== deleteTarget.id)))
+        .catch(() => {});
+    } else {
+      deleteArchiveItem(deleteTarget.id)
+        .then(() => setItems((prev) => prev.filter((i) => i.archiveItemId !== deleteTarget.id)))
+        .catch(() => {});
+    }
+    setDeleteTarget(null);
+  };
+
+  // ── 빈 상태 ──
+  const isEmpty = folderType === 'VIBE' ? vibes.length === 0 : items.length === 0;
+  const isLoading = folderType === 'VIBE' ? vibeLoading : itemLoading;
 
   return (
     <PageContainer>
-      <h1 className="mb-6 text-2xl font-bold tracking-[-1px] text-high-emphasis">
-        Archive — {folderName}
-      </h1>
+      {/* 헤더 */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-[-1px] text-high-emphasis">
+          {folderName || 'Archive'}
+        </h1>
+        <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-caption">
+          {folderType === 'VIBE' ? 'Vibe' : 'Item'}
+        </span>
+      </div>
 
-      {useApi && vibes.length > 0 ? (
+      {/* 로딩 */}
+      {initialLoading && (
+        <div className="flex items-center justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        </div>
+      )}
+
+      {/* 빈 상태 */}
+      {!initialLoading && isEmpty && (
+        <div className="flex flex-col items-center justify-center py-20 text-caption">
+          <p className="text-lg font-medium">아직 저장된 항목이 없어요</p>
+          <p className="mt-1 text-sm">피드에서 마음에 드는 {folderType === 'VIBE' ? 'Vibe' : '아이템'}를 저장해보세요</p>
+        </div>
+      )}
+
+      {/* Vibe 그리드 */}
+      {!initialLoading && folderType === 'VIBE' && vibes.length > 0 && (
         <div className="columns-2 gap-4 sm:columns-3 md:columns-4 lg:columns-5">
           {vibes.map((vibe) => (
-            <div key={vibe.archiveId} className="mb-4 break-inside-avoid">
-              <div className="overflow-hidden rounded-card bg-surface">
-                {vibe.generatedImageUrl ? (
-                  <img
-                    src={vibe.generatedImageUrl}
-                    alt={vibe.phrase ?? 'Archived Vibe'}
-                    className="w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex aspect-square items-center justify-center bg-disabled text-caption">
-                    No Image
-                  </div>
-                )}
-                <div className="p-2">
-                  {vibe.phrase && (
-                    <p className="truncate text-xs font-medium text-high-emphasis">
-                      {vibe.phrase}
-                    </p>
-                  )}
-                  {vibe.memo && (
-                    <p className="mt-1 truncate text-xs text-caption">{vibe.memo}</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <VibeCard
+              key={vibe.archiveId}
+              vibe={vibe}
+              onToggleFavorite={handleVibeToggleFavorite}
+              onDelete={(id) => setDeleteTarget({ type: 'vibe', id })}
+            />
           ))}
         </div>
-      ) : (
-        <ExploreMasonryGrid seedOffset={Number(folderId) * 100 || 1} />
       )}
+
+      {/* Item 그리드 */}
+      {!initialLoading && folderType === 'ITEM' && items.length > 0 && (
+        <div className="columns-2 gap-4 sm:columns-3 md:columns-4">
+          {items.map((item) => (
+            <ItemCard
+              key={item.archiveItemId}
+              item={item}
+              onToggleFavorite={handleItemToggleFavorite}
+              onDelete={(id) => setDeleteTarget({ type: 'item', id })}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* 무한 스크롤 센티넬 */}
+      <div ref={sentinelRef} className="h-1" />
+
+      {/* 추가 로딩 */}
+      {isLoading && !initialLoading && (
+        <div className="flex items-center justify-center py-6">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        </div>
+      )}
+
+      {/* 삭제 확인 모달 */}
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+      />
     </PageContainer>
   );
 }

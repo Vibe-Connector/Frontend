@@ -674,7 +674,7 @@ export default function Archive() {
                 <SortableFolderCard
                   key={folder.id}
                   folder={folder}
-                  onClick={() => navigate(`/archive/${folder.id}`)}
+                  onClick={() => navigate(`/archive/${folder.id}`, { state: { folderType: folder.folderType, folderName: folder.title } })}
                   onEdit={(e) => handleEditClick(folder, e)}
                 />
               ))}
@@ -688,7 +688,7 @@ export default function Archive() {
             <PlainFolderCard
               key={folder.id}
               folder={folder}
-              onClick={() => navigate(`/archive/${folder.id}`)}
+              onClick={() => navigate(`/archive/${folder.id}`, { state: { folderType: folder.folderType, folderName: folder.title } })}
               onEdit={(e) => handleEditClick(folder, e)}
             />
           ))}
