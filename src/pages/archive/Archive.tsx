@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import PageContainer from '@/components/layout/PageContainer';
-import { getFolders, createFolder, updateFolder, deleteFolder } from '@/api/archive';
+import { getFolders, createFolder, updateFolder, deleteFolder, getArchiveVibes, getArchiveItems } from '@/api/archive';
 import type { FolderResponse } from '@/api/archive';
 
 type SortMode = 'CREATED' | 'NAME' | 'CUSTOM';
@@ -41,11 +41,12 @@ interface ArchiveFolder {
   folderType: string;
   sortOrder: number;
   createdAt: string;
+  previewImages: string[];
 }
 
 const FALLBACK_FOLDERS: ArchiveFolder[] = [
-  { id: '1', numericId: 1, title: 'MyItems', pinCount: 0, timeLabel: '방금', folderType: 'VIBE', sortOrder: 0, createdAt: '' },
-  { id: '2', numericId: 2, title: 'MyPlaces', pinCount: 0, timeLabel: '방금', isPrivate: true, folderType: 'ITEM', sortOrder: 1, createdAt: '' },
+  { id: '1', numericId: 1, title: 'MyItems', pinCount: 0, timeLabel: '방금', folderType: 'VIBE', sortOrder: 0, createdAt: '', previewImages: [] },
+  { id: '2', numericId: 2, title: 'MyPlaces', pinCount: 0, timeLabel: '방금', isPrivate: true, folderType: 'ITEM', sortOrder: 1, createdAt: '', previewImages: [] },
 ];
 
 function mapFolderResponse(f: FolderResponse): ArchiveFolder {
@@ -60,6 +61,7 @@ function mapFolderResponse(f: FolderResponse): ArchiveFolder {
     folderType: f.folderType,
     sortOrder: f.sortOrder,
     createdAt: f.createdAt,
+    previewImages: [],
   };
 }
 
@@ -122,13 +124,23 @@ function EditIcon() {
   );
 }
 
-function ThumbnailGrid() {
+function ThumbnailGrid({ images = [] }: { images?: string[] }) {
+  const cells = [0, 1, 2, 3];
   return (
     <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5">
-      <div className="bg-disabled" />
-      <div className="bg-disabled" />
-      <div className="bg-disabled" />
-      <div className="bg-disabled" />
+      {cells.map((i) =>
+        images[i] ? (
+          <img
+            key={i}
+            src={images[i]}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div key={i} className="bg-disabled" />
+        ),
+      )}
     </div>
   );
 }
@@ -151,7 +163,7 @@ function FolderCardContent({
         {folder.thumbnailUrl ? (
           <img src={folder.thumbnailUrl} alt={folder.title} className="h-full w-full object-cover" />
         ) : (
-          <ThumbnailGrid />
+          <ThumbnailGrid images={folder.previewImages} />
         )}
 
         {folder.isPrivate && (
@@ -470,9 +482,41 @@ export default function Archive() {
 
   useEffect(() => {
     getFolders()
-      .then((res: FolderResponse[]) => {
+      .then(async (res: FolderResponse[]) => {
         const mapped = res.map(mapFolderResponse);
-        setFolders(mapped.length > 0 ? mapped : FALLBACK_FOLDERS);
+        if (mapped.length === 0) {
+          setFolders(FALLBACK_FOLDERS);
+          return;
+        }
+        setFolders(mapped);
+
+        // 각 폴더별 프리뷰 이미지 4장 로드
+        const previews = await Promise.allSettled(
+          mapped.map(async (folder) => {
+            const fetcher =
+              folder.folderType === 'ITEM' ? getArchiveItems : getArchiveVibes;
+            const page = await fetcher(folder.numericId, undefined, 4);
+            const urls = page.content
+              .map((item) =>
+                'imageUrl' in item ? item.imageUrl : item.generatedImageUrl,
+              )
+              .filter((url): url is string => !!url);
+            return { folderId: folder.id, urls };
+          }),
+        );
+
+        setFolders((prev) => {
+          const imageMap = new Map<string, string[]>();
+          for (const result of previews) {
+            if (result.status === 'fulfilled') {
+              imageMap.set(result.value.folderId, result.value.urls);
+            }
+          }
+          return prev.map((f) => ({
+            ...f,
+            previewImages: imageMap.get(f.id) ?? f.previewImages,
+          }));
+        });
       })
       .catch(() => setFolders(FALLBACK_FOLDERS));
   }, []);
