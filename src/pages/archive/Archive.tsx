@@ -100,14 +100,6 @@ function SortIcon() {
   );
 }
 
-function DragIcon() {
-  return (
-    <svg className="h-4 w-4 text-caption" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z" />
-    </svg>
-  );
-}
-
 function ChevronDownIcon() {
   return (
     <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -149,11 +141,9 @@ function ThumbnailGrid({ images = [] }: { images?: string[] }) {
 
 function FolderCardContent({
   folder,
-  showDragHandle,
   onEdit,
 }: {
   folder: ArchiveFolder;
-  showDragHandle?: boolean;
   onEdit?: (e: React.MouseEvent) => void;
 }) {
   return (
@@ -169,13 +159,6 @@ function FolderCardContent({
         {folder.isPrivate && (
           <div className="absolute top-3 left-3">
             <LockIcon />
-          </div>
-        )}
-
-        {/* Drag handle indicator */}
-        {showDragHandle && (
-          <div className="absolute top-2 right-2 rounded-full bg-white/80 p-1 shadow-sm">
-            <DragIcon />
           </div>
         )}
 
@@ -259,7 +242,7 @@ function SortableFolderCard({
       {...attributes}
       {...listeners}
     >
-      <FolderCardContent folder={folder} showDragHandle onEdit={onEdit} />
+      <FolderCardContent folder={folder} onEdit={onEdit} />
     </div>
   );
 }
