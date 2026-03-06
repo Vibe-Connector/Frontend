@@ -29,11 +29,16 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
         // 백엔드 필터링 보완: 클라이언트에서도 folderType 일치하는 것만 필터
         const filtered = list.filter((f) => f.folderType === folderType);
         if (filtered.length === 0) {
-          const defaultFolder = await createFolder({
-            folderName: folderType === 'ITEM' ? '나의 아이템' : '나의 Vibe',
-            folderType,
-          });
-          setFolders([defaultFolder]);
+          try {
+            const defaultFolder = await createFolder({
+              folderName: folderType === 'ITEM' ? '나의 아이템' : '나의 Vibe',
+              folderType,
+            });
+            setFolders([defaultFolder]);
+          } catch {
+            setFolders([]);
+            setError('새 폴더를 만들고 저장해주세요.');
+          }
         } else {
           setFolders(filtered);
         }
