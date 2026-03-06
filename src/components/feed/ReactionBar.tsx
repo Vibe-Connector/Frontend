@@ -45,10 +45,10 @@ function WowFaceIcon({ filled }: { filled?: boolean }) {
     <svg {...iconProps} fill={filled ? 'currentColor' : 'none'}>
       <circle cx="12" cy="12" r="10" />
       {/* 눈 */}
-      <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
-      <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="10" r="1" fill={filled ? 'white' : 'currentColor'} stroke="none" />
+      <circle cx="15" cy="10" r="1" fill={filled ? 'white' : 'currentColor'} stroke="none" />
       {/* 놀란 입 */}
-      <circle cx="12" cy="16" r="2" fill={filled ? 'none' : 'none'} stroke="currentColor" strokeWidth="2" />
+      <circle cx="12" cy="16" r="2" fill="none" stroke={filled ? 'white' : 'currentColor'} strokeWidth="2" />
     </svg>
   );
 }

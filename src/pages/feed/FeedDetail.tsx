@@ -4,10 +4,15 @@ import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import BookmarkModal from '@/components/common/BookmarkModal';
+import Modal from '@/components/common/Modal';
 import { getFeed } from '@/api/feed';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getExploreVibes } from '@/api/explore';
 import { getVibeResultItems } from '@/api/vibe';
+import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
+import { useAuthStore } from '@/store/authStore';
+import { ButtonDefault } from '@/components/common';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
 import type { RecommendedItemResponse } from '@/api/vibe';
 import type { ExploreVibeResponse } from '@/api/explore';
 import type { FeedResponse, ReactionSummary } from '@/api/types';
@@ -110,6 +115,7 @@ export default function FeedDetail() {
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
+  const [selectedItem, setSelectedItem] = useState<RecommendedItemResponse | null>(null);
   const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
   const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
   const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
@@ -118,8 +124,10 @@ export default function FeedDetail() {
   const [similarCursor, setSimilarCursor] = useState<string | undefined>();
   const [similarHasNext, setSimilarHasNext] = useState(true);
   const [forbidden, setForbidden] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const fetchedRef = useRef<string | null>(null);
   const navigate = useNavigate();
+  const currentUserId = useAuthStore((s) => s.user?.userId);
 
   useEffect(() => {
     if (!feedId || feedId === 'demo') return;
@@ -174,6 +182,12 @@ export default function FeedDetail() {
               .catch(() => {/* 아카이브 상태 로드 실패 무시 */});
           })
           .catch(() => {/* 폴백 유지 */});
+        // 팔로우 상태 초기화
+        if (res.userId) {
+          getFollowStatus(res.userId)
+            .then((fs) => setIsFollowing(fs.following))
+            .catch(() => {});
+        }
       })
       .catch((err) => {
         if (err?.response?.status === 403) setForbidden(true);
@@ -230,34 +244,54 @@ export default function FeedDetail() {
   return (
     <PageContainer>
       {/* ===== User Profile ===== */}
-      <div
-        className="mb-6 flex w-fit cursor-pointer items-center gap-3"
-        onClick={() => {
-          if (feed.user.userId == null) return;
-          navigate(`/feed?userId=${feed.user.userId}`);
-        }}
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
-          {feed.user.avatar ? (
-            <img
-              src={feed.user.avatar}
-              alt={feed.user.nickname}
-              className="h-full w-full rounded-full object-cover"
-            />
-          ) : (
-            <UserIcon />
-          )}
+      <div className="mb-6 flex items-center gap-3">
+        <div
+          className="flex w-fit cursor-pointer items-center gap-3"
+          onClick={() => {
+            if (feed.user.userId == null) return;
+            navigate(`/feed?userId=${feed.user.userId}`);
+          }}
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
+            {feed.user.avatar ? (
+              <img
+                src={feed.user.avatar}
+                alt={feed.user.nickname}
+                className="h-full w-full rounded-full object-cover"
+              />
+            ) : (
+              <UserIcon />
+            )}
+          </div>
+          <span className="text-base font-semibold text-high-emphasis hover:underline">
+            {feed.user.nickname}
+          </span>
         </div>
-        <span className="text-base font-semibold text-high-emphasis hover:underline">
-          {feed.user.nickname}
-        </span>
+        {feed.user.userId != null && feed.user.userId !== currentUserId && (
+          <ButtonDefault
+            shape="pill"
+            className="px-5! py-2! text-[14px]!"
+            onClick={async () => {
+              const prev = isFollowing;
+              setIsFollowing(!prev);
+              try {
+                const res = prev ? await unfollowUser(feed.user.userId!) : await followUser(feed.user.userId!);
+                setIsFollowing(res.following);
+              } catch {
+                setIsFollowing(prev);
+              }
+            }}
+          >
+            {isFollowing ? '팔로잉' : '팔로우'}
+          </ButtonDefault>
+        )}
       </div>
 
       {/* ===== Main Content (2-column) ===== */}
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Left — Main Image + Caption */}
         <div className="shrink-0 lg:w-105">
-          <img
+          <ImageWithFallback
             src={feed.image}
             alt="Vibe 메인 이미지"
             className="w-full rounded-card object-cover shadow-card"
@@ -349,12 +383,12 @@ export default function FeedDetail() {
                   return (
                     <div
                       key={item.itemId}
-                      className="group/item relative aspect-square overflow-hidden rounded-control bg-white"
+                      className="group/item relative aspect-square cursor-pointer overflow-hidden rounded-control bg-white"
+                      onClick={() => setSelectedItem(item)}
                     >
-                      <img
-                        src={item.imageUrl ?? `https://picsum.photos/seed/item${item.itemId}/200/200`}
+                      <ImageWithFallback
+                        src={item.imageUrl}
                         alt={item.itemName}
-                        loading="lazy"
                         className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
                       />
                       {/* 호버 시 라벨 오버레이 */}
@@ -413,10 +447,9 @@ export default function FeedDetail() {
                 className="group cursor-pointer"
               >
                 <div className="relative overflow-hidden rounded-card bg-surface">
-                  <img
-                    src={vibe.generatedImageUrl ?? `https://picsum.photos/seed/vibe${vibe.feedId}/600/600`}
+                  <ImageWithFallback
+                    src={vibe.generatedImageUrl}
                     alt={vibe.caption ?? `Vibe ${vibe.feedId}`}
-                    loading="lazy"
                     className="w-full rounded-card object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="pointer-events-none absolute inset-0 rounded-card bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
@@ -512,6 +545,35 @@ export default function FeedDetail() {
             setSimilarBookmarkTarget(null);
           }}
         />
+      )}
+      {/* ===== Item Detail Modal ===== */}
+      {selectedItem && (
+        <Modal
+          open={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          image={selectedItem.imageUrl ?? undefined}
+          title={selectedItem.itemName}
+          description={`${selectedItem.brand ?? '브랜드 없음'} · ${selectedItem.categoryKey}`}
+          primaryAction={
+            selectedItem.externalLink
+              ? { label: '외부 링크 열기', onClick: () => window.open(selectedItem.externalLink!, '_blank') }
+              : undefined
+          }
+          secondaryAction={{
+            label: '아카이브 저장',
+            onClick: () => {
+              setItemBookmarkTarget(selectedItem.itemId);
+              setSelectedItem(null);
+            },
+          }}
+        >
+          <div className="space-y-1 text-sm text-caption">
+            {selectedItem.matchScore > 0 && (
+              <p>매칭 점수: <strong className="text-high-emphasis">{selectedItem.matchScore}%</strong></p>
+            )}
+            {selectedItem.recommendReason && <p>{selectedItem.recommendReason}</p>}
+          </div>
+        </Modal>
       )}
     </PageContainer>
   );

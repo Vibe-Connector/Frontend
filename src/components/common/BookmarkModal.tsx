@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getFolders, archiveVibe, archiveItem, createFolder } from '@/api/archive';
 import type { FolderResponse } from '@/api/archive';
+import { ApiError } from '@/api/types';
 
 interface BookmarkModalProps {
   open: boolean;
@@ -17,20 +18,28 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
   const [saving, setSaving] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderPublic, setNewFolderPublic] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    setError(null);
     setLoading(true);
     getFolders(folderType)
       .then(async (list) => {
         // 백엔드 필터링 보완: 클라이언트에서도 folderType 일치하는 것만 필터
         const filtered = list.filter((f) => f.folderType === folderType);
         if (filtered.length === 0) {
-          const defaultFolder = await createFolder({
-            folderName: folderType === 'ITEM' ? '나의 아이템' : '나의 Vibe',
-            folderType,
-          });
-          setFolders([defaultFolder]);
+          try {
+            const defaultFolder = await createFolder({
+              folderName: folderType === 'ITEM' ? '나의 아이템' : '나의 Vibe',
+              folderType,
+            });
+            setFolders([defaultFolder]);
+          } catch {
+            setFolders([]);
+            setError('새 폴더를 만들고 저장해주세요.');
+          }
         } else {
           setFolders(filtered);
         }
@@ -66,8 +75,12 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
         onArchived(result.archiveId);
       }
       onClose();
-    } catch {
-      // TODO: 에러 토스트
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.code === 'ARCHIVE_008') {
+        setError('폴더당 최대 20개까지 저장할 수 있습니다.');
+      } else {
+        setError(err instanceof ApiError ? err.message : '저장에 실패했습니다.');
+      }
     } finally {
       setSaving(false);
     }
@@ -80,6 +93,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
       const folder = await createFolder({
         folderName: newFolderName.trim(),
         folderType,
+        isPublic: newFolderPublic,
       });
       setFolders((prev) => [...prev, folder]);
       setNewFolderName('');
@@ -93,8 +107,14 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
         onArchived(result.archiveId);
       }
       onClose();
-    } catch {
-      // TODO: 에러 토스트
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.code === 'ARCHIVE_007') {
+        setError('폴더는 최대 5개까지 생성할 수 있습니다.');
+        setCreatingFolder(false);
+        setNewFolderName('');
+      } else {
+        setError(err instanceof ApiError ? err.message : '폴더 생성에 실패했습니다.');
+      }
     } finally {
       setSaving(false);
     }
@@ -156,37 +176,63 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
           )}
         </div>
 
+        {/* 에러 메시지 */}
+        {error && (
+          <div className="mx-5 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            {error}
+          </div>
+        )}
+
         {/* 새 폴더 만들기 */}
         <div className="border-t border-stroke px-5 py-3">
           {creatingFolder ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-                placeholder="폴더 이름"
-                autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-stroke px-3 py-2 text-sm outline-none focus:border-accent"
-              />
-              <button
-                type="button"
-                disabled={!newFolderName.trim() || saving}
-                onClick={handleCreateFolder}
-                className="shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-              >
-                저장
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreatingFolder(false);
-                  setNewFolderName('');
-                }}
-                className="shrink-0 rounded-lg border border-stroke px-3 py-2 text-sm text-caption transition-colors hover:bg-input"
-              >
-                취소
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+                  placeholder="폴더 이름"
+                  autoFocus
+                  className="min-w-0 flex-1 rounded-lg border border-stroke px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+                <button
+                  type="button"
+                  disabled={!newFolderName.trim() || saving}
+                  onClick={handleCreateFolder}
+                  className="shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatingFolder(false);
+                    setNewFolderName('');
+                    setNewFolderPublic(true);
+                  }}
+                  className="shrink-0 rounded-lg border border-stroke px-3 py-2 text-sm text-caption transition-colors hover:bg-input"
+                >
+                  취소
+                </button>
+              </div>
+              <label className="flex items-center justify-between text-xs text-default">
+                <span>{newFolderPublic ? '공개' : '비공개'}</span>
+                <button
+                  type="button"
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                    newFolderPublic ? 'bg-high-emphasis' : 'bg-gray-200'
+                  }`}
+                  onClick={() => setNewFolderPublic((v) => !v)}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      newFolderPublic ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </label>
             </div>
           ) : (
             <button

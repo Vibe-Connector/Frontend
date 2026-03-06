@@ -4,8 +4,10 @@ import PageContainer from '@/components/layout/PageContainer';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { ButtonDefault } from '@/components/common';
 import { getUserFeeds } from '@/api/feed';
-import { getFolders } from '@/api/archive';
+import { getFolders, getPublicFolders } from '@/api/archive';
+import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
+import FollowListModal from '@/components/follow/FollowListModal';
 import type { FeedResponse } from '@/api/types';
 import type { FolderResponse } from '@/api/archive';
 
@@ -43,10 +45,20 @@ function ProfileSection({
   user,
   isFollowing,
   onToggleFollow,
+  isOwnProfile,
+  followerCount,
+  followingCount,
+  onFollowerClick,
+  onFollowingClick,
 }: {
   user: { nickname: string; avatarUrl: string | null; isFollowing: boolean };
   isFollowing: boolean;
   onToggleFollow: () => void;
+  isOwnProfile: boolean;
+  followerCount: number;
+  followingCount: number;
+  onFollowerClick: () => void;
+  onFollowingClick: () => void;
 }) {
   return (
     <div className="flex items-center gap-4">
@@ -57,10 +69,23 @@ function ProfileSection({
           <UserIcon />
         )}
       </div>
-      <span className="text-[16px] font-medium text-high-emphasis">{user.nickname}</span>
-      <ButtonDefault shape="pill" className="px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
-        {isFollowing ? '팔로잉' : '팔로우'}
-      </ButtonDefault>
+      <div className="flex flex-col">
+        <span className="text-[16px] font-medium text-high-emphasis">{user.nickname}</span>
+        <span className="text-sm text-caption">
+          <button type="button" onClick={onFollowerClick} className="hover:underline">
+            팔로워 <strong>{followerCount}</strong>
+          </button>
+          {' · '}
+          <button type="button" onClick={onFollowingClick} className="hover:underline">
+            팔로잉 <strong>{followingCount}</strong>
+          </button>
+        </span>
+      </div>
+      {!isOwnProfile && (
+        <ButtonDefault shape="pill" className="ml-auto px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
+          {isFollowing ? '팔로잉' : '팔로우'}
+        </ButtonDefault>
+      )}
     </div>
   );
 }
@@ -154,6 +179,24 @@ function CreateCollectionCard({ onClick }: { onClick: () => void }) {
 
 type ArchiveFilter = 'ALL' | 'VIBE' | 'ITEM';
 
+function ChevronLeftIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+const VISIBLE_COUNT = 5;
+
 function CollectionsSection({
   collections,
   onCollectionClick,
@@ -166,8 +209,25 @@ function CollectionsSection({
   isOwnProfile: boolean;
 }) {
   const [filter, setFilter] = useState<ArchiveFilter>('ALL');
+  const [startIndex, setStartIndex] = useState(0);
 
   const filtered = filter === 'ALL' ? collections : collections.filter((c) => c.folderType === filter);
+
+  // 필터 변경 시 시작 인덱스 초기화
+  const handleFilterChange = (key: ArchiveFilter) => {
+    setFilter(key);
+    setStartIndex(0);
+  };
+
+  // "만들기" 카드도 포함한 전체 아이템 수
+  const totalItems = filtered.length + (isOwnProfile ? 1 : 0);
+  const canGoPrev = startIndex > 0;
+  const canGoNext = startIndex + VISIBLE_COUNT < totalItems;
+
+  const visibleCollections = filtered.slice(startIndex, startIndex + VISIBLE_COUNT);
+  // "만들기" 카드가 현재 윈도우에 포함되는지 계산
+  const createCardIndex = filtered.length; // 만들기 카드의 가상 인덱스
+  const showCreateCard = isOwnProfile && createCardIndex >= startIndex && createCardIndex < startIndex + VISIBLE_COUNT;
 
   const tabs: { key: ArchiveFilter; label: string }[] = [
     { key: 'ALL', label: '전체' },
@@ -188,10 +248,10 @@ function CollectionsSection({
           <button
             key={tab.key}
             type="button"
-            onClick={() => setFilter(tab.key)}
+            onClick={() => handleFilterChange(tab.key)}
             className={`rounded-pill px-3 py-1 text-[13px] font-medium transition-colors ${
               filter === tab.key
-                ? 'bg-high-emphasis text-background'
+                ? 'bg-high-emphasis text-white'
                 : 'border border-stroke text-caption hover:text-high-emphasis'
             }`}
           >
@@ -202,11 +262,37 @@ function CollectionsSection({
 
       {/* 폴더 목록 */}
       {filtered.length > 0 ? (
-        <div className="flex gap-5 overflow-x-auto pb-2">
-          {filtered.map((col) => (
-            <CollectionCard key={col.id} collection={col} onClick={() => onCollectionClick(col)} />
-          ))}
-          {isOwnProfile && <CreateCollectionCard onClick={onCreateClick} />}
+        <div className="flex items-center gap-2">
+          {/* 좌측 화살표 */}
+          <button
+            type="button"
+            onClick={() => setStartIndex((i) => Math.max(i - VISIBLE_COUNT, 0))}
+            disabled={!canGoPrev}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stroke transition-colors ${
+              canGoPrev ? 'cursor-pointer text-high-emphasis hover:bg-surface' : 'invisible'
+            }`}
+          >
+            <ChevronLeftIcon />
+          </button>
+
+          <div className="flex min-w-0 flex-1 gap-5">
+            {visibleCollections.map((col) => (
+              <CollectionCard key={col.id} collection={col} onClick={() => onCollectionClick(col)} />
+            ))}
+            {showCreateCard && <CreateCollectionCard onClick={onCreateClick} />}
+          </div>
+
+          {/* 우측 화살표 */}
+          <button
+            type="button"
+            onClick={() => setStartIndex((i) => Math.min(i + VISIBLE_COUNT, totalItems - VISIBLE_COUNT))}
+            disabled={!canGoNext}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stroke transition-colors ${
+              canGoNext ? 'cursor-pointer text-high-emphasis hover:bg-surface' : 'invisible'
+            }`}
+          >
+            <ChevronRightIcon />
+          </button>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-10 text-caption">
@@ -225,6 +311,9 @@ function CollectionsSection({
 // --- Main Component ---
 export default function Feed() {
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowModal, setShowFollowModal] = useState<'followers' | 'following' | null>(null);
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
   const [searchParams] = useSearchParams();
@@ -267,13 +356,19 @@ export default function Feed() {
   useEffect(() => {
     fetchFeeds();
 
-    getFolders()
+    const folderPromise = isOwnProfile
+      ? getFolders()
+      : targetUserId
+        ? getPublicFolders(targetUserId)
+        : getFolders();
+
+    folderPromise
       .then((folders: FolderResponse[]) => {
         const mapped: Collection[] = folders.map((f) => ({
           id: String(f.folderId),
           name: f.folderName,
           pinCount: f.archiveCount,
-          isPrivate: false,
+          isPrivate: f.isPublic === false,
           thumbnailUrl: f.thumbnailUrl,
           createdAt: new Date(f.createdAt).toLocaleDateString('ko-KR'),
           folderType: (f.folderType === 'ITEM' ? 'ITEM' : 'VIBE') as 'VIBE' | 'ITEM',
@@ -281,6 +376,17 @@ export default function Feed() {
         setCollections(mapped.length > 0 ? mapped : []);
       })
       .catch(() => setCollections([]));
+
+    // 팔로우 상태 초기화
+    if (targetUserId) {
+      getFollowStatus(targetUserId)
+        .then((res) => {
+          setIsFollowing(res.following);
+          setFollowerCount(res.followerCount);
+          setFollowingCount(res.followingCount);
+        })
+        .catch(() => {});
+    }
   }, [fetchFeeds, targetUserId]);
 
   // 무한스크롤 for feeds
@@ -309,10 +415,40 @@ export default function Feed() {
     isFollowing,
   };
 
+  const handleToggleFollow = useCallback(async () => {
+    if (!targetUserId) return;
+    const prevFollowing = isFollowing;
+    const prevFollowerCount = followerCount;
+
+    // optimistic update
+    setIsFollowing(!prevFollowing);
+    setFollowerCount(prevFollowing ? prevFollowerCount - 1 : prevFollowerCount + 1);
+
+    try {
+      const res = prevFollowing ? await unfollowUser(targetUserId) : await followUser(targetUserId);
+      setIsFollowing(res.following);
+      setFollowerCount(res.followerCount);
+      setFollowingCount(res.followingCount);
+    } catch {
+      // 롤백
+      setIsFollowing(prevFollowing);
+      setFollowerCount(prevFollowerCount);
+    }
+  }, [targetUserId, isFollowing, followerCount]);
+
   return (
     <PageContainer>
       {/* Profile Section */}
-      <ProfileSection user={user} isFollowing={isFollowing} onToggleFollow={() => setIsFollowing((prev) => !prev)} />
+      <ProfileSection
+        user={user}
+        isFollowing={isFollowing}
+        onToggleFollow={handleToggleFollow}
+        isOwnProfile={isOwnProfile}
+        followerCount={followerCount}
+        followingCount={followingCount}
+        onFollowerClick={() => setShowFollowModal('followers')}
+        onFollowingClick={() => setShowFollowModal('following')}
+      />
 
       {/* Photo Grid */}
       <section className="mt-6">
@@ -332,10 +468,20 @@ export default function Feed() {
       {/* Collections Section */}
       <CollectionsSection
         collections={collections}
-        onCollectionClick={(col) => navigate(`/archive/${col.id}`, { state: { folderType: col.folderType, folderName: col.name } })}
+        onCollectionClick={(col) => navigate(`/archive/${col.id}`, { state: { folderType: col.folderType, folderName: col.name, ...(isOwnProfile ? {} : { ownerUserId: targetUserId }) } })}
         onCreateClick={() => navigate('/archive')}
         isOwnProfile={isOwnProfile}
       />
+
+      {/* Follow List Modal */}
+      {targetUserId && (
+        <FollowListModal
+          open={showFollowModal !== null}
+          onClose={() => setShowFollowModal(null)}
+          userId={targetUserId}
+          initialTab={showFollowModal ?? 'followers'}
+        />
+      )}
     </PageContainer>
   );
 }

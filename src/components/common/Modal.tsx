@@ -65,7 +65,7 @@ function Modal({
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 font-pretendard"
     >
-      <div className="relative w-full max-w-[400px] overflow-hidden rounded-card bg-white shadow-card">
+      <div className="relative w-full max-w-100 overflow-hidden rounded-card bg-white shadow-card">
         {/* Close button */}
         {showCloseButton && (
           <button
@@ -110,7 +110,7 @@ function Modal({
           {/* Description */}
           {description && (
             <p
-              className={`mt-2 text-[14px] leading-[21px] font-normal tracking-[-1px] text-caption ${icon || image ? "text-center" : ""}`}
+              className={`mt-2 text-[14px] leading-5.25 font-normal tracking-[-1px] text-caption ${icon || image ? "text-center" : ""}`}
             >
               {description}
             </p>

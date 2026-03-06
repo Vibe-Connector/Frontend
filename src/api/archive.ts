@@ -10,6 +10,7 @@ export interface FolderResponse {
   thumbnailUrl: string | null;
   sortOrder: number;
   archiveCount: number;
+  isPublic: boolean;
   createdAt: string;
 }
 
@@ -18,12 +19,14 @@ export interface FolderCreateRequest {
   folderType: 'VIBE' | 'ITEM';
   thumbnailUrl?: string;
   sortOrder?: number;
+  isPublic?: boolean;
 }
 
 export interface FolderUpdateRequest {
   folderName?: string;
   thumbnailUrl?: string;
   sortOrder?: number;
+  isPublic?: boolean;
 }
 
 export interface ArchiveVibeResponse {
@@ -73,6 +76,10 @@ export interface ArchiveItemRequest {
 export const getFolders = (folderType?: string): Promise<FolderResponse[]> =>
   client.get('/archives/folders', { params: { folderType } });
 
+// GET /api/v1/archives/users/{userId}/folders (타인의 공개 폴더 조회)
+export const getPublicFolders = (userId: number): Promise<FolderResponse[]> =>
+  client.get(`/archives/users/${userId}/folders`);
+
 // POST /api/v1/archives/folders
 export const createFolder = (data: FolderCreateRequest): Promise<FolderResponse> =>
   client.post('/archives/folders', data);
@@ -84,6 +91,16 @@ export const updateFolder = (folderId: number, data: FolderUpdateRequest): Promi
 // DELETE /api/v1/archives/folders/{folderId}
 export const deleteFolder = (folderId: number): Promise<void> =>
   client.delete(`/archives/folders/${folderId}`);
+
+// ── 공개 폴더 컨텐츠 조회 (타인 폴더) ──
+
+// GET /api/v1/archives/users/{userId}/folders/{folderId}/vibes
+export const getPublicFolderVibes = (userId: number, folderId: number, cursor?: string, size = 20): Promise<PageResponse<ArchiveVibeResponse>> =>
+  client.get(`/archives/users/${userId}/folders/${folderId}/vibes`, { params: { cursor, size } });
+
+// GET /api/v1/archives/users/{userId}/folders/{folderId}/items
+export const getPublicFolderItems = (userId: number, folderId: number, cursor?: string, size = 20): Promise<PageResponse<ArchiveItemResponse>> =>
+  client.get(`/archives/users/${userId}/folders/${folderId}/items`, { params: { cursor, size } });
 
 // ── Vibe 아카이브 ──
 

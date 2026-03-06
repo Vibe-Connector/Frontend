@@ -58,7 +58,7 @@ const Sidebar = () => {
   const exploreItems: SidebarItemData[] = [
     { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/explore'); } },
     { icon: <FeedIcon />, label: 'My Feed', onClick: () => navigate('/feed') },
-    { icon: <ArchiveIcon />, label: 'Archive', onClick: () => navigate('/archive') },
+    { icon: <ArchiveIcon />, label: 'My Archive', onClick: () => navigate('/archive') },
   ];
 
   const profileItems: SidebarItemData[] = [
