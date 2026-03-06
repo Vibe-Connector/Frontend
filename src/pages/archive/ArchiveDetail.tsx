@@ -243,6 +243,10 @@ export default function ArchiveDetail() {
   const [initialLoading, setInitialLoading] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // ── 정렬 ──
+  const [sortOrder, setSortOrder] = useState<'NEWEST' | 'OLDEST'>('NEWEST');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
   // ── 삭제 모달 상태 ──
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'vibe' | 'item'; id: number } | null>(null);
 
@@ -368,6 +372,10 @@ export default function ArchiveDetail() {
     setDeleteTarget(null);
   };
 
+  // ── 정렬된 데이터 ──
+  const sortedVibes = sortOrder === 'OLDEST' ? [...vibes].reverse() : vibes;
+  const sortedItems = sortOrder === 'OLDEST' ? [...items].reverse() : items;
+
   // ── 빈 상태 ──
   const isEmpty = folderType === 'VIBE' ? vibes.length === 0 : items.length === 0;
   const isLoading = folderType === 'VIBE' ? vibeLoading : itemLoading;
@@ -384,9 +392,38 @@ export default function ArchiveDetail() {
             {folderType === 'VIBE' ? vibes.length : items.length}개 항목
           </p>
         </div>
-        <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-caption">
-          {folderType === 'VIBE' ? 'Vibe' : 'Item'}
-        </span>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <button
+              type="button"
+              className="flex cursor-pointer items-center gap-1 rounded-full border border-stroke bg-white px-3 py-1 text-xs font-medium text-high-emphasis transition-colors hover:bg-gray-50"
+              onClick={() => setShowSortDropdown((v) => !v)}
+            >
+              {sortOrder === 'NEWEST' ? '최신순' : '오래된순'}
+              <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" /></svg>
+            </button>
+            {showSortDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
+                <div className="absolute right-0 z-20 mt-1 w-28 overflow-hidden rounded-lg border border-stroke bg-white shadow-lg">
+                  {(['NEWEST', 'OLDEST'] as const).map((order) => (
+                    <button
+                      key={order}
+                      type="button"
+                      className={`w-full cursor-pointer px-3 py-2 text-left text-xs transition-colors hover:bg-gray-50 ${sortOrder === order ? 'font-semibold text-high-emphasis' : 'text-default'}`}
+                      onClick={() => { setSortOrder(order); setShowSortDropdown(false); }}
+                    >
+                      {order === 'NEWEST' ? '최신순' : '오래된순'}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-caption">
+            {folderType === 'VIBE' ? 'Vibe' : 'Item'}
+          </span>
+        </div>
       </div>
 
       {/* 로딩 */}
@@ -407,7 +444,7 @@ export default function ArchiveDetail() {
       {/* Vibe 그리드 */}
       {!initialLoading && folderType === 'VIBE' && vibes.length > 0 && (
         <div className="columns-2 gap-4 sm:columns-3 md:columns-4 lg:columns-5">
-          {vibes.map((vibe) => (
+          {sortedVibes.map((vibe) => (
             <VibeCard
               key={vibe.archiveId}
               vibe={vibe}
@@ -422,7 +459,7 @@ export default function ArchiveDetail() {
       {/* Item 그리드 */}
       {!initialLoading && folderType === 'ITEM' && items.length > 0 && (
         <div className="columns-2 gap-4 sm:columns-3 md:columns-4">
-          {items.map((item) => (
+          {sortedItems.map((item) => (
             <ItemCard
               key={item.archiveItemId}
               item={item}
