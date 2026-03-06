@@ -468,7 +468,7 @@ export default function Feed() {
       {/* Collections Section */}
       <CollectionsSection
         collections={collections}
-        onCollectionClick={(col) => navigate(`/archive/${col.id}`, { state: { folderType: col.folderType, folderName: col.name } })}
+        onCollectionClick={(col) => navigate(`/archive/${col.id}`, { state: { folderType: col.folderType, folderName: col.name, ...(isOwnProfile ? {} : { ownerUserId: targetUserId }) } })}
         onCreateClick={() => navigate('/archive')}
         isOwnProfile={isOwnProfile}
       />

@@ -4,6 +4,8 @@ import PageContainer from '@/components/layout/PageContainer';
 import {
   getArchiveVibes,
   getArchiveItems,
+  getPublicFolderVibes,
+  getPublicFolderItems,
   toggleVibeFavorite,
   toggleItemFavorite,
   deleteArchiveVibe,
@@ -83,11 +85,13 @@ function VibeCard({
   onToggleFavorite,
   onDelete,
   onClick,
+  readOnly,
 }: {
   vibe: ArchiveVibeResponse & { _favorite: boolean };
   onToggleFavorite: (archiveId: number) => void;
   onDelete: (archiveId: number) => void;
   onClick: () => void;
+  readOnly?: boolean;
 }) {
   return (
     <div className="group mb-4 break-inside-avoid">
@@ -117,27 +121,27 @@ function VibeCard({
             <p className="mt-1 line-clamp-2 text-xs text-caption">{vibe.memo}</p>
           )}
 
-          {/* 액션 버튼 */}
-          <div className="mt-2 flex items-center gap-2">
-            {/* 책갈피 — 항상 표시 (아카이브 상태) */}
-            <button
-              type="button"
-              onClick={() => onDelete(vibe.archiveId)}
-              className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
-              aria-label="책갈피 해제"
-            >
-              <BookmarkIcon filled />
-            </button>
-            {/* 즐겨찾기 — 체크 시 항상, 미체크 시 호버 */}
-            <button
-              type="button"
-              onClick={() => onToggleFavorite(vibe.archiveId)}
-              className={`rounded-full p-1 transition-all ${vibe._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
-              aria-label={vibe._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-            >
-              <PinIcon filled={vibe._favorite} />
-            </button>
-          </div>
+          {/* 액션 버튼 — 읽기 전용 시 숨김 */}
+          {!readOnly && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onDelete(vibe.archiveId)}
+                className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
+                aria-label="책갈피 해제"
+              >
+                <BookmarkIcon filled />
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleFavorite(vibe.archiveId)}
+                className={`rounded-full p-1 transition-all ${vibe._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
+                aria-label={vibe._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+              >
+                <PinIcon filled={vibe._favorite} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -150,10 +154,12 @@ function ItemCard({
   item,
   onToggleFavorite,
   onDelete,
+  readOnly,
 }: {
   item: ArchiveItemResponse & { _favorite: boolean };
   onToggleFavorite: (archiveItemId: number) => void;
   onDelete: (archiveItemId: number) => void;
+  readOnly?: boolean;
 }) {
   return (
     <div className="group mb-4 break-inside-avoid">
@@ -190,27 +196,27 @@ function ItemCard({
             <p className="mt-1 line-clamp-2 text-xs text-caption">{item.memo}</p>
           )}
 
-          {/* 액션 버튼 */}
-          <div className="mt-2 flex items-center gap-2">
-            {/* 책갈피 — 항상 표시 (아카이브 상태) */}
-            <button
-              type="button"
-              onClick={() => onDelete(item.archiveItemId)}
-              className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
-              aria-label="책갈피 해제"
-            >
-              <BookmarkIcon filled />
-            </button>
-            {/* 즐겨찾기 — 체크 시 항상, 미체크 시 호버 */}
-            <button
-              type="button"
-              onClick={() => onToggleFavorite(item.archiveItemId)}
-              className={`rounded-full p-1 transition-all ${item._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
-              aria-label={item._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
-            >
-              <PinIcon filled={item._favorite} />
-            </button>
-          </div>
+          {/* 액션 버튼 — 읽기 전용 시 숨김 */}
+          {!readOnly && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onDelete(item.archiveItemId)}
+                className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
+                aria-label="책갈피 해제"
+              >
+                <BookmarkIcon filled />
+              </button>
+              <button
+                type="button"
+                onClick={() => onToggleFavorite(item.archiveItemId)}
+                className={`rounded-full p-1 transition-all ${item._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
+                aria-label={item._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
+              >
+                <PinIcon filled={item._favorite} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -223,9 +229,11 @@ export default function ArchiveDetail() {
   const { folderId } = useParams<{ folderId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as { folderType?: string; folderName?: string } | null;
+  const state = location.state as { folderType?: string; folderName?: string; ownerUserId?: number } | null;
 
   const folderType: 'VIBE' | 'ITEM' = state?.folderType === 'ITEM' ? 'ITEM' : 'VIBE';
+  const ownerUserId = state?.ownerUserId ?? null;
+  const isReadOnly = ownerUserId !== null;
   const [folderName, setFolderName] = useState(state?.folderName ?? '');
 
   // ── Vibe 상태 ──
@@ -258,7 +266,10 @@ export default function ArchiveDetail() {
     (cursor?: string) => {
       if (!isValidId || vibeLoading) return;
       setVibeLoading(true);
-      getArchiveVibes(numId, cursor)
+      const request = ownerUserId
+        ? getPublicFolderVibes(ownerUserId, numId, cursor)
+        : getArchiveVibes(numId, cursor);
+      request
         .then((res) => {
           const mapped = res.content.map((v) => ({ ...v, _favorite: v.isFavorite }));
           setVibes((prev) => (cursor ? [...prev, ...mapped] : mapped));
@@ -274,7 +285,7 @@ export default function ArchiveDetail() {
           setInitialLoading(false);
         });
     },
-    [isValidId, numId, vibeLoading, state?.folderName],
+    [isValidId, numId, vibeLoading, state?.folderName, ownerUserId],
   );
 
   // ── Item 데이터 로드 ──
@@ -282,7 +293,10 @@ export default function ArchiveDetail() {
     (cursor?: string) => {
       if (!isValidId || itemLoading) return;
       setItemLoading(true);
-      getArchiveItems(numId, cursor)
+      const request = ownerUserId
+        ? getPublicFolderItems(ownerUserId, numId, cursor)
+        : getArchiveItems(numId, cursor);
+      request
         .then((res) => {
           const mapped = res.content.map((i) => ({ ...i, _favorite: i.isFavorite }));
           setItems((prev) => (cursor ? [...prev, ...mapped] : mapped));
@@ -298,7 +312,7 @@ export default function ArchiveDetail() {
           setInitialLoading(false);
         });
     },
-    [isValidId, numId, itemLoading, state?.folderName],
+    [isValidId, numId, itemLoading, state?.folderName, ownerUserId],
   );
 
   // ── 초기 로드 ──
@@ -451,6 +465,7 @@ export default function ArchiveDetail() {
               onToggleFavorite={handleVibeToggleFavorite}
               onDelete={(id) => setDeleteTarget({ type: 'vibe', id })}
               onClick={() => { if (vibe.feedId) navigate(`/feed/${vibe.feedId}`); }}
+              readOnly={isReadOnly}
             />
           ))}
         </div>
@@ -465,6 +480,7 @@ export default function ArchiveDetail() {
               item={item}
               onToggleFavorite={handleItemToggleFavorite}
               onDelete={(id) => setDeleteTarget({ type: 'item', id })}
+              readOnly={isReadOnly}
             />
           ))}
         </div>

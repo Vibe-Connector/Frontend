@@ -92,6 +92,16 @@ export const updateFolder = (folderId: number, data: FolderUpdateRequest): Promi
 export const deleteFolder = (folderId: number): Promise<void> =>
   client.delete(`/archives/folders/${folderId}`);
 
+// ── 공개 폴더 컨텐츠 조회 (타인 폴더) ──
+
+// GET /api/v1/archives/users/{userId}/folders/{folderId}/vibes
+export const getPublicFolderVibes = (userId: number, folderId: number, cursor?: string, size = 20): Promise<PageResponse<ArchiveVibeResponse>> =>
+  client.get(`/archives/users/${userId}/folders/${folderId}/vibes`, { params: { cursor, size } });
+
+// GET /api/v1/archives/users/{userId}/folders/{folderId}/items
+export const getPublicFolderItems = (userId: number, folderId: number, cursor?: string, size = 20): Promise<PageResponse<ArchiveItemResponse>> =>
+  client.get(`/archives/users/${userId}/folders/${folderId}/items`, { params: { cursor, size } });
+
 // ── Vibe 아카이브 ──
 
 // GET /api/v1/archives/vibes
