@@ -179,6 +179,24 @@ function CreateCollectionCard({ onClick }: { onClick: () => void }) {
 
 type ArchiveFilter = 'ALL' | 'VIBE' | 'ITEM';
 
+function ChevronLeftIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+const VISIBLE_COUNT = 5;
+
 function CollectionsSection({
   collections,
   onCollectionClick,
@@ -191,8 +209,25 @@ function CollectionsSection({
   isOwnProfile: boolean;
 }) {
   const [filter, setFilter] = useState<ArchiveFilter>('ALL');
+  const [startIndex, setStartIndex] = useState(0);
 
   const filtered = filter === 'ALL' ? collections : collections.filter((c) => c.folderType === filter);
+
+  // 필터 변경 시 시작 인덱스 초기화
+  const handleFilterChange = (key: ArchiveFilter) => {
+    setFilter(key);
+    setStartIndex(0);
+  };
+
+  // "만들기" 카드도 포함한 전체 아이템 수
+  const totalItems = filtered.length + (isOwnProfile ? 1 : 0);
+  const canGoPrev = startIndex > 0;
+  const canGoNext = startIndex + VISIBLE_COUNT < totalItems;
+
+  const visibleCollections = filtered.slice(startIndex, startIndex + VISIBLE_COUNT);
+  // "만들기" 카드가 현재 윈도우에 포함되는지 계산
+  const createCardIndex = filtered.length; // 만들기 카드의 가상 인덱스
+  const showCreateCard = isOwnProfile && createCardIndex >= startIndex && createCardIndex < startIndex + VISIBLE_COUNT;
 
   const tabs: { key: ArchiveFilter; label: string }[] = [
     { key: 'ALL', label: '전체' },
@@ -213,7 +248,7 @@ function CollectionsSection({
           <button
             key={tab.key}
             type="button"
-            onClick={() => setFilter(tab.key)}
+            onClick={() => handleFilterChange(tab.key)}
             className={`rounded-pill px-3 py-1 text-[13px] font-medium transition-colors ${
               filter === tab.key
                 ? 'bg-high-emphasis text-white'
@@ -227,11 +262,37 @@ function CollectionsSection({
 
       {/* 폴더 목록 */}
       {filtered.length > 0 ? (
-        <div className="flex gap-5 overflow-x-auto pb-2">
-          {filtered.map((col) => (
-            <CollectionCard key={col.id} collection={col} onClick={() => onCollectionClick(col)} />
-          ))}
-          {isOwnProfile && <CreateCollectionCard onClick={onCreateClick} />}
+        <div className="flex items-center gap-2">
+          {/* 좌측 화살표 */}
+          <button
+            type="button"
+            onClick={() => setStartIndex((i) => Math.max(i - VISIBLE_COUNT, 0))}
+            disabled={!canGoPrev}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stroke transition-colors ${
+              canGoPrev ? 'cursor-pointer text-high-emphasis hover:bg-surface' : 'invisible'
+            }`}
+          >
+            <ChevronLeftIcon />
+          </button>
+
+          <div className="flex min-w-0 flex-1 gap-5">
+            {visibleCollections.map((col) => (
+              <CollectionCard key={col.id} collection={col} onClick={() => onCollectionClick(col)} />
+            ))}
+            {showCreateCard && <CreateCollectionCard onClick={onCreateClick} />}
+          </div>
+
+          {/* 우측 화살표 */}
+          <button
+            type="button"
+            onClick={() => setStartIndex((i) => Math.min(i + VISIBLE_COUNT, totalItems - VISIBLE_COUNT))}
+            disabled={!canGoNext}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stroke transition-colors ${
+              canGoNext ? 'cursor-pointer text-high-emphasis hover:bg-surface' : 'invisible'
+            }`}
+          >
+            <ChevronRightIcon />
+          </button>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-10 text-caption">
