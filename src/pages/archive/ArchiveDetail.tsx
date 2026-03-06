@@ -376,9 +376,14 @@ export default function ArchiveDetail() {
     <PageContainer>
       {/* 헤더 */}
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-[-1px] text-high-emphasis">
-          {folderName || 'Archive'}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-[-1px] text-high-emphasis">
+            {folderName || 'Archive'}
+          </h1>
+          <p className="mt-1 text-sm text-caption">
+            {folderType === 'VIBE' ? vibes.length : items.length}개 항목
+          </p>
+        </div>
         <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-caption">
           {folderType === 'VIBE' ? 'Vibe' : 'Item'}
         </span>

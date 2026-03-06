@@ -197,7 +197,7 @@ function FolderCardContent({
         {folder.title}
       </p>
       <p className="text-[13px] tracking-[-0.5px] text-caption">
-        {folder.timeLabel}
+        {folder.pinCount}개 항목 · {folder.timeLabel}
       </p>
     </>
   );
