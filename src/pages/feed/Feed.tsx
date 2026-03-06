@@ -43,10 +43,12 @@ function ProfileSection({
   user,
   isFollowing,
   onToggleFollow,
+  isOwnProfile,
 }: {
   user: { nickname: string; avatarUrl: string | null; isFollowing: boolean };
   isFollowing: boolean;
   onToggleFollow: () => void;
+  isOwnProfile: boolean;
 }) {
   return (
     <div className="flex items-center gap-4">
@@ -58,9 +60,11 @@ function ProfileSection({
         )}
       </div>
       <span className="text-[16px] font-medium text-high-emphasis">{user.nickname}</span>
-      <ButtonDefault shape="pill" className="px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
-        {isFollowing ? '팔로잉' : '팔로우'}
-      </ButtonDefault>
+      {!isOwnProfile && (
+        <ButtonDefault shape="pill" className="px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
+          {isFollowing ? '팔로잉' : '팔로우'}
+        </ButtonDefault>
+      )}
     </div>
   );
 }
@@ -312,7 +316,7 @@ export default function Feed() {
   return (
     <PageContainer>
       {/* Profile Section */}
-      <ProfileSection user={user} isFollowing={isFollowing} onToggleFollow={() => setIsFollowing((prev) => !prev)} />
+      <ProfileSection user={user} isFollowing={isFollowing} onToggleFollow={() => setIsFollowing((prev) => !prev)} isOwnProfile={isOwnProfile} />
 
       {/* Photo Grid */}
       <section className="mt-6">
