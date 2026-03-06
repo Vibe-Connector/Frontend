@@ -561,12 +561,22 @@ export default function Archive() {
   );
 
   const handleCreateFolder = (name: string, type: 'VIBE' | 'ITEM') => {
+    if (folders.length >= 5) {
+      alert('폴더는 최대 5개까지 생성할 수 있습니다.');
+      return;
+    }
     createFolder({ folderName: name, folderType: type })
       .then((res: FolderResponse) => {
         setFolders((prev) => [...prev, mapFolderResponse(res)]);
         setShowCreateModal(false);
       })
-      .catch(() => alert('폴더 생성에 실패했습니다.'));
+      .catch((err: unknown) => {
+        const msg =
+          err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ARCHIVE_007'
+            ? '폴더는 최대 5개까지 생성할 수 있습니다.'
+            : '폴더 생성에 실패했습니다.';
+        alert(msg);
+      });
   };
 
   const handleEditClick = (folder: ArchiveFolder, e: React.MouseEvent) => {

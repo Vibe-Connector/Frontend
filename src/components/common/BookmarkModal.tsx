@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getFolders, archiveVibe, archiveItem, createFolder } from '@/api/archive';
 import type { FolderResponse } from '@/api/archive';
+import { ApiError } from '@/api/types';
 
 interface BookmarkModalProps {
   open: boolean;
@@ -17,9 +18,11 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
   const [saving, setSaving] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    setError(null);
     setLoading(true);
     getFolders(folderType)
       .then(async (list) => {
@@ -66,8 +69,8 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
         onArchived(result.archiveId);
       }
       onClose();
-    } catch {
-      // TODO: 에러 토스트
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : '저장에 실패했습니다.');
     } finally {
       setSaving(false);
     }
@@ -93,8 +96,14 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
         onArchived(result.archiveId);
       }
       onClose();
-    } catch {
-      // TODO: 에러 토스트
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.code === 'ARCHIVE_007') {
+        setError('폴더는 최대 5개까지 생성할 수 있습니다.');
+        setCreatingFolder(false);
+        setNewFolderName('');
+      } else {
+        setError(err instanceof ApiError ? err.message : '폴더 생성에 실패했습니다.');
+      }
     } finally {
       setSaving(false);
     }
@@ -155,6 +164,13 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
             </>
           )}
         </div>
+
+        {/* 에러 메시지 */}
+        {error && (
+          <div className="mx-5 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            {error}
+          </div>
+        )}
 
         {/* 새 폴더 만들기 */}
         <div className="border-t border-stroke px-5 py-3">
