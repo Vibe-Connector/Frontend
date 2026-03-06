@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TabToggle from '../common/TabToggle';
 import ProfileDropdown from '../common/ProfileDropdown';
@@ -80,6 +80,7 @@ const Header = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -98,6 +99,18 @@ const Header = () => {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  // 외부 클릭 시 알림 패널 닫기 (벨 버튼 + 패널 영역 모두 포함하는 wrapper ref)
+  useEffect(() => {
+    if (!notificationOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+        setNotificationOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [notificationOpen]);
+
   // 알림 클릭 → 읽음 처리 + 해당 페이지 이동
   const handleNotificationClick = useCallback(async (notification: NotificationResponse) => {
     if (!notification.isRead) {
@@ -108,10 +121,9 @@ const Header = () => {
     }
     setNotificationOpen(false);
 
-    // linkUrl 또는 타입별 라우팅
-    if (notification.linkUrl) {
-      navigate(notification.linkUrl);
-    } else if (notification.referenceId != null) {
+    // referenceId 기반 타입별 프론트엔드 라우팅
+    // (BE linkUrl은 REST API 경로이므로 사용하지 않음)
+    if (notification.referenceId != null) {
       const routes: Record<string, string> = {
         FEED_REACTION: `/feed/${notification.referenceId}`,
         FEED_COMMENT: `/feed/${notification.referenceId}`,
@@ -166,7 +178,7 @@ const Header = () => {
         {/* Right Section */}
         <div className="flex-1 flex items-center justify-end gap-5">
           {/* 알림 벨 아이콘 + 드롭다운 패널 */}
-          <div className="relative">
+          <div ref={notificationRef} className="relative">
             <button
               className="relative cursor-pointer"
               onClick={() => setNotificationOpen((prev) => !prev)}

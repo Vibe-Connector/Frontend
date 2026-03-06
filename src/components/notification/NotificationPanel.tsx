@@ -23,20 +23,8 @@ const NotificationPanel = ({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [loadedOnce, setLoadedOnce] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  // 외부 클릭 시 닫기
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [isOpen, onClose]);
 
   // 패널 열릴 때 초기 데이터 로드
   useEffect(() => {
@@ -44,6 +32,7 @@ const NotificationPanel = ({
     setNotifications([]);
     setCursor(undefined);
     setHasMore(true);
+    setLoadedOnce(false);
     loadNotifications(undefined);
   }, [isOpen]);
 
@@ -59,9 +48,10 @@ const NotificationPanel = ({
         setCursor(String(items[items.length - 1].notificationId));
       }
     } catch {
-      /* 실패 시 무시 */
+      /* API 실패 시 빈 목록 유지 */
     } finally {
       setLoading(false);
+      setLoadedOnce(true);
     }
   };
 
@@ -87,11 +77,10 @@ const NotificationPanel = ({
 
   if (!isOpen) return null;
 
+  const showEmpty = notifications.length === 0 && !loading && loadedOnce;
+
   return (
-    <div
-      ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-[380px] max-h-[480px] bg-white rounded-xl shadow-lg border border-black/10 z-50 flex flex-col overflow-hidden"
-    >
+    <div className="absolute right-0 top-full mt-2 w-[380px] max-h-[480px] bg-white rounded-xl shadow-lg border border-black/10 z-50 flex flex-col overflow-hidden">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-black/10">
         <h3 className="text-sm font-semibold text-high-emphasis">알림</h3>
@@ -110,8 +99,8 @@ const NotificationPanel = ({
         className="flex-1 overflow-y-auto"
         onScroll={handleScroll}
       >
-        {notifications.length === 0 && !loading && (
-          <div className="flex items-center justify-center h-40 text-sm text-muted">
+        {showEmpty && (
+          <div className="flex items-center justify-center h-40 text-sm text-gray-400">
             새로운 알림이 없습니다
           </div>
         )}
