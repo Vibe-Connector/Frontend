@@ -216,7 +216,7 @@ function CollectionsSection({
             onClick={() => setFilter(tab.key)}
             className={`rounded-pill px-3 py-1 text-[13px] font-medium transition-colors ${
               filter === tab.key
-                ? 'bg-high-emphasis text-background'
+                ? 'bg-high-emphasis text-white'
                 : 'border border-stroke text-caption hover:text-high-emphasis'
             }`}
           >
