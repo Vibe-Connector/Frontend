@@ -5,6 +5,7 @@ import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { ButtonDefault } from '@/components/common';
 import { getUserFeeds } from '@/api/feed';
 import { getFolders } from '@/api/archive';
+import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
 import type { FeedResponse } from '@/api/types';
 import type { FolderResponse } from '@/api/archive';
@@ -44,11 +45,19 @@ function ProfileSection({
   isFollowing,
   onToggleFollow,
   isOwnProfile,
+  followerCount,
+  followingCount,
+  onFollowerClick,
+  onFollowingClick,
 }: {
   user: { nickname: string; avatarUrl: string | null; isFollowing: boolean };
   isFollowing: boolean;
   onToggleFollow: () => void;
   isOwnProfile: boolean;
+  followerCount: number;
+  followingCount: number;
+  onFollowerClick: () => void;
+  onFollowingClick: () => void;
 }) {
   return (
     <div className="flex items-center gap-4">
@@ -59,9 +68,20 @@ function ProfileSection({
           <UserIcon />
         )}
       </div>
-      <span className="text-[16px] font-medium text-high-emphasis">{user.nickname}</span>
+      <div className="flex flex-col">
+        <span className="text-[16px] font-medium text-high-emphasis">{user.nickname}</span>
+        <span className="text-sm text-caption">
+          <button type="button" onClick={onFollowerClick} className="hover:underline">
+            팔로워 <strong>{followerCount}</strong>
+          </button>
+          {' · '}
+          <button type="button" onClick={onFollowingClick} className="hover:underline">
+            팔로잉 <strong>{followingCount}</strong>
+          </button>
+        </span>
+      </div>
       {!isOwnProfile && (
-        <ButtonDefault shape="pill" className="px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
+        <ButtonDefault shape="pill" className="ml-auto px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
           {isFollowing ? '팔로잉' : '팔로우'}
         </ButtonDefault>
       )}
@@ -229,6 +249,8 @@ function CollectionsSection({
 // --- Main Component ---
 export default function Feed() {
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
   const [searchParams] = useSearchParams();
@@ -285,6 +307,17 @@ export default function Feed() {
         setCollections(mapped.length > 0 ? mapped : []);
       })
       .catch(() => setCollections([]));
+
+    // 팔로우 상태 초기화
+    if (targetUserId) {
+      getFollowStatus(targetUserId)
+        .then((res) => {
+          setIsFollowing(res.following);
+          setFollowerCount(res.followerCount);
+          setFollowingCount(res.followingCount);
+        })
+        .catch(() => {});
+    }
   }, [fetchFeeds, targetUserId]);
 
   // 무한스크롤 for feeds
@@ -313,10 +346,40 @@ export default function Feed() {
     isFollowing,
   };
 
+  const handleToggleFollow = useCallback(async () => {
+    if (!targetUserId) return;
+    const prevFollowing = isFollowing;
+    const prevFollowerCount = followerCount;
+
+    // optimistic update
+    setIsFollowing(!prevFollowing);
+    setFollowerCount(prevFollowing ? prevFollowerCount - 1 : prevFollowerCount + 1);
+
+    try {
+      const res = prevFollowing ? await unfollowUser(targetUserId) : await followUser(targetUserId);
+      setIsFollowing(res.following);
+      setFollowerCount(res.followerCount);
+      setFollowingCount(res.followingCount);
+    } catch {
+      // 롤백
+      setIsFollowing(prevFollowing);
+      setFollowerCount(prevFollowerCount);
+    }
+  }, [targetUserId, isFollowing, followerCount]);
+
   return (
     <PageContainer>
       {/* Profile Section */}
-      <ProfileSection user={user} isFollowing={isFollowing} onToggleFollow={() => setIsFollowing((prev) => !prev)} isOwnProfile={isOwnProfile} />
+      <ProfileSection
+        user={user}
+        isFollowing={isFollowing}
+        onToggleFollow={handleToggleFollow}
+        isOwnProfile={isOwnProfile}
+        followerCount={followerCount}
+        followingCount={followingCount}
+        onFollowerClick={() => {}}
+        onFollowingClick={() => {}}
+      />
 
       {/* Photo Grid */}
       <section className="mt-6">

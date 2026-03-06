@@ -6,6 +6,7 @@ import type { PageResponse } from './types';
 export interface FollowResponse {
   following: boolean;
   followerCount: number;
+  followingCount: number;
 }
 
 export interface FollowUserResponse {
