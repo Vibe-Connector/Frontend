@@ -56,7 +56,7 @@ function mapFolderResponse(f: FolderResponse): ArchiveFolder {
     title: f.folderName,
     pinCount: f.archiveCount,
     timeLabel: new Date(f.createdAt).toLocaleDateString('ko-KR'),
-    isPrivate: false,
+    isPrivate: f.isPublic === false,
     thumbnailUrl: f.thumbnailUrl,
     folderType: f.folderType,
     sortOrder: f.sortOrder,
@@ -257,21 +257,23 @@ function FolderEditModal({
 }: {
   folder: ArchiveFolder;
   onClose: () => void;
-  onRename: (newName: string) => void;
+  onRename: (newName: string, isPublic: boolean) => void;
   onDelete: () => void;
 }) {
   const [editName, setEditName] = useState(folder.title);
+  const [isPublic, setIsPublic] = useState(!folder.isPrivate);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleRename = () => {
     const trimmed = editName.trim();
-    if (!trimmed || trimmed === folder.title) {
+    const publicChanged = isPublic !== !folder.isPrivate;
+    if ((!trimmed || trimmed === folder.title) && !publicChanged) {
       onClose();
       return;
     }
     setSaving(true);
-    onRename(trimmed);
+    onRename(trimmed || folder.title, isPublic);
   };
 
   return (
@@ -326,6 +328,28 @@ function FolderEditModal({
               disabled={saving}
             />
 
+            {/* Public/Private toggle */}
+            <label className="mt-3 flex items-center justify-between text-sm font-medium text-default">
+              <span>공개 설정</span>
+              <button
+                type="button"
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  isPublic ? 'bg-high-emphasis' : 'bg-gray-200'
+                }`}
+                onClick={() => setIsPublic((v) => !v)}
+                disabled={saving}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    isPublic ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </label>
+            <p className="mt-0.5 text-xs text-caption">
+              {isPublic ? '다른 사용자가 이 폴더를 볼 수 있습니다' : '나만 볼 수 있는 비공개 폴더입니다'}
+            </p>
+
             <div className="mt-5 flex gap-2">
               <button
                 type="button"
@@ -359,17 +383,18 @@ function FolderCreateModal({
 }: {
   folderType: 'VIBE' | 'ITEM';
   onClose: () => void;
-  onCreate: (name: string, type: 'VIBE' | 'ITEM') => void;
+  onCreate: (name: string, type: 'VIBE' | 'ITEM', isPublic: boolean) => void;
 }) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'VIBE' | 'ITEM'>(folderType);
+  const [isPublic, setIsPublic] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const handleCreate = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     setSaving(true);
-    onCreate(trimmed, type);
+    onCreate(trimmed, type, isPublic);
   };
 
   return (
@@ -415,6 +440,27 @@ function FolderCreateModal({
             </button>
           ))}
         </div>
+
+        <label className="mt-3 flex items-center justify-between text-sm font-medium text-default">
+          <span>공개 설정</span>
+          <button
+            type="button"
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+              isPublic ? 'bg-high-emphasis' : 'bg-gray-200'
+            }`}
+            onClick={() => setIsPublic((v) => !v)}
+            disabled={saving}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                isPublic ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </label>
+        <p className="mt-0.5 text-xs text-caption">
+          {isPublic ? '다른 사용자가 이 폴더를 볼 수 있습니다' : '나만 볼 수 있는 비공개 폴더입니다'}
+        </p>
 
         <div className="mt-5 flex gap-2">
           <button
@@ -544,13 +590,13 @@ export default function Archive() {
     [],
   );
 
-  const handleCreateFolder = (name: string, type: 'VIBE' | 'ITEM') => {
+  const handleCreateFolder = (name: string, type: 'VIBE' | 'ITEM', isPublic: boolean) => {
     if (folders.length >= 5) {
       setShowCreateModal(false);
       setErrorMessage('폴더는 최대 5개까지 생성할 수 있습니다.');
       return;
     }
-    createFolder({ folderName: name, folderType: type })
+    createFolder({ folderName: name, folderType: type, isPublic })
       .then((res: FolderResponse) => {
         setFolders((prev) => [...prev, mapFolderResponse(res)]);
         setShowCreateModal(false);
@@ -570,17 +616,17 @@ export default function Archive() {
     setEditTarget(folder);
   };
 
-  const handleRename = (newName: string) => {
+  const handleRename = (newName: string, isPublic: boolean) => {
     if (!editTarget) return;
     const folderId = editTarget.numericId;
-    updateFolder(folderId, { folderName: newName })
+    updateFolder(folderId, { folderName: newName, isPublic })
       .then(() => {
         setFolders((prev) =>
-          prev.map((f) => (f.numericId === folderId ? { ...f, title: newName } : f)),
+          prev.map((f) => (f.numericId === folderId ? { ...f, title: newName, isPrivate: !isPublic } : f)),
         );
         setEditTarget(null);
       })
-      .catch(() => alert('폴더 이름 변경에 실패했습니다.'));
+      .catch(() => alert('폴더 수정에 실패했습니다.'));
   };
 
   const handleDelete = () => {

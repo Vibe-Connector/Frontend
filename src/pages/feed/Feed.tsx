@@ -4,7 +4,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { ButtonDefault } from '@/components/common';
 import { getUserFeeds } from '@/api/feed';
-import { getFolders } from '@/api/archive';
+import { getFolders, getPublicFolders } from '@/api/archive';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
 import FollowListModal from '@/components/follow/FollowListModal';
@@ -356,13 +356,19 @@ export default function Feed() {
   useEffect(() => {
     fetchFeeds();
 
-    getFolders()
+    const folderPromise = isOwnProfile
+      ? getFolders()
+      : targetUserId
+        ? getPublicFolders(targetUserId)
+        : getFolders();
+
+    folderPromise
       .then((folders: FolderResponse[]) => {
         const mapped: Collection[] = folders.map((f) => ({
           id: String(f.folderId),
           name: f.folderName,
           pinCount: f.archiveCount,
-          isPrivate: false,
+          isPrivate: f.isPublic === false,
           thumbnailUrl: f.thumbnailUrl,
           createdAt: new Date(f.createdAt).toLocaleDateString('ko-KR'),
           folderType: (f.folderType === 'ITEM' ? 'ITEM' : 'VIBE') as 'VIBE' | 'ITEM',

@@ -18,6 +18,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
   const [saving, setSaving] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderPublic, setNewFolderPublic] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
       const folder = await createFolder({
         folderName: newFolderName.trim(),
         folderType,
+        isPublic: newFolderPublic,
       });
       setFolders((prev) => [...prev, folder]);
       setNewFolderName('');
@@ -184,34 +186,53 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
         {/* 새 폴더 만들기 */}
         <div className="border-t border-stroke px-5 py-3">
           {creatingFolder ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-                placeholder="폴더 이름"
-                autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-stroke px-3 py-2 text-sm outline-none focus:border-accent"
-              />
-              <button
-                type="button"
-                disabled={!newFolderName.trim() || saving}
-                onClick={handleCreateFolder}
-                className="shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-              >
-                저장
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreatingFolder(false);
-                  setNewFolderName('');
-                }}
-                className="shrink-0 rounded-lg border border-stroke px-3 py-2 text-sm text-caption transition-colors hover:bg-input"
-              >
-                취소
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+                  placeholder="폴더 이름"
+                  autoFocus
+                  className="min-w-0 flex-1 rounded-lg border border-stroke px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+                <button
+                  type="button"
+                  disabled={!newFolderName.trim() || saving}
+                  onClick={handleCreateFolder}
+                  className="shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  저장
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatingFolder(false);
+                    setNewFolderName('');
+                    setNewFolderPublic(true);
+                  }}
+                  className="shrink-0 rounded-lg border border-stroke px-3 py-2 text-sm text-caption transition-colors hover:bg-input"
+                >
+                  취소
+                </button>
+              </div>
+              <label className="flex items-center justify-between text-xs text-default">
+                <span>{newFolderPublic ? '공개' : '비공개'}</span>
+                <button
+                  type="button"
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                    newFolderPublic ? 'bg-high-emphasis' : 'bg-gray-200'
+                  }`}
+                  onClick={() => setNewFolderPublic((v) => !v)}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                      newFolderPublic ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </label>
             </div>
           ) : (
             <button

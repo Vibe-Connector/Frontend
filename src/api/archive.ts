@@ -10,6 +10,7 @@ export interface FolderResponse {
   thumbnailUrl: string | null;
   sortOrder: number;
   archiveCount: number;
+  isPublic: boolean;
   createdAt: string;
 }
 
@@ -18,12 +19,14 @@ export interface FolderCreateRequest {
   folderType: 'VIBE' | 'ITEM';
   thumbnailUrl?: string;
   sortOrder?: number;
+  isPublic?: boolean;
 }
 
 export interface FolderUpdateRequest {
   folderName?: string;
   thumbnailUrl?: string;
   sortOrder?: number;
+  isPublic?: boolean;
 }
 
 export interface ArchiveVibeResponse {
@@ -72,6 +75,10 @@ export interface ArchiveItemRequest {
 // GET /api/v1/archives/folders
 export const getFolders = (folderType?: string): Promise<FolderResponse[]> =>
   client.get('/archives/folders', { params: { folderType } });
+
+// GET /api/v1/archives/users/{userId}/folders (타인의 공개 폴더 조회)
+export const getPublicFolders = (userId: number): Promise<FolderResponse[]> =>
+  client.get(`/archives/users/${userId}/folders`);
 
 // POST /api/v1/archives/folders
 export const createFolder = (data: FolderCreateRequest): Promise<FolderResponse> =>
