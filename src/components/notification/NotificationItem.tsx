@@ -1,3 +1,4 @@
+import type React from 'react';
 import type { NotificationResponse } from '@/api/notification';
 
 // ── SVG Icons (타입별) ──
@@ -32,7 +33,7 @@ const BellSmallIcon = () => (
   </svg>
 );
 
-const typeIconMap: Record<string, () => JSX.Element> = {
+const typeIconMap: Record<string, () => React.ReactElement> = {
   FEED_REACTION: HeartIcon,
   FEED_COMMENT: ChatIcon,
   FOLLOW: UserIcon,
@@ -60,10 +61,12 @@ function formatTime(isoString: string): string {
 interface NotificationItemProps {
   notification: NotificationResponse;
   onClick: (notification: NotificationResponse) => void;
+  groupCount?: number;
 }
 
-const NotificationItem = ({ notification, onClick }: NotificationItemProps) => {
+const NotificationItem = ({ notification, onClick, groupCount }: NotificationItemProps) => {
   const IconComponent = typeIconMap[notification.type] ?? BellSmallIcon;
+  const hasGroup = groupCount !== undefined && groupCount > 1;
 
   return (
     <button
@@ -74,14 +77,23 @@ const NotificationItem = ({ notification, onClick }: NotificationItemProps) => {
       onClick={() => onClick(notification)}
     >
       {/* 타입 아이콘 */}
-      <div className="mt-0.5 shrink-0">
+      <div className="mt-0.5 shrink-0 relative">
         <IconComponent />
+        {hasGroup && (
+          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            {groupCount}
+          </span>
+        )}
       </div>
 
       {/* 내용 */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-high-emphasis truncate">{notification.title}</p>
-        <p className="text-xs text-caption mt-0.5 line-clamp-2">{notification.body}</p>
+        <p className="text-xs text-caption mt-0.5 line-clamp-2">
+          {hasGroup
+            ? `${notification.body.split('님')[0]}님 외 ${groupCount - 1}명`
+            : notification.body}
+        </p>
         <p className="text-xs text-muted mt-1">{formatTime(notification.createdAt)}</p>
       </div>
 
