@@ -4,6 +4,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import BookmarkModal from '@/components/common/BookmarkModal';
+import Modal from '@/components/common/Modal';
 import { getFeed } from '@/api/feed';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getExploreVibes } from '@/api/explore';
@@ -11,6 +12,7 @@ import { getVibeResultItems } from '@/api/vibe';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
 import { ButtonDefault } from '@/components/common';
+import ImageWithFallback from '@/components/common/ImageWithFallback';
 import type { RecommendedItemResponse } from '@/api/vibe';
 import type { ExploreVibeResponse } from '@/api/explore';
 import type { FeedResponse, ReactionSummary } from '@/api/types';
@@ -113,6 +115,7 @@ export default function FeedDetail() {
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
+  const [selectedItem, setSelectedItem] = useState<RecommendedItemResponse | null>(null);
   const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
   const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
   const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
@@ -288,7 +291,7 @@ export default function FeedDetail() {
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Left — Main Image + Caption */}
         <div className="shrink-0 lg:w-105">
-          <img
+          <ImageWithFallback
             src={feed.image}
             alt="Vibe 메인 이미지"
             className="w-full rounded-card object-cover shadow-card"
@@ -380,12 +383,12 @@ export default function FeedDetail() {
                   return (
                     <div
                       key={item.itemId}
-                      className="group/item relative aspect-square overflow-hidden rounded-control bg-white"
+                      className="group/item relative aspect-square cursor-pointer overflow-hidden rounded-control bg-white"
+                      onClick={() => setSelectedItem(item)}
                     >
-                      <img
-                        src={item.imageUrl ?? `https://picsum.photos/seed/item${item.itemId}/200/200`}
+                      <ImageWithFallback
+                        src={item.imageUrl}
                         alt={item.itemName}
-                        loading="lazy"
                         className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
                       />
                       {/* 호버 시 라벨 오버레이 */}
@@ -444,10 +447,9 @@ export default function FeedDetail() {
                 className="group cursor-pointer"
               >
                 <div className="relative overflow-hidden rounded-card bg-surface">
-                  <img
-                    src={vibe.generatedImageUrl ?? `https://picsum.photos/seed/vibe${vibe.feedId}/600/600`}
+                  <ImageWithFallback
+                    src={vibe.generatedImageUrl}
                     alt={vibe.caption ?? `Vibe ${vibe.feedId}`}
-                    loading="lazy"
                     className="w-full rounded-card object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                   <div className="pointer-events-none absolute inset-0 rounded-card bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
@@ -543,6 +545,35 @@ export default function FeedDetail() {
             setSimilarBookmarkTarget(null);
           }}
         />
+      )}
+      {/* ===== Item Detail Modal ===== */}
+      {selectedItem && (
+        <Modal
+          open={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          image={selectedItem.imageUrl ?? undefined}
+          title={selectedItem.itemName}
+          description={`${selectedItem.brand ?? '브랜드 없음'} · ${selectedItem.categoryKey}`}
+          primaryAction={
+            selectedItem.externalLink
+              ? { label: '외부 링크 열기', onClick: () => window.open(selectedItem.externalLink!, '_blank') }
+              : undefined
+          }
+          secondaryAction={{
+            label: '아카이브 저장',
+            onClick: () => {
+              setItemBookmarkTarget(selectedItem.itemId);
+              setSelectedItem(null);
+            },
+          }}
+        >
+          <div className="space-y-1 text-sm text-caption">
+            {selectedItem.matchScore > 0 && (
+              <p>매칭 점수: <strong className="text-high-emphasis">{selectedItem.matchScore}%</strong></p>
+            )}
+            {selectedItem.recommendReason && <p>{selectedItem.recommendReason}</p>}
+          </div>
+        </Modal>
       )}
     </PageContainer>
   );

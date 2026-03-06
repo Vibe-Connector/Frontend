@@ -92,7 +92,7 @@ export default function FollowListModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleBackdropClick}
     >
-      <div className="w-[380px] rounded-card bg-white shadow-xl">
+      <div className="w-95 rounded-card bg-white shadow-xl">
         {/* 헤더 + 탭 */}
         <div className="flex border-b border-stroke">
           {(['followers', 'following'] as Tab[]).map((t) => (

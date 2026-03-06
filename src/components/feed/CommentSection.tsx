@@ -100,7 +100,7 @@ export default function CommentSection({ feedId }: CommentSectionProps) {
       ) : comments.length === 0 ? (
         <p className="py-2 text-sm text-low-emphasis">아직 댓글이 없습니다.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="max-h-100 space-y-3 overflow-y-auto">
           {comments.map((c) => (
             <CommentItem
               key={c.commentId}
