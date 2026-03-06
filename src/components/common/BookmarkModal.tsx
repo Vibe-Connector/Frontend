@@ -70,7 +70,11 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
       }
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof ApiError ? err.message : '저장에 실패했습니다.');
+      if (err instanceof ApiError && err.code === 'ARCHIVE_008') {
+        setError('폴더당 최대 20개까지 저장할 수 있습니다.');
+      } else {
+        setError(err instanceof ApiError ? err.message : '저장에 실패했습니다.');
+      }
     } finally {
       setSaving(false);
     }
