@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import PageContainer from '@/components/layout/PageContainer';
-import { ButtonDefault, TextInput, Dropdown } from '@/components/common';
+import { ButtonDefault, TextInput, Dropdown, ProfileAvatarUpload } from '@/components/common';
 import { getMyProfile, updateProfile } from '@/api/user';
 import type { UserProfileResponse } from '@/api/user';
 import { useAuthStore } from '@/store/authStore';
@@ -107,11 +107,14 @@ export default function Profile() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {/* Avatar */}
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-disabled">
-            {displayAvatar && (
-              <img src={displayAvatar} alt={displayName} className="h-full w-full object-cover" />
-            )}
-          </div>
+          <ProfileAvatarUpload
+            currentImageUrl={displayAvatar}
+            displayName={displayName}
+            onUpload={(newUrl) => {
+              setProfile((prev) => prev ? { ...prev, profileImageUrl: newUrl } : prev);
+              updateAuthUser({ profileImageUrl: newUrl });
+            }}
+          />
 
           <div>
             <p className="text-[18px] font-semibold tracking-[-1px] text-high-emphasis">

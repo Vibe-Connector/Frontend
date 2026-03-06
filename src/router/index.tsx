@@ -8,6 +8,7 @@ import Login from '@/pages/auth/Login';
 import SignUp from '@/pages/auth/SignUp';
 import Explore from '@/pages/home/Explore';
 import Feed from '@/pages/feed/Feed';
+import FeedCreate from '@/pages/feed/FeedCreate';
 import FeedDetail from '@/pages/feed/FeedDetail';
 import VibeConnector from '@/pages/vibe/VibeConnector';
 import VibeConnectorConnect from '@/pages/vibe/VibeConnectorConnect';
@@ -17,6 +18,7 @@ import VibeConnectorResult from '@/pages/vibe/VibeConnectorResult';
 import Profile from '@/pages/mypage/Profile';
 import ProfileSettings from '@/pages/mypage/ProfileSettings';
 import ProfileAnalysisReport from '@/pages/mypage/ProfileAnalysisReport';
+import SessionHistory from '@/pages/mypage/SessionHistory';
 import Archive from '@/pages/archive/Archive';
 import ArchiveDetail from '@/pages/archive/ArchiveDetail';
 import OAuthCallback from '@/pages/auth/OAuthCallback';
@@ -53,6 +55,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { path: '/feed', element: <Feed /> },
+          { path: '/feed/create', element: <FeedCreate /> },
           { path: '/feed/:feedId', element: <FeedDetail /> },
 
           // VibeConnector
@@ -66,6 +69,7 @@ export const router = createBrowserRouter([
           { path: '/profile', element: <Profile /> },
           { path: '/profile/settings', element: <ProfileSettings /> },
           { path: '/profile/report', element: <ProfileAnalysisReport /> },
+          { path: '/profile/sessionhistory', element: <SessionHistory /> },
 
           // Archive (Sidebar: profile 모드)
           { path: '/archive', element: <Archive /> },

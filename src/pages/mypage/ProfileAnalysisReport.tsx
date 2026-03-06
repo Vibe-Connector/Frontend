@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonOrange } from '@/components/common';
+import RecentSessions from '@/components/common/RecentSessions';
 import { useMonthlyReport, useYearlyReport } from '@/hooks/useReport';
 import type { MonthlyReportResponse, YearlyReportResponse } from '@/api/report';
 
@@ -647,6 +648,11 @@ export default function ProfileAnalysisReport() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 최근 Vibe 세션 */}
+      <div className="mb-8">
+        <RecentSessions />
       </div>
 
       {/* 컨텐츠 */}

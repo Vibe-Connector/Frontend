@@ -54,7 +54,7 @@ function WeatherIcon({ icon, isActive }: { icon: string; isActive: boolean }) {
 
 export default function WeatherSelector({ weatherIntensities, onWeatherIntensityChange }: WeatherSelectorProps) {
   return (
-    <div className="rounded-card bg-surface p-6">
+    <div className="rounded-card bg-white/50 p-6">
       <h3 className="mb-4 text-center text-sm font-medium text-high-emphasis">
         오늘의 날씨는 어때요?
       </h3>
@@ -80,15 +80,15 @@ export default function WeatherSelector({ weatherIntensities, onWeatherIntensity
                 <input
                   type="range"
                   min={0}
-                  max={100}
-                  step={5}
+                  max={80}
+                  step={20}
                   value={intensity}
                   onChange={(e) => onWeatherIntensityChange(weather.id, Number(e.target.value))}
                   className="vibe-slider h-2 flex-1 cursor-pointer appearance-none rounded-pill bg-disabled"
                   aria-label={`${weather.label} 강도`}
                 />
-                <span className={`w-10 text-right text-xs font-medium tabular-nums ${isActive ? 'text-high-emphasis' : 'text-caption'}`}>
-                  {intensity}%
+                <span className={`w-14 text-right text-xs font-medium ${isActive ? 'text-high-emphasis' : 'text-caption'}`}>
+                  {intensity === 0 ? '—' : intensity === 20 ? '약간' : intensity === 40 ? '보통' : intensity === 60 ? '강' : '매우 강'}
                 </span>
               </div>
             </div>

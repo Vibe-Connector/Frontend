@@ -1,7 +1,10 @@
+export type EmotionZone = 'warm' | 'energy' | 'calm' | 'melancholy' | 'dream';
+
 export interface MoodKeyword {
   id: string;
   label: string;
   color: string;
+  zone?: EmotionZone;
 }
 
 export interface TimeOption {
