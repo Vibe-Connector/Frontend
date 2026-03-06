@@ -474,6 +474,7 @@ export default function Archive() {
   const [filterType, setFilterType] = useState<FilterType>('ALL');
   const [editTarget, setEditTarget] = useState<ArchiveFolder | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -562,7 +563,8 @@ export default function Archive() {
 
   const handleCreateFolder = (name: string, type: 'VIBE' | 'ITEM') => {
     if (folders.length >= 5) {
-      alert('폴더는 최대 5개까지 생성할 수 있습니다.');
+      setShowCreateModal(false);
+      setErrorMessage('폴더는 최대 5개까지 생성할 수 있습니다.');
       return;
     }
     createFolder({ folderName: name, folderType: type })
@@ -571,11 +573,12 @@ export default function Archive() {
         setShowCreateModal(false);
       })
       .catch((err: unknown) => {
+        setShowCreateModal(false);
         const msg =
           err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ARCHIVE_007'
             ? '폴더는 최대 5개까지 생성할 수 있습니다.'
             : '폴더 생성에 실패했습니다.';
-        alert(msg);
+        setErrorMessage(msg);
       });
   };
 
@@ -723,6 +726,27 @@ export default function Archive() {
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateFolder}
         />
+      )}
+
+      {/* Error Modal */}
+      {errorMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setErrorMessage(null)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative z-10 w-80 rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-high-emphasis">알림</h3>
+            <p className="mt-2 text-sm text-caption">{errorMessage}</p>
+            <button
+              type="button"
+              className="mt-5 w-full cursor-pointer rounded-lg bg-high-emphasis px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
+              onClick={() => setErrorMessage(null)}
+            >
+              확인
+            </button>
+          </div>
+        </div>
       )}
     </PageContainer>
   );
