@@ -92,7 +92,7 @@ export default function FollowListModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleBackdropClick}
     >
-      <div className="w-[380px] rounded-card bg-background shadow-xl">
+      <div className="w-[380px] rounded-card bg-white shadow-xl">
         {/* 헤더 + 탭 */}
         <div className="flex border-b border-stroke">
           {(['followers', 'following'] as Tab[]).map((t) => (
@@ -109,12 +109,14 @@ export default function FollowListModal({
           ))}
         </div>
 
-        {/* 리스트 */}
-        <div ref={scrollRef} onScroll={handleScroll} className="max-h-[400px] overflow-y-auto">
+        {/* 리스트 — 고정 높이로 탭 전환 시 크기 유지 */}
+        <div ref={scrollRef} onScroll={handleScroll} className="h-100 overflow-y-auto">
           {list.length === 0 && !loading ? (
-            <p className="py-10 text-center text-sm text-caption">
-              {tab === 'followers' ? '팔로워가 없습니다' : '팔로잉이 없습니다'}
-            </p>
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-caption">
+                {tab === 'followers' ? '팔로워가 없습니다' : '팔로잉이 없습니다'}
+              </p>
+            </div>
           ) : (
             list.map((user) => (
               <button

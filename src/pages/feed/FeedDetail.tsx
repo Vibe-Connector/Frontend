@@ -8,6 +8,9 @@ import { getFeed } from '@/api/feed';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getExploreVibes } from '@/api/explore';
 import { getVibeResultItems } from '@/api/vibe';
+import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
+import { useAuthStore } from '@/store/authStore';
+import { ButtonDefault } from '@/components/common';
 import type { RecommendedItemResponse } from '@/api/vibe';
 import type { ExploreVibeResponse } from '@/api/explore';
 import type { FeedResponse, ReactionSummary } from '@/api/types';
@@ -118,8 +121,10 @@ export default function FeedDetail() {
   const [similarCursor, setSimilarCursor] = useState<string | undefined>();
   const [similarHasNext, setSimilarHasNext] = useState(true);
   const [forbidden, setForbidden] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const fetchedRef = useRef<string | null>(null);
   const navigate = useNavigate();
+  const currentUserId = useAuthStore((s) => s.user?.userId);
 
   useEffect(() => {
     if (!feedId || feedId === 'demo') return;
@@ -174,6 +179,12 @@ export default function FeedDetail() {
               .catch(() => {/* 아카이브 상태 로드 실패 무시 */});
           })
           .catch(() => {/* 폴백 유지 */});
+        // 팔로우 상태 초기화
+        if (res.userId) {
+          getFollowStatus(res.userId)
+            .then((fs) => setIsFollowing(fs.following))
+            .catch(() => {});
+        }
       })
       .catch((err) => {
         if (err?.response?.status === 403) setForbidden(true);
@@ -230,27 +241,47 @@ export default function FeedDetail() {
   return (
     <PageContainer>
       {/* ===== User Profile ===== */}
-      <div
-        className="mb-6 flex w-fit cursor-pointer items-center gap-3"
-        onClick={() => {
-          if (feed.user.userId == null) return;
-          navigate(`/feed?userId=${feed.user.userId}`);
-        }}
-      >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
-          {feed.user.avatar ? (
-            <img
-              src={feed.user.avatar}
-              alt={feed.user.nickname}
-              className="h-full w-full rounded-full object-cover"
-            />
-          ) : (
-            <UserIcon />
-          )}
+      <div className="mb-6 flex items-center gap-3">
+        <div
+          className="flex w-fit cursor-pointer items-center gap-3"
+          onClick={() => {
+            if (feed.user.userId == null) return;
+            navigate(`/feed?userId=${feed.user.userId}`);
+          }}
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
+            {feed.user.avatar ? (
+              <img
+                src={feed.user.avatar}
+                alt={feed.user.nickname}
+                className="h-full w-full rounded-full object-cover"
+              />
+            ) : (
+              <UserIcon />
+            )}
+          </div>
+          <span className="text-base font-semibold text-high-emphasis hover:underline">
+            {feed.user.nickname}
+          </span>
         </div>
-        <span className="text-base font-semibold text-high-emphasis hover:underline">
-          {feed.user.nickname}
-        </span>
+        {feed.user.userId != null && feed.user.userId !== currentUserId && (
+          <ButtonDefault
+            shape="pill"
+            className="px-5! py-2! text-[14px]!"
+            onClick={async () => {
+              const prev = isFollowing;
+              setIsFollowing(!prev);
+              try {
+                const res = prev ? await unfollowUser(feed.user.userId!) : await followUser(feed.user.userId!);
+                setIsFollowing(res.following);
+              } catch {
+                setIsFollowing(prev);
+              }
+            }}
+          >
+            {isFollowing ? '팔로잉' : '팔로우'}
+          </ButtonDefault>
+        )}
       </div>
 
       {/* ===== Main Content (2-column) ===== */}
