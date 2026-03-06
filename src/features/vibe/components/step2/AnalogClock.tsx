@@ -107,11 +107,11 @@ export default function AnalogClock({
   // Hour highlight color based on time of day
   const getHourColor = (h: number): string => {
     const h24 = amPm === 'PM' && h !== 12 ? h + 12 : amPm === 'AM' && h === 12 ? 0 : h;
-    if (h24 < 6) return '#D9D4FF'; // dawn
-    if (h24 < 12) return '#FFF0C8'; // morning
-    if (h24 < 18) return '#FFD6E0'; // afternoon
-    if (h24 < 21) return '#FFD4C4'; // evening
-    return '#C8E6FF'; // night
+    if (h24 < 6) return '#7572FF40'; // dawn
+    if (h24 < 12) return '#F4B22540'; // morning
+    if (h24 < 18) return '#0090F940'; // afternoon
+    if (h24 < 21) return '#F1863B40'; // evening
+    return '#82898E40'; // night
   };
 
   return (

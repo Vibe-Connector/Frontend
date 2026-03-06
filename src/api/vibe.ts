@@ -90,6 +90,7 @@ export interface VibeHistoryResponse {
   sessionId: number;
   resultId: number;
   phrase: string | null;
+  generatedImageUrl: string | null;
   moods: string[];
   time: string;
   weather: string;

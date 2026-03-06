@@ -1,12 +1,39 @@
-import type { MoodKeyword, TimeOption, WeatherOption, PlaceOption, CompanionOption } from './types';
+import type { MoodKeyword, EmotionZone, TimeOption, WeatherOption, PlaceOption, CompanionOption } from './types';
+
+/* ── Emotion Zone 설정 ── */
+
+export const EMOTION_ZONES: Record<EmotionZone, { label: string; chipColor: string }> = {
+  warm:       { label: '따뜻함', chipColor: '#F1863B' },
+  energy:     { label: '활력',   chipColor: '#F4B225' },
+  calm:       { label: '고요함', chipColor: '#0090F9' },
+  melancholy: { label: '그리움', chipColor: '#82898E' },
+  dream:      { label: '몽환',   chipColor: '#7572FF' },
+};
+
+export const MOOD_ZONE_MAP: Record<string, EmotionZone> = {
+  cozy: 'warm',          warm: 'warm',
+  energetic: 'energy',   whimsical: 'energy',   refreshing: 'energy',  crisp: 'energy',
+  serene: 'calm',        contemplative: 'calm', focused: 'calm',
+  melancholic: 'melancholy', nostalgic: 'melancholy', languid: 'melancholy',
+  dreamy: 'dream',       romantic: 'dream',     mysterious: 'dream',
+};
 
 export const MOOD_KEYWORDS: MoodKeyword[] = [
-  { id: 'cozy', label: '포근한', color: '#FFD6E0' },
-  { id: 'dreamy', label: '몽환적인', color: '#D9D4FF' },
-  { id: 'refreshing', label: '상쾌한', color: '#C8F7DC' },
-  { id: 'calm', label: '잔잔한', color: '#C8E6FF' },
-  { id: 'warm', label: '따뜻한', color: '#FFF0C8' },
-  { id: 'energetic', label: '에너지 넘치는', color: '#FFD4C4' },
+  { id: 'cozy',          label: '포근한',     color: '#F1863B', zone: 'warm' },
+  { id: 'warm',          label: '따뜻한',     color: '#F1863B', zone: 'warm' },
+  { id: 'energetic',     label: '활기찬',     color: '#F4B225', zone: 'energy' },
+  { id: 'whimsical',     label: '발랄한',     color: '#F4B225', zone: 'energy' },
+  { id: 'refreshing',    label: '상쾌한',     color: '#F4B225', zone: 'energy' },
+  { id: 'crisp',         label: '청량한',     color: '#F4B225', zone: 'energy' },
+  { id: 'serene',        label: '고요한',     color: '#0090F9', zone: 'calm' },
+  { id: 'contemplative', label: '사색적인',   color: '#0090F9', zone: 'calm' },
+  { id: 'focused',       label: '몰입되는',   color: '#0090F9', zone: 'calm' },
+  { id: 'melancholic',   label: '쓸쓸한',     color: '#82898E', zone: 'melancholy' },
+  { id: 'nostalgic',     label: '향수 어린',  color: '#82898E', zone: 'melancholy' },
+  { id: 'languid',       label: '나른한',     color: '#82898E', zone: 'melancholy' },
+  { id: 'dreamy',        label: '몽글몽글한', color: '#7572FF', zone: 'dream' },
+  { id: 'romantic',      label: '로맨틱한',   color: '#7572FF', zone: 'dream' },
+  { id: 'mysterious',    label: '신비로운',   color: '#7572FF', zone: 'dream' },
 ];
 
 export const TIME_OPTIONS: TimeOption[] = [
