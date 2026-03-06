@@ -34,10 +34,10 @@ export default function FollowListModal({
   const scrollRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
+  // 탭별 데이터 로드 (초기 + pagination)
   const fetchList = useCallback(
-    (nextCursor?: string) => {
-      setLoading(true);
-      const apiFn = tab === 'followers' ? getFollowers : getFollowing;
+    (currentTab: Tab, nextCursor?: string) => {
+      const apiFn = currentTab === 'followers' ? getFollowers : getFollowing;
       apiFn(userId, nextCursor, 20)
         .then((res) => {
           const shuffled = [...res.content].sort(() => Math.random() - 0.5);
@@ -45,32 +45,53 @@ export default function FollowListModal({
           setCursor(res.nextCursor);
           setHasNext(res.hasNext);
         })
-        .catch(() => {})
+        .catch(() => {
+          if (!nextCursor) setList([]);
+        })
         .finally(() => setLoading(false));
     },
-    [tab, userId],
+    [userId],
   );
 
-  // 탭 변경 또는 모달 열릴 때 초기 로드
+  // 모달 열릴 때 / initialTab 변경 시 초기 로드 (setState는 async 콜백 내부에서만)
   useEffect(() => {
     if (!open) return;
-    setList([]);
-    setCursor(null);
-    setHasNext(false);
-    fetchList();
-  }, [open, fetchList]);
+    let cancelled = false;
+    const currentTab = initialTab;
+    const apiFn = currentTab === 'followers' ? getFollowers : getFollowing;
+    apiFn(userId, undefined, 20)
+      .then((res) => {
+        if (cancelled) return;
+        const shuffled = [...res.content].sort(() => Math.random() - 0.5);
+        setTab(currentTab);
+        setList(shuffled);
+        setCursor(res.nextCursor);
+        setHasNext(res.hasNext);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setTab(currentTab);
+        setList([]);
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, initialTab, userId]);
 
-  // 탭 변경 시 initialTab 동기화
-  useEffect(() => {
-    if (open) setTab(initialTab);
-  }, [open, initialTab]);
+  // 탭 클릭 핸들러
+  const handleTabChange = (newTab: Tab) => {
+    setTab(newTab);
+    setList([]);
+    setLoading(true);
+    fetchList(newTab);
+  };
 
   // 스크롤 pagination
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el || loading || !hasNext || !cursor) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
-      fetchList(cursor);
+      fetchList(tab, cursor);
     }
   };
 
@@ -99,7 +120,7 @@ export default function FollowListModal({
             <button
               key={t}
               type="button"
-              onClick={() => setTab(t)}
+              onClick={() => handleTabChange(t)}
               className={`flex-1 py-3 text-center text-sm font-medium transition-colors ${
                 tab === t ? 'border-b-2 border-high-emphasis text-high-emphasis' : 'text-caption hover:text-high-emphasis'
               }`}
