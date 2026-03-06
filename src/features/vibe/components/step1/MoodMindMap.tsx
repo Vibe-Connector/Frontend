@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
-import { MOOD_KEYWORDS, MAX_CUSTOM_MOODS, MAX_MOOD_SELECTIONS } from '../../constants';
-import type { MoodKeyword } from '../../types';
+import {
+  MOOD_KEYWORDS,
+  MAX_CUSTOM_MOODS,
+  MAX_MOOD_SELECTIONS,
+  EMOTION_ZONES,
+  MOOD_ZONE_MAP,
+} from '../../constants';
+import type { MoodKeyword, EmotionZone } from '../../types';
 import MoodCloudChip from './MoodCloudChip';
 import MoodInputBubble from './MoodInputBubble';
 
@@ -14,22 +20,8 @@ interface MoodMindMapProps {
   isLimitReached?: boolean;
 }
 
-const CUSTOM_CLOUD_COLORS = ['#E8D5FF', '#D5F0E8', '#FFE8D5'];
-
-/** N개 아이템을 중심 주위로 타원형 배치 */
-function computeRadialPositions(count: number) {
-  const positions: { top: string; left: string }[] = [];
-  for (let i = 0; i < count; i++) {
-    const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-    const rx = 32;
-    const ry = 28;
-    positions.push({
-      top: `${50 + ry * Math.sin(angle)}%`,
-      left: `${50 + rx * Math.cos(angle)}%`,
-    });
-  }
-  return positions;
-}
+const ZONE_ORDER: EmotionZone[] = ['warm', 'energy', 'calm', 'melancholy', 'dream'];
+const CUSTOM_TAG_COLOR = '#EDEEEF';
 
 export default function MoodMindMap({
   selectedMoods,
@@ -42,96 +34,124 @@ export default function MoodMindMap({
 }: MoodMindMapProps) {
   const displayMoods = moods ?? MOOD_KEYWORDS;
 
-  const positions = useMemo(
-    () => computeRadialPositions(displayMoods.length),
-    [displayMoods.length],
-  );
+  const groupedMoods = useMemo(() => {
+    const groups: Record<EmotionZone, MoodKeyword[]> = {
+      warm: [],
+      energy: [],
+      calm: [],
+      melancholy: [],
+      dream: [],
+    };
+    for (const mood of displayMoods) {
+      const zone = mood.zone ?? MOOD_ZONE_MAP[mood.id] ?? 'calm';
+      groups[zone].push(mood);
+    }
+    return groups;
+  }, [displayMoods]);
+
+  const selectionCount = selectedMoods.length;
 
   return (
-    <div className="relative w-full overflow-hidden rounded-card bg-vibe-bg" style={{ minHeight: '480px' }}>
-      {/* Decorative doodles */}
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-        {/* Stars */}
-        <text x="12%" y="15%" fontSize="20" opacity="0.3" className="fill-caption">&#10022;</text>
-        <text x="88%" y="12%" fontSize="16" opacity="0.25" className="fill-caption">&#10022;</text>
-        <text x="8%" y="75%" fontSize="14" opacity="0.2" className="fill-caption">&#10022;</text>
-        <text x="92%" y="65%" fontSize="18" opacity="0.3" className="fill-caption">&#10022;</text>
-        <text x="35%" y="90%" fontSize="12" opacity="0.2" className="fill-caption">&#9829;</text>
-        <text x="75%" y="88%" fontSize="14" opacity="0.25" className="fill-caption">&#10022;</text>
-        {/* Wavy lines */}
-        <path d="M 60 200 Q 70 190 80 200 Q 90 210 100 200" fill="none" stroke="var(--color-caption)" strokeWidth="1.5" opacity="0.2" />
-        <path d="M 700 150 Q 710 140 720 150 Q 730 160 740 150" fill="none" stroke="var(--color-caption)" strokeWidth="1.5" opacity="0.2" />
-        <path d="M 200 400 Q 210 390 220 400 Q 230 410 240 400" fill="none" stroke="var(--color-caption)" strokeWidth="1.5" opacity="0.15" />
-        {/* Small arrows */}
-        <path d="M 150 250 L 170 245 L 165 260" fill="none" stroke="var(--color-caption)" strokeWidth="1.2" opacity="0.2" />
-        <path d="M 650 300 L 670 295 L 665 310" fill="none" stroke="var(--color-caption)" strokeWidth="1.2" opacity="0.2" />
-      </svg>
-
-      {/* Limit reached notice */}
-      {isLimitReached && (
-        <div className="absolute top-4 left-1/2 z-20 -translate-x-1/2">
-          <p className="rounded-pill bg-brand/90 px-4 py-1.5 text-xs font-medium text-white">
-            최대 {MAX_MOOD_SELECTIONS}개까지 선택 가능합니다
+    <div className="rounded-card bg-vibe-bg p-6 md:p-8">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold tracking-[-0.5px] text-high-emphasis">
+            지금 어떤 기분인가요?
+          </h2>
+          <p className="mt-1 text-sm text-caption">
+            원하는 기분을 골라보세요
           </p>
+        </div>
+        <div
+          className="shrink-0 rounded-pill px-3.5 py-1.5 text-sm font-semibold animate-smooth"
+          style={{
+            backgroundColor: selectionCount > 0 ? 'var(--color-accent)' : 'white',
+            color: selectionCount > 0 ? 'white' : 'var(--color-caption)',
+          }}
+        >
+          {selectionCount}/{MAX_MOOD_SELECTIONS}
+        </div>
+      </div>
+
+      {/* Zone groups */}
+      <div className="mt-6 space-y-5">
+        {ZONE_ORDER.map((zone) => {
+          const zoneMoods = groupedMoods[zone];
+          if (zoneMoods.length === 0) return null;
+          const zoneConfig = EMOTION_ZONES[zone];
+
+          return (
+            <div key={zone}>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-caption/70">
+                {zoneConfig.label}
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {zoneMoods.map((mood) => (
+                  <MoodCloudChip
+                    key={mood.id}
+                    label={mood.label}
+                    color={mood.color}
+                    isSelected={selectedMoods.includes(mood.id)}
+                    onClick={() => onToggleMood(mood.id)}
+                    disabled={isLimitReached && !selectedMoods.includes(mood.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Divider — "또는 직접 표현하기" */}
+      <div className="relative my-7">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-stroke/40" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-vibe-bg px-3 text-xs text-caption">
+            또는 직접 표현하기
+          </span>
+        </div>
+      </div>
+
+      {/* Custom mood input */}
+      <MoodInputBubble
+        onSubmit={onAddCustomMood}
+        customCount={customMoods.length}
+        maxCustom={MAX_CUSTOM_MOODS}
+        disabled={isLimitReached}
+      />
+
+      {/* Custom mood tags */}
+      {customMoods.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {customMoods.map((mood) => (
+            <span
+              key={`custom:${mood}`}
+              className="inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-sm font-medium text-high-emphasis animate-smooth"
+              style={{ backgroundColor: CUSTOM_TAG_COLOR }}
+            >
+              {mood}
+              <button
+                type="button"
+                onClick={() => onRemoveCustomMood(mood)}
+                className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-caption hover:text-high-emphasis"
+                aria-label={`${mood} 삭제`}
+              >
+                &times;
+              </button>
+            </span>
+          ))}
         </div>
       )}
 
-      {/* Center input bubble */}
-      <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-        <MoodInputBubble
-          onSubmit={onAddCustomMood}
-          customCount={customMoods.length}
-          maxCustom={MAX_CUSTOM_MOODS}
-        />
-      </div>
-
-      {/* Preset mood clouds — 동적 배치 */}
-      {displayMoods.map((mood, i) => {
-        const isSelected = selectedMoods.includes(mood.id);
-        return (
-          <div
-            key={mood.id}
-            className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-            style={{
-              top: positions[i].top,
-              left: positions[i].left,
-            }}
-          >
-            <MoodCloudChip
-              label={mood.label}
-              color={mood.color}
-              isSelected={isSelected}
-              onClick={() => onToggleMood(mood.id)}
-              disabled={isLimitReached && !isSelected}
-            />
-          </div>
-        );
-      })}
-
-      {/* Custom mood clouds */}
-      {customMoods.map((mood, i) => {
-        const isSelected = selectedMoods.includes(`custom:${mood}`);
-        return (
-          <div
-            key={`custom:${mood}`}
-            className="absolute z-10"
-            style={{
-              bottom: `${12 + i * 8}%`,
-              right: `${10 + i * 15}%`,
-            }}
-          >
-            <MoodCloudChip
-              label={mood}
-              color={CUSTOM_CLOUD_COLORS[i % CUSTOM_CLOUD_COLORS.length]}
-              isSelected={isSelected}
-              onClick={() => onToggleMood(`custom:${mood}`)}
-              disabled={isLimitReached && !isSelected}
-              isCustom
-              onRemove={() => onRemoveCustomMood(mood)}
-            />
-          </div>
-        );
-      })}
+      {/* Limit notice */}
+      {isLimitReached && (
+        <p className="mt-5 text-center text-xs font-medium text-accent">
+          최대 {MAX_MOOD_SELECTIONS}개까지 선택할 수 있어요
+        </p>
+      )}
     </div>
   );
 }

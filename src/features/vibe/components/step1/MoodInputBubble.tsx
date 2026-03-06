@@ -4,11 +4,18 @@ interface MoodInputBubbleProps {
   onSubmit: (keyword: string) => void;
   customCount: number;
   maxCustom: number;
+  disabled?: boolean;
 }
 
-export default function MoodInputBubble({ onSubmit, customCount, maxCustom }: MoodInputBubbleProps) {
+export default function MoodInputBubble({
+  onSubmit,
+  customCount,
+  maxCustom,
+  disabled = false,
+}: MoodInputBubbleProps) {
   const [value, setValue] = useState('');
-  const isDisabled = customCount >= maxCustom;
+  const isMaxReached = customCount >= maxCustom;
+  const isDisabled = disabled || isMaxReached;
 
   const handleSubmit = () => {
     const trimmed = value.trim();
@@ -18,14 +25,7 @@ export default function MoodInputBubble({ onSubmit, customCount, maxCustom }: Mo
   };
 
   return (
-    <div
-      className="flex flex-col items-center justify-center border-2 border-stroke bg-white px-6 py-5"
-      style={{
-        borderRadius: '50% 45% 50% 42% / 42% 50% 45% 50%',
-        minWidth: '180px',
-        minHeight: '120px',
-      }}
-    >
+    <div className="flex gap-2">
       <input
         type="text"
         value={value}
@@ -36,16 +36,23 @@ export default function MoodInputBubble({ onSubmit, customCount, maxCustom }: Mo
             handleSubmit();
           }
         }}
-        placeholder="기분을 입력해보세요"
+        placeholder={
+          isMaxReached
+            ? `최대 ${maxCustom}개까지 추가 가능`
+            : '기분을 직접 입력해보세요'
+        }
         disabled={isDisabled}
-        className="w-full bg-transparent text-center text-sm font-medium text-high-emphasis placeholder:text-caption outline-none disabled:opacity-40"
+        className="flex-1 rounded-control border border-stroke bg-white px-4 py-2.5 text-sm text-high-emphasis placeholder:text-caption outline-none focus:border-accent disabled:opacity-40"
         aria-label="커스텀 무드 키워드 입력"
       />
-      {isDisabled ? (
-        <p className="mt-1 text-xs text-caption">최대 {maxCustom}개까지</p>
-      ) : (
-        <p className="mt-1 text-xs text-caption">Enter로 추가</p>
-      )}
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={isDisabled || !value.trim()}
+        className="shrink-0 cursor-pointer rounded-control bg-brand px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        추가
+      </button>
     </div>
   );
 }

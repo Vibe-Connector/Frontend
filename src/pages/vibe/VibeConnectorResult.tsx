@@ -4,6 +4,7 @@ import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
 import { getVibeSession, createVibe } from '@/api/vibe';
 import type { VibeResultResponse } from '@/api/vibe';
+import { ApiError } from '@/api/types';
 import { useOptions } from '@/hooks/useOptions';
 
 // [BEFORE INTEGRATION] const MOCK_RESULT = { ... 하드코딩 mock 데이터 }
@@ -373,7 +374,13 @@ export default function VibeConnectorResult() {
           startImagePolling(Number(sessionId));
         }
       })
-      .catch(() => setResult(FALLBACK_RESULT))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 403) {
+          navigate('/', { replace: true });
+          return;
+        }
+        setResult(FALLBACK_RESULT);
+      })
       .finally(() => setLoading(false));
   }, [sessionId, startImagePolling]);
 

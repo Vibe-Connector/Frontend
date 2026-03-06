@@ -7,7 +7,7 @@ import MoodMindMap from '@/features/vibe/components/step1/MoodMindMap';
 import TimeWeatherPanel from '@/features/vibe/components/step2/TimeWeatherPanel';
 import PlaceCompanionPanel from '@/features/vibe/components/step3/PlaceCompanionPanel';
 import { useVibeFlow } from '@/features/vibe/hooks/useVibeFlow';
-import { MAX_MOOD_SELECTIONS } from '@/features/vibe/constants';
+import { MAX_MOOD_SELECTIONS, EMOTION_ZONES, MOOD_ZONE_MAP } from '@/features/vibe/constants';
 import type { MoodKeyword } from '@/features/vibe/types';
 import { useOptions } from '@/hooks/useOptions';
 import { createVibe } from '@/api/vibe';
@@ -43,17 +43,20 @@ export default function VibeConnector() {
   const { data: options } = useOptions();
   const [submitting, setSubmitting] = useState(false);
 
-  // API 무드를 MoodKeyword 형태로 변환 (색상 팔레트 자동 부여)
-  const MOOD_PALETTE = ['#FFD6E0', '#D9D4FF', '#C8F7DC', '#C8E6FF', '#FFF0C8', '#FFD4C4', '#E8D5FF', '#D5F0E8', '#FFE8D5', '#C8FFED'];
+  // API 무드를 MoodKeyword 형태로 변환 (감정 영역 기반 색상 할당)
   const apiMoods: MoodKeyword[] | undefined = useMemo(() => {
     if (!options?.moods) return undefined;
-    return options.moods.map((m, i) => ({
-      id: m.keywordValue,
-      label: m.label === m.keywordValue
-        ? (MOOD_KOREAN_MAP[m.keywordValue] ?? m.label)
-        : m.label,
-      color: MOOD_PALETTE[i % MOOD_PALETTE.length],
-    }));
+    return options.moods.map((m) => {
+      const zone = MOOD_ZONE_MAP[m.keywordValue] ?? 'calm';
+      return {
+        id: m.keywordValue,
+        label: m.label === m.keywordValue
+          ? (MOOD_KOREAN_MAP[m.keywordValue] ?? m.label)
+          : m.label,
+        color: EMOTION_ZONES[zone].chipColor,
+        zone,
+      };
+    });
   }, [options]);
 
   // API 장소/동반자를 UI 형태로 변환

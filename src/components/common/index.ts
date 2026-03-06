@@ -23,3 +23,8 @@ export { default as ProfileDropdown } from "./ProfileDropdown";
 
 export { default as TextInput } from "./TextInput";
 export type { TextInputProps } from "./TextInput";
+
+export { default as ProfileAvatarUpload } from "./ProfileAvatarUpload";
+export type { ProfileAvatarUploadProps } from "./ProfileAvatarUpload";
+
+export { default as RecentSessions } from "./RecentSessions";
