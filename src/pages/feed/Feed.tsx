@@ -7,6 +7,7 @@ import { getUserFeeds } from '@/api/feed';
 import { getFolders } from '@/api/archive';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
+import FollowListModal from '@/components/follow/FollowListModal';
 import type { FeedResponse } from '@/api/types';
 import type { FolderResponse } from '@/api/archive';
 
@@ -251,6 +252,7 @@ export default function Feed() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowModal, setShowFollowModal] = useState<'followers' | 'following' | null>(null);
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
   const [searchParams] = useSearchParams();
@@ -377,8 +379,8 @@ export default function Feed() {
         isOwnProfile={isOwnProfile}
         followerCount={followerCount}
         followingCount={followingCount}
-        onFollowerClick={() => {}}
-        onFollowingClick={() => {}}
+        onFollowerClick={() => setShowFollowModal('followers')}
+        onFollowingClick={() => setShowFollowModal('following')}
       />
 
       {/* Photo Grid */}
@@ -403,6 +405,16 @@ export default function Feed() {
         onCreateClick={() => navigate('/archive')}
         isOwnProfile={isOwnProfile}
       />
+
+      {/* Follow List Modal */}
+      {targetUserId && (
+        <FollowListModal
+          open={showFollowModal !== null}
+          onClose={() => setShowFollowModal(null)}
+          userId={targetUserId}
+          initialTab={showFollowModal ?? 'followers'}
+        />
+      )}
     </PageContainer>
   );
 }
