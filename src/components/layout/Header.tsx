@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import TabToggle from '../common/TabToggle';
 import ProfileDropdown from '../common/ProfileDropdown';
 import { useAppMode } from '../../hooks/useAppMode';
-import { getUnreadCount } from '@/api/notification';
+import { getUnreadCount, markAsRead, type NotificationResponse } from '@/api/notification';
 import { useAuthStore } from '@/store/authStore';
+import { NotificationPanel } from '../notification';
 
 type Tab = 'generate' | 'explore';
 
@@ -75,9 +76,10 @@ const Header = () => {
   const location = useLocation();
   const { sidebarMode, profilePage, switchToExplore } = useAppMode();
 
-  // [AFTER INTEGRATION] 알림 미읽음 수 로드 (인증된 경우에만)
+  // 알림 미읽음 수 로드 (인증된 경우에만)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -95,6 +97,32 @@ const Header = () => {
 
     return () => clearInterval(interval);
   }, [isAuthenticated]);
+
+  // 알림 클릭 → 읽음 처리 + 해당 페이지 이동
+  const handleNotificationClick = useCallback(async (notification: NotificationResponse) => {
+    if (!notification.isRead) {
+      try {
+        await markAsRead(notification.notificationId);
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } catch { /* 실패 시 무시 */ }
+    }
+    setNotificationOpen(false);
+
+    // linkUrl 또는 타입별 라우팅
+    if (notification.linkUrl) {
+      navigate(notification.linkUrl);
+    } else if (notification.referenceId != null) {
+      const routes: Record<string, string> = {
+        FEED_REACTION: `/feed/${notification.referenceId}`,
+        FEED_COMMENT: `/feed/${notification.referenceId}`,
+        FOLLOW: `/feed?userId=${notification.referenceId}`,
+        VIBE_COMPLETE: `/vibe/result/${notification.referenceId}`,
+        REPORT_READY: '/profile/report',
+      };
+      const target = routes[notification.type];
+      if (target) navigate(target);
+    }
+  }, [navigate]);
 
   /** URL 기반 탭 활성 상태 동기화 */
   const activeTab: Tab = location.pathname.startsWith('/vibe') ? 'generate' : 'explore';
@@ -135,18 +163,28 @@ const Header = () => {
           <span className="text-brand text-sm font-medium">{profilePageLabel}</span>
         )}
 
-        {/* Right Section — ProfileDropdown으로 교체 */}
+        {/* Right Section */}
         <div className="flex-1 flex items-center justify-end gap-5">
-          {/* [BEFORE INTEGRATION] <button className="cursor-pointer"><BellIcon /></button> */}
-          {/* [AFTER INTEGRATION] 알림 뱃지 추가 */}
-          <button className="relative cursor-pointer" onClick={() => navigate('/notifications')}>
-            <BellIcon />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
+          {/* 알림 벨 아이콘 + 드롭다운 패널 */}
+          <div className="relative">
+            <button
+              className="relative cursor-pointer"
+              onClick={() => setNotificationOpen((prev) => !prev)}
+            >
+              <BellIcon />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <NotificationPanel
+              isOpen={notificationOpen}
+              onClose={() => setNotificationOpen(false)}
+              onNotificationClick={handleNotificationClick}
+              onUnreadCountChange={setUnreadCount}
+            />
+          </div>
           <ProfileDropdown />
         </div>
       </div>
