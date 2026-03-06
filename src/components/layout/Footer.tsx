@@ -78,10 +78,10 @@ const Footer = () => {
 
         {/* Social Links */}
         <div className="flex items-center gap-4">
-          <a href="#" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.notion.so/VIBE-LINK-2e7571ca7b6e812fb600f31ce69a316a" target="_blank" rel="noopener noreferrer">
             <NotionIcon />
           </a>
-          <a href="#" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/Vibe-Connector" target="_blank" rel="noopener noreferrer">
             <GitHubIcon />
           </a>
         </div>
