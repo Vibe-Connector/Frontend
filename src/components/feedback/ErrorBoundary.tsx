@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <div className="flex flex-col items-center justify-center min-h-100 gap-4">
           <h2 className="text-xl font-semibold text-high-emphasis">
             문제가 발생했습니다
           </h2>

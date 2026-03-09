@@ -60,11 +60,13 @@ function ProfileSection({
   onFollowerClick: () => void;
   onFollowingClick: () => void;
 }) {
+  const [avatarError, setAvatarError] = useState(false);
+
   return (
     <div className="flex items-center gap-4">
       <div className="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-stroke text-caption">
-        {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt={user.nickname} className="h-full w-full rounded-full object-cover" />
+        {user.avatarUrl && !avatarError ? (
+          <img src={user.avatarUrl} alt={user.nickname} className="h-full w-full rounded-full object-cover" onError={() => setAvatarError(true)} />
         ) : (
           <UserIcon />
         )}

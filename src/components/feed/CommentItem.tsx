@@ -156,17 +156,17 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
       <div className="flex gap-2">
         {/* 프로필 이미지 */}
         <div
-          className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-surface"
+          className="relative flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-surface"
           onClick={() => navigate(`/feed?userId=${comment.userId}`)}
         >
-          {comment.profileImageUrl ? (
+          <span className="text-xs text-caption">{comment.nickname.charAt(0)}</span>
+          {comment.profileImageUrl && (
             <img
               src={comment.profileImageUrl}
               alt={comment.nickname}
-              className="h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />
-          ) : (
-            <span className="text-xs text-caption">{comment.nickname.charAt(0)}</span>
           )}
         </div>
 

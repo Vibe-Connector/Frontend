@@ -4,18 +4,17 @@ import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import BookmarkModal from '@/components/common/BookmarkModal';
+import ItemDetailModal from '@/components/common/ItemDetailModal';
+import { getFeed, getSimilarFeeds, updateFeed, deleteFeed } from '@/api/feed';
 import Modal from '@/components/common/Modal';
-import { getFeed } from '@/api/feed';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
-import { getExploreVibes } from '@/api/explore';
 import { getVibeResultItems } from '@/api/vibe';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
 import { ButtonDefault } from '@/components/common';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import type { RecommendedItemResponse } from '@/api/vibe';
-import type { ExploreVibeResponse } from '@/api/explore';
-import type { FeedResponse, ReactionSummary } from '@/api/types';
+import type { FeedResponse, ReactionSummary, SimilarFeedResponse } from '@/api/types';
 
 /* ---------- Mock Data ---------- */
 // [BEFORE INTEGRATION] 하드코딩된 Mock 데이터
@@ -115,19 +114,25 @@ export default function FeedDetail() {
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
-  const [selectedItem, setSelectedItem] = useState<RecommendedItemResponse | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string } | null>(null);
   const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
   const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
   const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
-  const [similarFeeds, setSimilarFeeds] = useState<ExploreVibeResponse[]>([]);
+  const [similarFeeds, setSimilarFeeds] = useState<SimilarFeedResponse[]>([]);
   const [similarLoading, setSimilarLoading] = useState(false);
-  const [similarCursor, setSimilarCursor] = useState<string | undefined>();
-  const [similarHasNext, setSimilarHasNext] = useState(true);
+  const [similarArchiveMap, setSimilarArchiveMap] = useState<Record<number, number>>({});
   const [forbidden, setForbidden] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editCaption, setEditCaption] = useState('');
+  const [editPublic, setEditPublic] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [feedIsPublic, setFeedIsPublic] = useState(true);
   const fetchedRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?.userId);
+  const isOwner = currentUserId != null && feed.user.userId === currentUserId;
 
   useEffect(() => {
     if (!feedId || feedId === 'demo') return;
@@ -149,6 +154,7 @@ export default function FeedDetail() {
           views: res.viewCount,
         });
         setResultId(res.resultId);
+        setFeedIsPublic(res.isPublic);
         setApiReactions(res.reactions);
         setApiMyReactionTypes(res.myReactionTypes);
         // Vibe 아카이브 상태 확인
@@ -196,15 +202,13 @@ export default function FeedDetail() {
   }, [feedId]);
 
   // 비슷한 무드 추천 피드 로드
-  const loadSimilarFeeds = useCallback(async (cursor?: string) => {
+  const loadSimilarFeeds = useCallback(async () => {
+    const numId = Number(feedId);
+    if (isNaN(numId)) return;
     setSimilarLoading(true);
     try {
-      const res = await getExploreVibes('MONTH', cursor, 12);
-      const numId = Number(feedId);
-      const filtered = res.content.filter((v) => v.feedId !== numId);
-      setSimilarFeeds((prev) => cursor ? [...prev, ...filtered] : filtered);
-      setSimilarCursor(res.nextCursor ?? undefined);
-      setSimilarHasNext(res.hasNext);
+      const res = await getSimilarFeeds(numId, 10);
+      setSimilarFeeds(res);
     } catch {
       /* 무시 */
     } finally {
@@ -218,6 +222,42 @@ export default function FeedDetail() {
   }, [feedId, loadSimilarFeeds]);
 
   const numFeedId = Number(feedId);
+
+  const handleEditStart = () => {
+    setEditCaption(feed.caption ?? '');
+    setEditPublic(feedIsPublic);
+    setEditMode(true);
+  };
+
+  const handleEditSave = async () => {
+    const numId = Number(feedId);
+    if (isNaN(numId)) return;
+    setSaving(true);
+    try {
+      await updateFeed(numId, {
+        caption: editCaption || null,
+        isPublic: editPublic !== feedIsPublic ? editPublic : null,
+      });
+      setFeed((prev) => ({ ...prev, caption: editCaption || null }));
+      setFeedIsPublic(editPublic);
+      setEditMode(false);
+    } catch {
+      /* TODO: 에러 토스트 */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const numId = Number(feedId);
+    if (isNaN(numId)) return;
+    try {
+      await deleteFeed(numId);
+      navigate('/feed', { replace: true });
+    } catch {
+      /* TODO: 에러 토스트 */
+    }
+  };
 
   if (forbidden) {
     return (
@@ -296,21 +336,79 @@ export default function FeedDetail() {
             alt="Vibe 메인 이미지"
             className="w-full rounded-card object-cover shadow-card"
           />
-          {/* 캡션 + 작성일 */}
-          {(feed.caption || feed.createdAt) && (
-            <div className="mt-3 px-1">
-              {feed.caption && (
-                <p className="text-sm leading-relaxed text-high-emphasis">
-                  {feed.caption}
-                </p>
-              )}
-              {feed.createdAt && (
-                <p className="mt-1 text-xs text-low-emphasis">
-                  {formatDate(feed.createdAt)}
-                </p>
-              )}
-            </div>
-          )}
+          {/* 캡션 + 작성일 + 수정/삭제 */}
+          <div className="mt-3 px-1">
+            {editMode ? (
+              <>
+                <textarea
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  maxLength={300}
+                  rows={3}
+                  className="w-full resize-none rounded-control border border-stroke bg-white px-3 py-2 text-sm text-high-emphasis outline-none focus:border-accent"
+                  placeholder="캡션을 입력하세요"
+                />
+                <label className="mt-2 flex items-center gap-2 text-sm text-caption">
+                  <input
+                    type="checkbox"
+                    checked={editPublic}
+                    onChange={(e) => setEditPublic(e.target.checked)}
+                    className="h-4 w-4 accent-accent"
+                  />
+                  공개
+                </label>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditSave}
+                    disabled={saving}
+                    className="rounded-full bg-default px-4 py-1.5 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                  >
+                    {saving ? '저장 중…' : '저장'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMode(false)}
+                    className="rounded-full border border-stroke px-4 py-1.5 text-sm font-bold text-high-emphasis transition-colors hover:bg-input"
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {feed.caption && (
+                  <p className="text-sm leading-relaxed text-high-emphasis">
+                    {feed.caption}
+                  </p>
+                )}
+                {feed.createdAt && (
+                  <p className="mt-1 text-xs text-low-emphasis">
+                    {formatDate(feed.createdAt)}
+                    {!feedIsPublic && <span className="ml-2 text-caption">· 비공개</span>}
+                  </p>
+                )}
+                {isOwner && (
+                  <div className="mt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleEditStart}
+                      className="text-sm font-medium text-caption transition-colors hover:text-high-emphasis"
+                    >
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(true)}
+                      className="text-sm font-medium text-caption transition-colors hover:text-red-500"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Right — Info Panel */}
@@ -384,7 +482,7 @@ export default function FeedDetail() {
                     <div
                       key={item.itemId}
                       className="group/item relative aspect-square cursor-pointer overflow-hidden rounded-control bg-white"
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey })}
                     >
                       <ImageWithFallback
                         src={item.imageUrl}
@@ -440,67 +538,62 @@ export default function FeedDetail() {
           <p className="py-8 text-center text-sm text-low-emphasis">추천 피드가 없습니다.</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
-            {similarFeeds.map((vibe) => (
-              <div
-                key={vibe.feedId}
-                onClick={() => navigate(`/feed/${vibe.feedId}`)}
-                className="group cursor-pointer"
-              >
-                <div className="relative overflow-hidden rounded-card bg-surface">
-                  <ImageWithFallback
-                    src={vibe.generatedImageUrl}
-                    alt={vibe.caption ?? `Vibe ${vibe.feedId}`}
-                    className="w-full rounded-card object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="pointer-events-none absolute inset-0 rounded-card bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
-                  {/* 호버 시 북마크 버튼 */}
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (vibe.isArchived && vibe.archiveId) {
-                        try {
-                          await deleteArchiveVibe(vibe.archiveId);
-                          setSimilarFeeds((prev) =>
-                            prev.map((f) => f.feedId === vibe.feedId ? { ...f, isArchived: false, archiveId: null } : f),
-                          );
-                        } catch { /* 에러 무시 */ }
-                      } else {
-                        setSimilarBookmarkTarget({ feedId: vibe.feedId, resultId: vibe.resultId });
-                      }
-                    }}
-                    className={`absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 transition-opacity duration-200 ${vibe.isArchived ? 'text-accent opacity-100' : 'text-caption opacity-0 hover:text-accent group-hover:opacity-100'}`}
-                    aria-label="북마크"
-                  >
-                    <BookmarkIcon filled={vibe.isArchived} />
-                  </button>
-                  {/* 호버 시 정보 오버레이 */}
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-linear-to-t from-black/50 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <div className="text-white">
-                      <p className="truncate text-xs font-medium">{vibe.authorNickname}</p>
-                      {vibe.caption && (
-                        <p className="mt-0.5 line-clamp-2 text-xs opacity-80">{vibe.caption}</p>
-                      )}
+            {similarFeeds.map((vibe) => {
+              const isArchived = vibe.feedId in similarArchiveMap;
+              return (
+                <div
+                  key={vibe.feedId}
+                  onClick={() => navigate(`/feed/${vibe.feedId}`)}
+                  className="group cursor-pointer"
+                >
+                  <div className="relative overflow-hidden rounded-card bg-surface">
+                    <ImageWithFallback
+                      src={vibe.generatedImageUrl}
+                      alt={vibe.caption ?? `Vibe ${vibe.feedId}`}
+                      className="w-full rounded-card object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="pointer-events-none absolute inset-0 rounded-card bg-black/0 transition-colors duration-200 group-hover:bg-black/10" />
+                    {/* 호버 시 북마크 버튼 */}
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (isArchived) {
+                          try {
+                            await deleteArchiveVibe(similarArchiveMap[vibe.feedId]);
+                            setSimilarArchiveMap((prev) => {
+                              const next = { ...prev };
+                              delete next[vibe.feedId];
+                              return next;
+                            });
+                          } catch { /* 에러 무시 */ }
+                        } else {
+                          setSimilarBookmarkTarget({ feedId: vibe.feedId, resultId: vibe.resultId });
+                        }
+                      }}
+                      className={`absolute top-2 right-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-white/80 transition-opacity duration-200 ${isArchived ? 'text-accent opacity-100' : 'text-caption opacity-0 hover:text-accent group-hover:opacity-100'}`}
+                      aria-label="북마크"
+                    >
+                      <BookmarkIcon filled={isArchived} />
+                    </button>
+                    {/* 호버 시 정보 오버레이 */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-linear-to-t from-black/50 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <div className="text-white">
+                        <p className="truncate text-xs font-medium">{vibe.authorNickname}</p>
+                        {vibe.caption && (
+                          <p className="mt-0.5 line-clamp-2 text-xs opacity-80">{vibe.caption}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* 더보기 버튼 */}
-        {similarHasNext && (
+        {similarLoading && (
           <div className="flex justify-center py-6">
-            {similarLoading ? (
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-accent" />
-            ) : (
-              <button
-                onClick={() => loadSimilarFeeds(similarCursor)}
-                className="rounded-control bg-surface px-6 py-2 text-sm font-medium text-caption transition-colors hover:bg-input hover:text-high-emphasis"
-              >
-                더보기
-              </button>
-            )}
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-stroke border-t-accent" />
           </div>
         )}
       </div>
@@ -535,46 +628,33 @@ export default function FeedDetail() {
           onClose={() => setSimilarBookmarkTarget(null)}
           resultId={similarBookmarkTarget.resultId}
           onArchived={(newArchiveId) => {
-            setSimilarFeeds((prev) =>
-              prev.map((f) =>
-                f.feedId === similarBookmarkTarget.feedId
-                  ? { ...f, isArchived: true, archiveId: newArchiveId }
-                  : f,
-              ),
-            );
+            setSimilarArchiveMap((prev) => ({ ...prev, [similarBookmarkTarget.feedId]: newArchiveId }));
             setSimilarBookmarkTarget(null);
           }}
         />
       )}
       {/* ===== Item Detail Modal ===== */}
       {selectedItem && (
-        <Modal
+        <ItemDetailModal
           open={!!selectedItem}
           onClose={() => setSelectedItem(null)}
-          image={selectedItem.imageUrl ?? undefined}
-          title={selectedItem.itemName}
-          description={`${selectedItem.brand ?? '브랜드 없음'} · ${selectedItem.categoryKey}`}
-          primaryAction={
-            selectedItem.externalLink
-              ? { label: '외부 링크 열기', onClick: () => window.open(selectedItem.externalLink!, '_blank') }
-              : undefined
-          }
-          secondaryAction={{
-            label: '아카이브 저장',
-            onClick: () => {
-              setItemBookmarkTarget(selectedItem.itemId);
-              setSelectedItem(null);
-            },
+          itemId={selectedItem.itemId}
+          categoryKey={selectedItem.categoryKey}
+          onArchive={() => {
+            setItemBookmarkTarget(selectedItem.itemId);
+            setSelectedItem(null);
           }}
-        >
-          <div className="space-y-1 text-sm text-caption">
-            {selectedItem.matchScore > 0 && (
-              <p>매칭 점수: <strong className="text-high-emphasis">{selectedItem.matchScore}%</strong></p>
-            )}
-            {selectedItem.recommendReason && <p>{selectedItem.recommendReason}</p>}
-          </div>
-        </Modal>
+        />
       )}
+      {/* ===== Delete Confirmation Modal ===== */}
+      <Modal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="피드를 삭제하시겠습니까?"
+        description="삭제된 피드는 복구할 수 없습니다."
+        primaryAction={{ label: '삭제', onClick: handleDelete }}
+        secondaryAction={{ label: '취소', onClick: () => setShowDeleteModal(false) }}
+      />
     </PageContainer>
   );
 }

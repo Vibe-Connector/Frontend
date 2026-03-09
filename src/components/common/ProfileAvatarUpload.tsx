@@ -62,6 +62,7 @@ export default function ProfileAvatarUpload({
           src={currentImageUrl}
           alt={displayName}
           className="h-full w-full object-cover"
+          onError={(e) => { e.currentTarget.style.display = 'none'; }}
         />
       )}
 

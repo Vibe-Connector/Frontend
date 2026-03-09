@@ -146,11 +146,15 @@ export default function FollowListModal({
                 onClick={() => handleUserClick(user.userId)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-stroke text-caption">
-                  {user.profileImageUrl ? (
-                    <img src={user.profileImageUrl} alt={user.nickname} className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    <UserIcon />
+                <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-stroke text-caption">
+                  <UserIcon />
+                  {user.profileImageUrl && (
+                    <img
+                      src={user.profileImageUrl}
+                      alt={user.nickname}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
                   )}
                 </div>
                 <span className="text-sm font-medium text-high-emphasis">{user.nickname}</span>

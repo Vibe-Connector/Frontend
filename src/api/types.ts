@@ -93,6 +93,20 @@ export interface FeedUpdateRequest {
   isPublic?: boolean | null;
 }
 
+// 근거: Backend domain/feed/dto/SimilarFeedResponse.java
+export interface SimilarFeedResponse {
+  feedId: number;
+  resultId: number;
+  generatedImageUrl: string | null;
+  phrase: string | null;
+  caption: string | null;
+  authorId: number;
+  authorNickname: string;
+  authorProfileImageUrl: string | null;
+  similarityScore: number;
+  createdAt: string; // ISO 8601
+}
+
 // ══════════════════════════════════════════════════════════════
 // 댓글 도메인
 // 근거: Backend domain/feed/dto/Comment*.java

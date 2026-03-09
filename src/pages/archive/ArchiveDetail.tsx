@@ -12,6 +12,7 @@ import {
   deleteArchiveItem,
 } from '@/api/archive';
 import type { ArchiveVibeResponse, ArchiveItemResponse } from '@/api/archive';
+import ItemDetailModal from '@/components/common/ItemDetailModal';
 
 // ── SVG 아이콘 ──
 
@@ -154,15 +155,17 @@ function ItemCard({
   item,
   onToggleFavorite,
   onDelete,
+  onClick,
   readOnly,
 }: {
   item: ArchiveItemResponse & { _favorite: boolean };
   onToggleFavorite: (archiveItemId: number) => void;
   onDelete: (archiveItemId: number) => void;
+  onClick?: () => void;
   readOnly?: boolean;
 }) {
   return (
-    <div className="group mb-4 break-inside-avoid">
+    <div className="group mb-4 break-inside-avoid cursor-pointer" onClick={onClick}>
       <div className="overflow-hidden rounded-card bg-surface">
         {item.imageUrl ? (
           <div className="relative aspect-square overflow-hidden">
@@ -201,7 +204,7 @@ function ItemCard({
             <div className="mt-2 flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => onDelete(item.archiveItemId)}
+                onClick={(e) => { e.stopPropagation(); onDelete(item.archiveItemId); }}
                 className="rounded-full p-1 text-accent transition-colors hover:text-accent/70"
                 aria-label="책갈피 해제"
               >
@@ -209,7 +212,7 @@ function ItemCard({
               </button>
               <button
                 type="button"
-                onClick={() => onToggleFavorite(item.archiveItemId)}
+                onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.archiveItemId); }}
                 className={`rounded-full p-1 transition-all ${item._favorite ? 'opacity-100 text-accent' : 'opacity-0 text-caption group-hover:opacity-100 hover:text-accent/70'}`}
                 aria-label={item._favorite ? '즐겨찾기 해제' : '즐겨찾기'}
               >
@@ -249,6 +252,7 @@ export default function ArchiveDetail() {
   const [itemLoading, setItemLoading] = useState(false);
 
   const [initialLoading, setInitialLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string } | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // ── 정렬 ──
@@ -480,6 +484,7 @@ export default function ArchiveDetail() {
               item={item}
               onToggleFavorite={handleItemToggleFavorite}
               onDelete={(id) => setDeleteTarget({ type: 'item', id })}
+              onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey })}
               readOnly={isReadOnly}
             />
           ))}
@@ -502,6 +507,16 @@ export default function ArchiveDetail() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
       />
+
+      {/* ===== Item Detail Modal ===== */}
+      {selectedItem && (
+        <ItemDetailModal
+          open={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          itemId={selectedItem.itemId}
+          categoryKey={selectedItem.categoryKey}
+        />
+      )}
     </PageContainer>
   );
 }

@@ -9,6 +9,7 @@ import type {
   ReactionSummary,
   ReactionType,
   ReactionUserResponse,
+  SimilarFeedResponse,
   PageResponse,
 } from './types';
 
@@ -37,6 +38,10 @@ export const deleteFeed = (feedId: number): Promise<void> =>
 // GET /api/v1/users/{userId}/feeds
 export const getUserFeeds = (userId: number, cursor?: string, size = 20): Promise<PageResponse<FeedResponse>> =>
   client.get(`/users/${userId}/feeds`, { params: { cursor, size } });
+
+// GET /api/v1/feeds/{feedId}/similar
+export const getSimilarFeeds = (feedId: number, limit = 10): Promise<SimilarFeedResponse[]> =>
+  client.get(`/feeds/${feedId}/similar`, { params: { limit } });
 
 // ── 리액션 ──
 
