@@ -21,7 +21,7 @@ function SkeletonGrid() {
       {Array.from({ length: 12 }).map((_, i) => (
         <div key={i}>
           <div className="animate-pulse overflow-hidden rounded-card bg-surface">
-            <div className="aspect-[3/4] bg-disabled" />
+            <div className="aspect-3/4 bg-disabled" />
             <div className="space-y-1.5 p-2">
               <div className="h-3 w-16 rounded bg-disabled" />
               <div className="h-3 w-24 rounded bg-disabled" />
@@ -69,37 +69,44 @@ export default function Explore() {
   // BookmarkModal state
   const [bookmarkTarget, setBookmarkTarget] = useState<{ resultId: number; feedId: number } | null>(null);
 
-  const fetchVibes = useCallback(
-    (cursor?: string) => {
-      const isInitial = !cursor;
-      if (isInitial) setLoading(true);
-      else setLoadingMore(true);
-
-      getExploreVibes(period, cursor, 20)
-        .then((res) => {
-          setVibes((prev) => (isInitial ? res.content : [...prev, ...res.content]));
-          setNextCursor(res.nextCursor);
-          setHasNext(res.hasNext);
-          setApiFailed(false);
-        })
-        .catch(() => {
-          if (isInitial) setApiFailed(true);
-        })
-        .finally(() => {
-          if (isInitial) setLoading(false);
-          else setLoadingMore(false);
-        });
-    },
-    [period],
-  );
-
-  // 기간 변경 또는 초기 로드
+  // 기간 변경 또는 초기 로드 — setState는 비동기 콜백 안에서만 호출
   useEffect(() => {
-    setVibes([]);
-    setNextCursor(null);
-    setHasNext(false);
-    fetchVibes();
-  }, [fetchVibes]);
+    let cancelled = false;
+
+    getExploreVibes(period, undefined, 20)
+      .then((res) => {
+        if (cancelled) return;
+        setVibes(res.content);
+        setNextCursor(res.nextCursor);
+        setHasNext(res.hasNext);
+        setApiFailed(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setVibes([]);
+        setApiFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [period]);
+
+  // 무한스크롤 추가 로드
+  const fetchMore = useCallback(() => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+
+    getExploreVibes(period, nextCursor, 20)
+      .then((res) => {
+        setVibes((prev) => [...prev, ...res.content]);
+        setNextCursor(res.nextCursor);
+        setHasNext(res.hasNext);
+      })
+      .catch(() => { /* 추가 로드 실패 무시 */ })
+      .finally(() => setLoadingMore(false));
+  }, [period, nextCursor, loadingMore]);
 
   // 무한스크롤
   useEffect(() => {
@@ -109,7 +116,7 @@ export default function Explore() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNext && !loadingMore && nextCursor) {
-          fetchVibes(nextCursor);
+          fetchMore();
         }
       },
       { rootMargin: '400px' },
@@ -117,7 +124,7 @@ export default function Explore() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasNext, loadingMore, nextCursor, fetchVibes]);
+  }, [hasNext, loadingMore, nextCursor, fetchMore]);
 
   const handleCardClick = (feedId: number) => {
     navigate(`/feed/${feedId}`);
@@ -125,6 +132,7 @@ export default function Explore() {
 
   const handlePeriodChange = (newPeriod: ExplorePeriod) => {
     if (newPeriod === period) return;
+    setLoading(true);
     setSearchParams({ period: newPeriod }, { replace: true });
   };
 
@@ -214,7 +222,7 @@ export default function Explore() {
                       <ImageWithFallback
                         src={vibe.generatedImageUrl}
                         alt={vibe.caption ?? 'Vibe'}
-                        className="aspect-[3/4] w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="aspect-3/4 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
 
                       {/* 책갈피 버튼 */}
