@@ -316,17 +316,17 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
                       onClick={() => navigate(`/feed?userId=${u.userId}`)}
                       className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-input"
                     >
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface">
-                        {u.profileImageUrl ? (
+                      <div className="relative flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface">
+                        <span className="text-xs text-caption">
+                          {u.nickname.charAt(0)}
+                        </span>
+                        {u.profileImageUrl && (
                           <img
                             src={u.profileImageUrl}
                             alt={u.nickname}
-                            className="h-full w-full object-cover"
+                            className="absolute inset-0 h-full w-full object-cover"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
                           />
-                        ) : (
-                          <span className="text-xs text-caption">
-                            {u.nickname.charAt(0)}
-                          </span>
                         )}
                       </div>
                       <span className="min-w-0 flex-1 truncate text-xs font-medium text-high-emphasis">
