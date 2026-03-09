@@ -22,6 +22,7 @@ export interface ItemDetailModalProps {
 
 const CATEGORY_MAP: Record<string, ItemCategory> = {
   movie: 'movie',
+  video: 'movie',
   music: 'music',
   lighting: 'lighting',
   coffee: 'coffee',
@@ -187,7 +188,12 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
   const category = toItemCategory(categoryKey);
 
   useEffect(() => {
-    if (!open || !category) return;
+    if (!open) return;
+    if (!category) {
+      setLoading(false);
+      setError(true);
+      return;
+    }
     setLoading(true);
     setError(false);
     setDetail(null);
