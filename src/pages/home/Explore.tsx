@@ -17,14 +17,11 @@ const PERIOD_TABS: { key: ExplorePeriod; label: string }[] = [
 
 function SkeletonGrid() {
   return (
-    <div className="columns-2 gap-4 sm:columns-3 md:columns-4 lg:columns-5">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
       {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className="mb-4 break-inside-avoid">
+        <div key={i}>
           <div className="animate-pulse overflow-hidden rounded-card bg-surface">
-            <div
-              className="bg-disabled"
-              style={{ aspectRatio: [3 / 4, 1, 4 / 5, 3 / 2][i % 4] }}
-            />
+            <div className="aspect-[3/4] bg-disabled" />
             <div className="space-y-1.5 p-2">
               <div className="h-3 w-16 rounded bg-disabled" />
               <div className="h-3 w-24 rounded bg-disabled" />
@@ -201,9 +198,9 @@ export default function Explore() {
         </>
       ) : (
         <>
-          <div className="columns-2 gap-4 sm:columns-3 md:columns-4 lg:columns-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {vibes.map((vibe) => (
-              <div key={vibe.feedId} className="mb-4 break-inside-avoid">
+              <div key={vibe.feedId}>
                 <div
                   role="button"
                   tabIndex={0}
@@ -217,7 +214,7 @@ export default function Explore() {
                       <ImageWithFallback
                         src={vibe.generatedImageUrl}
                         alt={vibe.caption ?? 'Vibe'}
-                        className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="aspect-[3/4] w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
 
                       {/* 책갈피 버튼 */}
