@@ -4,8 +4,9 @@ import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
 import BookmarkModal from '@/components/common/BookmarkModal';
+import ItemDetailModal from '@/components/common/ItemDetailModal';
+import { getFeed, getSimilarFeeds, updateFeed, deleteFeed } from '@/api/feed';
 import Modal from '@/components/common/Modal';
-import { getFeed, getSimilarFeeds } from '@/api/feed';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getVibeResultItems } from '@/api/vibe';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
@@ -113,7 +114,7 @@ export default function FeedDetail() {
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
-  const [selectedItem, setSelectedItem] = useState<RecommendedItemResponse | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string } | null>(null);
   const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
   const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
   const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
@@ -122,9 +123,16 @@ export default function FeedDetail() {
   const [similarArchiveMap, setSimilarArchiveMap] = useState<Record<number, number>>({});
   const [forbidden, setForbidden] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editCaption, setEditCaption] = useState('');
+  const [editPublic, setEditPublic] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [feedIsPublic, setFeedIsPublic] = useState(true);
   const fetchedRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?.userId);
+  const isOwner = currentUserId != null && feed.user.userId === currentUserId;
 
   useEffect(() => {
     if (!feedId || feedId === 'demo') return;
@@ -146,6 +154,7 @@ export default function FeedDetail() {
           views: res.viewCount,
         });
         setResultId(res.resultId);
+        setFeedIsPublic(res.isPublic);
         setApiReactions(res.reactions);
         setApiMyReactionTypes(res.myReactionTypes);
         // Vibe 아카이브 상태 확인
@@ -213,6 +222,42 @@ export default function FeedDetail() {
   }, [feedId, loadSimilarFeeds]);
 
   const numFeedId = Number(feedId);
+
+  const handleEditStart = () => {
+    setEditCaption(feed.caption ?? '');
+    setEditPublic(feedIsPublic);
+    setEditMode(true);
+  };
+
+  const handleEditSave = async () => {
+    const numId = Number(feedId);
+    if (isNaN(numId)) return;
+    setSaving(true);
+    try {
+      await updateFeed(numId, {
+        caption: editCaption || null,
+        isPublic: editPublic !== feedIsPublic ? editPublic : null,
+      });
+      setFeed((prev) => ({ ...prev, caption: editCaption || null }));
+      setFeedIsPublic(editPublic);
+      setEditMode(false);
+    } catch {
+      /* TODO: 에러 토스트 */
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const numId = Number(feedId);
+    if (isNaN(numId)) return;
+    try {
+      await deleteFeed(numId);
+      navigate('/feed', { replace: true });
+    } catch {
+      /* TODO: 에러 토스트 */
+    }
+  };
 
   if (forbidden) {
     return (
@@ -291,21 +336,79 @@ export default function FeedDetail() {
             alt="Vibe 메인 이미지"
             className="w-full rounded-card object-cover shadow-card"
           />
-          {/* 캡션 + 작성일 */}
-          {(feed.caption || feed.createdAt) && (
-            <div className="mt-3 px-1">
-              {feed.caption && (
-                <p className="text-sm leading-relaxed text-high-emphasis">
-                  {feed.caption}
-                </p>
-              )}
-              {feed.createdAt && (
-                <p className="mt-1 text-xs text-low-emphasis">
-                  {formatDate(feed.createdAt)}
-                </p>
-              )}
-            </div>
-          )}
+          {/* 캡션 + 작성일 + 수정/삭제 */}
+          <div className="mt-3 px-1">
+            {editMode ? (
+              <>
+                <textarea
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  maxLength={300}
+                  rows={3}
+                  className="w-full resize-none rounded-control border border-stroke bg-white px-3 py-2 text-sm text-high-emphasis outline-none focus:border-accent"
+                  placeholder="캡션을 입력하세요"
+                />
+                <label className="mt-2 flex items-center gap-2 text-sm text-caption">
+                  <input
+                    type="checkbox"
+                    checked={editPublic}
+                    onChange={(e) => setEditPublic(e.target.checked)}
+                    className="h-4 w-4 accent-accent"
+                  />
+                  공개
+                </label>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleEditSave}
+                    disabled={saving}
+                    className="rounded-full bg-default px-4 py-1.5 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                  >
+                    {saving ? '저장 중…' : '저장'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditMode(false)}
+                    className="rounded-full border border-stroke px-4 py-1.5 text-sm font-bold text-high-emphasis transition-colors hover:bg-input"
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {feed.caption && (
+                  <p className="text-sm leading-relaxed text-high-emphasis">
+                    {feed.caption}
+                  </p>
+                )}
+                {feed.createdAt && (
+                  <p className="mt-1 text-xs text-low-emphasis">
+                    {formatDate(feed.createdAt)}
+                    {!feedIsPublic && <span className="ml-2 text-caption">· 비공개</span>}
+                  </p>
+                )}
+                {isOwner && (
+                  <div className="mt-2 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleEditStart}
+                      className="text-sm font-medium text-caption transition-colors hover:text-high-emphasis"
+                    >
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteModal(true)}
+                      className="text-sm font-medium text-caption transition-colors hover:text-red-500"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Right — Info Panel */}
@@ -379,7 +482,7 @@ export default function FeedDetail() {
                     <div
                       key={item.itemId}
                       className="group/item relative aspect-square cursor-pointer overflow-hidden rounded-control bg-white"
-                      onClick={() => setSelectedItem(item)}
+                      onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey })}
                     >
                       <ImageWithFallback
                         src={item.imageUrl}
@@ -532,33 +635,26 @@ export default function FeedDetail() {
       )}
       {/* ===== Item Detail Modal ===== */}
       {selectedItem && (
-        <Modal
+        <ItemDetailModal
           open={!!selectedItem}
           onClose={() => setSelectedItem(null)}
-          image={selectedItem.imageUrl ?? undefined}
-          title={selectedItem.itemName}
-          description={`${selectedItem.brand ?? '브랜드 없음'} · ${selectedItem.categoryKey}`}
-          primaryAction={
-            selectedItem.externalLink
-              ? { label: '외부 링크 열기', onClick: () => window.open(selectedItem.externalLink!, '_blank') }
-              : undefined
-          }
-          secondaryAction={{
-            label: '아카이브 저장',
-            onClick: () => {
-              setItemBookmarkTarget(selectedItem.itemId);
-              setSelectedItem(null);
-            },
+          itemId={selectedItem.itemId}
+          categoryKey={selectedItem.categoryKey}
+          onArchive={() => {
+            setItemBookmarkTarget(selectedItem.itemId);
+            setSelectedItem(null);
           }}
-        >
-          <div className="space-y-1 text-sm text-caption">
-            {selectedItem.matchScore > 0 && (
-              <p>매칭 점수: <strong className="text-high-emphasis">{selectedItem.matchScore}%</strong></p>
-            )}
-            {selectedItem.recommendReason && <p>{selectedItem.recommendReason}</p>}
-          </div>
-        </Modal>
+        />
       )}
+      {/* ===== Delete Confirmation Modal ===== */}
+      <Modal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="피드를 삭제하시겠습니까?"
+        description="삭제된 피드는 복구할 수 없습니다."
+        primaryAction={{ label: '삭제', onClick: handleDelete }}
+        secondaryAction={{ label: '취소', onClick: () => setShowDeleteModal(false) }}
+      />
     </PageContainer>
   );
 }
