@@ -4,6 +4,8 @@ import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
 import { getVibeSession, createVibe } from '@/api/vibe';
 import type { VibeResultResponse } from '@/api/vibe';
+import { searchSpotifyTrack } from '@/api/spotify';
+import type { SpotifyTrackResponse } from '@/api/spotify';
 import { ApiError } from '@/api/types';
 import { useOptions } from '@/hooks/useOptions';
 import GeckoLoader from '@/components/feedback/GeckoLoader';
@@ -47,8 +49,8 @@ const FALLBACK_RESULT = {
       key: 'playlist',
       label: 'PLAYLIST',
       items: [
-        { id: 'p1', name: 'Lo-fi Autumn Breeze', detail: '32곡 · 2시간 14분' },
-        { id: 'p2', name: 'Vintage Café Jazz', detail: '28곡 · 1시간 52분' },
+        { id: 'p1', name: 'Lo-fi Autumn Breeze', detail: '32곡 · 2시간 14분', albumCoverUrl: null, previewUrl: null, spotifyUri: null, isrc: null, musicbrainzId: null },
+        { id: 'p2', name: 'Vintage Café Jazz', detail: '28곡 · 1시간 52분', albumCoverUrl: null, previewUrl: null, spotifyUri: null, isrc: null, musicbrainzId: null },
       ],
     },
   ],
@@ -84,6 +86,29 @@ function PlayIcon() {
       stroke="none"
     >
       <polygon points="5 3 19 12 5 21 5 3" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="none"
+    >
+      <rect x="6" y="4" width="4" height="16" />
+      <rect x="14" y="4" width="4" height="16" />
+    </svg>
+  );
+}
+
+function SpotifyIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
     </svg>
   );
 }
@@ -185,18 +210,70 @@ function PosterFallback({ name, size = 'sm' }: { name: string; size?: 'sm' | 'lg
   );
 }
 
+interface ItemRowItem {
+  id: string;
+  name: string;
+  detail: string;
+  externalLink?: string | null;
+  imageUrl?: string | null;
+  // 음악 전용
+  albumCoverUrl?: string | null;
+  previewUrl?: string | null;
+  spotifyUri?: string | null;
+  isrc?: string | null;
+  musicbrainzId?: string | null;
+}
+
 function ItemRow({
   item,
   categoryKey,
+  audioRef,
+  playingId,
+  onPlayPreview,
 }: {
-  item: { id: string; name: string; detail: string; externalLink?: string | null; imageUrl?: string | null };
+  item: ItemRowItem;
   categoryKey: string;
+  audioRef: React.RefObject<HTMLAudioElement | null>;
+  playingId: string | null;
+  onPlayPreview: (item: ItemRowItem) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
   const [posterError, setPosterError] = useState(false);
+  const [coverError, setCoverError] = useState(false);
+  const [spotifyData, setSpotifyData] = useState<SpotifyTrackResponse | null>(null);
+  const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const fetchedRef = useRef(false);
 
+  const isMusic = categoryKey === 'playlist';
+  const isPlaying = playingId === item.id;
   const hasPoster = categoryKey === 'tvshow' && item.imageUrl && !posterError;
+
+  // 앨범 커버: DB 데이터 → Spotify 조회 결과 순서로 사용
+  const albumCover = item.albumCoverUrl || spotifyData?.albumCoverUrl;
+  const previewUrl = item.previewUrl || spotifyData?.previewUrl;
+  const spotifyUrl = item.spotifyUri
+    ? `https://open.spotify.com/track/${item.spotifyUri.replace('spotify:track:', '')}`
+    : spotifyData?.spotifyUrl;
+
+  // 음악 아이템: 앨범커버 없거나 이름이 itemKey면 Spotify API로 조회
+  const nameIsKey = !item.name || /^(music|movie|lighting|coffee)_/.test(item.name);
+  useEffect(() => {
+    if (!isMusic || fetchedRef.current) return;
+    if (item.albumCoverUrl && !nameIsKey) return;
+    if (!item.isrc && !item.musicbrainzId && !item.name) return;
+
+    fetchedRef.current = true;
+    setSpotifyLoading(true);
+    searchSpotifyTrack({
+      isrc: item.isrc,
+      mbid: item.musicbrainzId,
+      query: !item.isrc && !item.musicbrainzId ? item.name : null,
+    })
+      .then(setSpotifyData)
+      .catch(() => { /* 조회 실패는 무시 */ })
+      .finally(() => setSpotifyLoading(false));
+  }, [isMusic, item.albumCoverUrl, item.isrc, item.musicbrainzId, item.name]);
 
   return (
     <div
@@ -204,6 +281,28 @@ function ItemRow({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* 음악 앨범 커버 썸네일 */}
+      {isMusic && (
+        <div className="relative flex-shrink-0 overflow-hidden rounded-[4px]">
+          {spotifyLoading ? (
+            <div className="flex h-12 w-12 items-center justify-center bg-stroke/60">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-caption border-t-brand" />
+            </div>
+          ) : albumCover && !coverError ? (
+            <img
+              src={albumCover}
+              alt={`${item.name} 앨범 커버`}
+              className="h-12 w-12 object-cover"
+              onError={() => setCoverError(true)}
+            />
+          ) : (
+            <div className="flex h-12 w-12 items-center justify-center bg-stroke/60 text-caption">
+              <MusicIcon />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* TV SHOW 포스터 썸네일 */}
       {categoryKey === 'tvshow' && (
         <button
@@ -223,9 +322,10 @@ function ItemRow({
           )}
         </button>
       )}
+
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-medium text-high-emphasis">
-          {item.name}
+          {(isMusic && spotifyData?.trackName) || item.name}
         </p>
         <p className="truncate text-xs text-caption">{item.detail}</p>
         {/* COFFEE 구입처 링크 */}
@@ -240,10 +340,35 @@ function ItemRow({
           </a>
         )}
       </div>
-      {categoryKey === 'playlist' && hovered && (
-        <button className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand text-white">
-          <PlayIcon />
-        </button>
+
+      {/* 음악: 미리듣기 + Spotify 링크 */}
+      {isMusic && (hovered || isPlaying) && (
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {previewUrl && (
+            <button
+              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+                isPlaying
+                  ? 'bg-accent text-white'
+                  : 'bg-brand text-white hover:bg-brand/80'
+              }`}
+              onClick={() => onPlayPreview(item)}
+              title={isPlaying ? '정지' : '미리듣기'}
+            >
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
+          )}
+          {spotifyUrl && (
+            <a
+              href={spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1DB954] text-white hover:bg-[#1ed760] transition-colors"
+              title="Spotify에서 열기"
+            >
+              <SpotifyIcon />
+            </a>
+          )}
+        </div>
       )}
 
       {/* TV SHOW 포스터 모달 */}
@@ -300,6 +425,11 @@ function mapApiResultToView(apiResult: VibeResultResponse) {
         detail: [item.brand, item.recommendReason].filter(Boolean).join(' · ') || cat.categoryKey,
         externalLink: item.externalLink ?? null,
         imageUrl: item.imageUrl ?? null,
+        albumCoverUrl: item.albumCoverUrl ?? null,
+        previewUrl: item.previewUrl ?? null,
+        spotifyUri: item.spotifyUri ?? null,
+        isrc: item.isrc ?? null,
+        musicbrainzId: item.musicbrainzId ?? null,
       })),
     })),
   };
@@ -322,6 +452,39 @@ export default function VibeConnectorResult() {
   const [imageTimedOut, setImageTimedOut] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
+
+  // 오디오 미리듣기 상태
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
+  const handlePlayPreview = useCallback((item: ItemRowItem) => {
+    const previewUrl = item.previewUrl;
+    if (!previewUrl) return;
+
+    // 같은 곡을 다시 클릭하면 정지
+    if (playingId === item.id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+      return;
+    }
+
+    // 기존 재생 중지
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const audio = new Audio(previewUrl);
+    audioRef.current = audio;
+    setPlayingId(item.id);
+
+    audio.play().catch(() => {
+      setPlayingId(null);
+    });
+
+    audio.addEventListener('ended', () => {
+      setPlayingId(null);
+    });
+  }, [playingId]);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -358,7 +521,14 @@ export default function VibeConnectorResult() {
   }, [stopPolling]);
 
   useEffect(() => {
-    return () => stopPolling();
+    return () => {
+      stopPolling();
+      // 오디오 정리
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, [stopPolling]);
 
   useEffect(() => {
@@ -502,6 +672,9 @@ export default function VibeConnectorResult() {
                             key={item.id}
                             item={item}
                             categoryKey={cat.key}
+                            audioRef={audioRef}
+                            playingId={playingId}
+                            onPlayPreview={handlePlayPreview}
                           />
                         ))}
                       </div>
