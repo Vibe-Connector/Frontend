@@ -58,6 +58,24 @@ function isCoffee(d: ItemDetailResponse, cat: ItemCategory): d is CoffeeDetailRe
 
 /* ── 유틸 ── */
 
+/** itemName(한국어)이 없을 때 도메인별 원제/원명으로 폴백 */
+function getDisplayName(detail: ItemDetailResponse, category: ItemCategory | null): string {
+  if (detail.itemName) return detail.itemName;
+  if (category === 'movie' && isMovie(detail, category)) {
+    return detail.originalTitle ?? '이름 없음';
+  }
+  if (category === 'music' && isMusic(detail, category)) {
+    return detail.albumName ?? detail.artists[0]?.name ?? '이름 없음';
+  }
+  if (category === 'coffee' && isCoffee(detail, category)) {
+    return detail.capsuleName ?? '이름 없음';
+  }
+  if (category === 'lighting' && isLighting(detail, category)) {
+    return detail.lightingType ?? detail.lightColor ?? '이름 없음';
+  }
+  return '이름 없음';
+}
+
 function formatMs(ms: number): string {
   const min = Math.floor(ms / 60000);
   const sec = Math.floor((ms % 60000) / 1000);
@@ -358,7 +376,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <div className="w-80 shrink-0">
                   <ImageWithFallback
                     src={detail.imageUrl}
-                    alt={detail.itemName ?? '포스터'}
+                    alt={getDisplayName(detail, category)}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -367,10 +385,10 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <span className="mb-2 inline-block w-fit rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-caption">
                   {categoryLabel}
                 </span>
-                <h2 className="text-lg font-bold text-high-emphasis">{detail.itemName ?? '이름 없음'}</h2>
+                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category)}</h2>
                 {detail.brand && <p className="mt-0.5 text-sm text-caption">{detail.brand}</p>}
                 {detail.description && (
-                  <MovieOverviewText text={detail.description} movieTitle={detail.itemName ?? ''} />
+                  <MovieOverviewText text={detail.description} movieTitle={getDisplayName(detail, category)} />
                 )}
                 <hr className="my-4 border-stroke" />
                 <MovieDetail data={detail} />
@@ -393,7 +411,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <span className="mb-2 inline-block rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-caption">
                   {categoryLabel}
                 </span>
-                <h2 className="text-lg font-bold text-high-emphasis">{detail.itemName ?? '이름 없음'}</h2>
+                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category)}</h2>
                 {detail.brand && <p className="mt-0.5 text-sm text-caption">{detail.brand}</p>}
                 {detail.description && <ExpandableText text={detail.description} />}
                 <hr className="my-4 border-stroke" />
