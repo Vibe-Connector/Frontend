@@ -109,7 +109,7 @@ function PhotoGrid({
   loadingMore,
 }: {
   feeds: FeedResponse[];
-  onFeedClick: (feedId: number) => void;
+  onFeedClick: (feed: FeedResponse) => void;
   hasNext: boolean;
   loadingMore: boolean;
 }) {
@@ -123,7 +123,7 @@ function PhotoGrid({
               key={feed.feedId}
               type="button"
               className="group relative aspect-4/5 cursor-pointer overflow-hidden rounded-control bg-surface"
-              onClick={() => onFeedClick(feed.feedId)}
+              onClick={() => onFeedClick(feed)}
             >
               <ImageWithFallback
                 src={feed.generatedImageUrl}
@@ -468,7 +468,22 @@ export default function Feed() {
         {feedLoading ? (
           <FeedImageSkeleton />
         ) : feeds.length > 0 ? (
-          <PhotoGrid feeds={feeds} onFeedClick={(id) => navigate(`/feed/${id}`)} hasNext={feedHasNext} loadingMore={feedLoadingMore} />
+          <PhotoGrid
+            feeds={feeds}
+            onFeedClick={(feed) => navigate(`/feed/${feed.feedId}`, {
+              state: {
+                feed: {
+                  image: feed.generatedImageUrl,
+                  nickname: feed.nickname,
+                  avatar: feed.profileImageUrl,
+                  caption: feed.caption,
+                  views: feed.viewCount,
+                },
+              },
+            })}
+            hasNext={feedHasNext}
+            loadingMore={feedLoadingMore}
+          />
         ) : (
           <p className="py-12 text-center text-sm text-caption">아직 게시된 피드가 없습니다</p>
         )}

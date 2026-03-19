@@ -126,8 +126,18 @@ export default function Explore() {
     return () => observer.disconnect();
   }, [hasNext, loadingMore, nextCursor, fetchMore]);
 
-  const handleCardClick = (feedId: number) => {
-    navigate(`/feed/${feedId}`);
+  const handleCardClick = (vibe: ExploreVibeResponse) => {
+    navigate(`/feed/${vibe.feedId}`, {
+      state: {
+        feed: {
+          image: vibe.generatedImageUrl,
+          nickname: vibe.authorNickname,
+          avatar: vibe.authorProfileImageUrl,
+          caption: vibe.caption,
+          views: vibe.viewCount,
+        },
+      },
+    });
   };
 
   const handlePeriodChange = (newPeriod: ExplorePeriod) => {
@@ -213,8 +223,8 @@ export default function Explore() {
                   role="button"
                   tabIndex={0}
                   className="group relative w-full cursor-pointer text-left"
-                  onClick={() => handleCardClick(vibe.feedId)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(vibe.feedId); }}
+                  onClick={() => handleCardClick(vibe)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCardClick(vibe); }}
                 >
                   <div className="overflow-hidden rounded-card bg-surface transition-shadow hover:shadow-card">
                     {/* 이미지 + 책갈피 버튼 */}
