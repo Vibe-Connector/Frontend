@@ -191,6 +191,8 @@ export interface MusicDetailResponse extends ItemCommon {
   previewUrl: string | null;
   spotifyUri: string | null;
   contentType: string; // "TRACK" | "ALBUM" | "PLAYLIST"
+  isrc: string | null;
+  musicbrainzId: string | null;
 }
 
 // ── 조명 ──
