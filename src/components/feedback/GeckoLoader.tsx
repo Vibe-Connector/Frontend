@@ -1,6 +1,14 @@
-export default function GeckoLoader() {
+interface GeckoLoaderProps {
+  inline?: boolean;
+}
+
+export default function GeckoLoader({ inline = false }: GeckoLoaderProps) {
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className={
+      inline
+        ? "flex flex-col items-center justify-center w-full h-full min-h-[400px]"
+        : "fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/30 backdrop-blur-sm"
+    }>
       <div className="relative w-64 h-64">
         <div
           className="absolute w-full h-full flex items-center justify-center"

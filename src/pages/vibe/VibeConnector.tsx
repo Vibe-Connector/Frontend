@@ -11,7 +11,7 @@ import { MAX_MOOD_SELECTIONS, EMOTION_ZONES, MOOD_ZONE_MAP } from '@/features/vi
 import type { MoodKeyword } from '@/features/vibe/types';
 import { useOptions } from '@/hooks/useOptions';
 import { createVibe } from '@/api/vibe';
-import GeckoLoader from '@/components/feedback/GeckoLoader';
+
 
 // 한국어 폴백 맵 (번역 데이터가 없을 때 사용)
 const MOOD_KOREAN_MAP: Record<string, string> = {
@@ -199,6 +199,7 @@ export default function VibeConnector() {
             onCompanionChange={flow.setCompanion}
             places={apiPlaces}
             companions={apiCompanions}
+            submitting={submitting}
           />
         )}
       </div>
@@ -206,13 +207,12 @@ export default function VibeConnector() {
       <StepNavigation
         currentStep={flow.currentStep}
         canProceed={flow.canProceed}
+        submitting={submitting}
         onPrev={flow.prevStep}
         onNext={flow.nextStep}
         onReset={flow.resetCurrentStep}
         onSubmit={handleSubmit}
       />
-
-      {submitting && <GeckoLoader />}
     </PageContainer>
   );
 }

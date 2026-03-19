@@ -6,6 +6,7 @@ import { getVibeSession, createVibe } from '@/api/vibe';
 import type { VibeResultResponse } from '@/api/vibe';
 import { ApiError } from '@/api/types';
 import { useOptions } from '@/hooks/useOptions';
+import GeckoLoader from '@/components/feedback/GeckoLoader';
 
 // [BEFORE INTEGRATION] const MOCK_RESULT = { ... 하드코딩 mock 데이터 }
 // [AFTER INTEGRATION] 실제 API에서 데이터를 가져옴
@@ -422,14 +423,6 @@ export default function VibeConnectorResult() {
     }
   };
 
-  if (loading) {
-    return (
-      <PageContainer className="flex items-center justify-center">
-        <p className="text-caption">결과를 불러오는 중...</p>
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer className="!px-0">
       <div className="flex flex-col" style={{ minHeight: 'calc(100vh - var(--spacing-header) - var(--spacing-footer) - 64px)' }}>
@@ -437,20 +430,23 @@ export default function VibeConnectorResult() {
         <div className="flex flex-1 flex-col gap-6 px-[var(--spacing-page-x)] lg:flex-row">
           {/* Left — AI Generated Image */}
           <div className="flex flex-1 items-start justify-center lg:justify-start">
-            <div className="relative w-full max-w-[560px] overflow-hidden rounded-card">
-              {imageUrl ? (
+            <div className="flex items-center justify-center relative w-full max-w-[560px] overflow-hidden rounded-card bg-surface">
+              {loading ? (
+                <div className="aspect-[8/11] w-full">
+                  <GeckoLoader inline />
+                </div>
+              ) : imageUrl ? (
                 <img
                   src={imageUrl}
                   alt={`Vibe 결과 이미지 (세션: ${sessionId})`}
                   className="w-full object-cover"
                 />
               ) : imageLoading ? (
-                <div className="flex aspect-[8/11] w-full flex-col items-center justify-center gap-4 bg-surface">
-                  <span className="h-10 w-10 animate-spin rounded-full border-4 border-stroke border-t-brand" />
-                  <p className="text-sm text-caption">AI 이미지를 생성하고 있습니다...</p>
+                <div className="aspect-[8/11] w-full">
+                  <GeckoLoader inline />
                 </div>
               ) : imageTimedOut ? (
-                <div className="flex aspect-[8/11] w-full flex-col items-center justify-center gap-3 bg-surface">
+                <div className="flex aspect-[8/11] w-full flex-col items-center justify-center gap-3">
                   <p className="text-sm text-caption">이미지를 생성할 수 없었습니다</p>
                   <button
                     className="rounded-control bg-brand px-4 py-2 text-sm text-white"
@@ -462,7 +458,7 @@ export default function VibeConnectorResult() {
                   </button>
                 </div>
               ) : (
-                <div className="flex aspect-[8/11] w-full items-center justify-center bg-surface">
+                <div className="flex aspect-[8/11] w-full items-center justify-center">
                   <p className="text-sm text-caption">이미지 없음</p>
                 </div>
               )}
