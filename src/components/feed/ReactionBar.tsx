@@ -136,6 +136,9 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
   const didLongPress = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // async 클로저에서 showUsers 최신값을 추적하기 위한 ref
+  const showUsersRef = useRef(false);
+  showUsersRef.current = showUsers;
 
   const totalCount = Object.values(counts).reduce((sum, c) => sum + c, 0);
 
@@ -176,11 +179,24 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
       }
 
       // 반응 변경 시 사용자 목록 캐시 초기화
+      // 패널이 이미 열려있으면 스피너를 표시해 "반응 없음"이 순간적으로 노출되는 것을 방지
       setReactionUsers([]);
+      if (showUsersRef.current) {
+        setLoadingUsers(true);
+      }
 
       setPending(true);
       try {
         await toggleReaction(feedId, type);
+        // toggle 완료 후 패널이 열려있으면 서버에서 최신 반응자 목록 재조회
+        if (showUsersRef.current) {
+          try {
+            const users = await getReactionUsers(feedId);
+            setReactionUsers(users);
+          } catch { /* 무시 */ } finally {
+            setLoadingUsers(false);
+          }
+        }
       } catch {
         // 롤백
         setMyType(prevType);
@@ -194,6 +210,7 @@ export default function ReactionBar({ feedId, reactions, myReactionTypes }: Reac
           }
           return next;
         });
+        setLoadingUsers(false);
       } finally {
         setPending(false);
       }
