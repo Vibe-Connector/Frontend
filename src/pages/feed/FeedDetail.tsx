@@ -9,6 +9,7 @@ import { getFeed, getSimilarFeeds, updateFeed, deleteFeed } from '@/api/feed';
 import Modal from '@/components/common/Modal';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getVibeResultItems } from '@/api/vibe';
+import { searchSpotifyTrack } from '@/api/spotify';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
 import { ButtonDefault } from '@/components/common';
@@ -99,6 +100,25 @@ function formatDate(isoString: string): string {
   });
 }
 
+/** itemKey 형태인지 판별 (music_mb_xxx, music_xxx 등 시스템 키) */
+function isItemKey(name: string | null | undefined): boolean {
+  if (!name) return true;
+  return /^(music|movie|lighting|coffee)_/.test(name);
+}
+
+/** Spotify 검색 결과가 DB 아이템과 일치하는지 검증 */
+function verifySpotifyMatch(
+  item: RecommendedItemResponse,
+  spotifyData: { isrc: string | null; artists: string[]; albumName: string | null; trackName: string }
+): boolean {
+  // ISRC가 일치하면 확실
+  if (item.isrc && spotifyData.isrc && item.isrc === spotifyData.isrc) return true;
+  // ISRC/MBID로 검색한 경우 (item에 isrc 또는 musicbrainzId가 있었다면) 신뢰
+  if (item.isrc || item.musicbrainzId) return true;
+  // 이름 기반 검색이면 false (신뢰할 수 없음)
+  return false;
+}
+
 /* ---------- Component ---------- */
 
 export default function FeedDetail() {
@@ -130,6 +150,7 @@ export default function FeedDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [feedIsPublic, setFeedIsPublic] = useState(true);
   const fetchedRef = useRef<string | null>(null);
+  const spotifyEnrichedRef = useRef(false);
   const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?.userId);
   const isOwner = currentUserId != null && feed.user.userId === currentUserId;
@@ -138,6 +159,7 @@ export default function FeedDetail() {
     if (!feedId || feedId === 'demo') return;
     if (fetchedRef.current === feedId) return;
     fetchedRef.current = feedId;
+    spotifyEnrichedRef.current = false;
     const numId = Number(feedId);
     if (isNaN(numId)) return;
 
@@ -200,6 +222,50 @@ export default function FeedDetail() {
         /* 그 외 폴백 유지 */
       });
   }, [feedId]);
+
+  // 음악 아이템의 Spotify 데이터 보완 (앨범커버, 이름 없을 때)
+  useEffect(() => {
+    if (vibeItems.length === 0 || spotifyEnrichedRef.current) return;
+    const needsEnrichment = vibeItems.some(
+      (item) => item.categoryKey === 'music' && (!item.albumCoverUrl || isItemKey(item.itemName))
+    );
+    if (!needsEnrichment) return;
+    spotifyEnrichedRef.current = true;
+
+    const musicItems = vibeItems.filter(
+      (item) => item.categoryKey === 'music' && (!item.albumCoverUrl || isItemKey(item.itemName))
+    );
+
+    musicItems.forEach((item) => {
+      // ISRC → MBID → 이름+아티스트 순서로 정확하게 검색
+      searchSpotifyTrack({
+        isrc: item.isrc,
+        mbid: item.musicbrainzId,
+        query: (!item.isrc && !item.musicbrainzId && !isItemKey(item.itemName)) ? item.itemName : null,
+      })
+        .then((spotifyData) => {
+          // 검증: ISRC 매칭 시 신뢰, 아니면 앨범명이나 아티스트로 교차 검증
+          const isVerified = verifySpotifyMatch(item, spotifyData);
+          if (!isVerified) return;
+
+          setVibeItems((prev) =>
+            prev.map((v) =>
+              v.itemId === item.itemId
+                ? {
+                    ...v,
+                    albumCoverUrl: v.albumCoverUrl || spotifyData.albumCoverUrl,
+                    previewUrl: v.previewUrl || spotifyData.previewUrl,
+                    spotifyUri: v.spotifyUri || spotifyData.spotifyUri,
+                    // itemKey 형태의 이름이면 Spotify 트랙명으로 대체
+                    itemName: isItemKey(v.itemName) ? spotifyData.trackName : v.itemName,
+                  }
+                : v
+            )
+          );
+        })
+        .catch(() => {/* 무시 */});
+    });
+  }, [vibeItems]);
 
   // 비슷한 무드 추천 피드 로드
   const loadSimilarFeeds = useCallback(async () => {
@@ -478,6 +544,11 @@ export default function FeedDetail() {
               <div className="grid grid-cols-4 gap-3">
                 {vibeItems.slice(0, 8).map((item) => {
                   const isArchived = item.itemId in itemArchiveMap;
+                  const isMusic = item.categoryKey === 'music';
+                  // 음악: 앨범커버 우선, 그 외: imageUrl
+                  const displayImage = isMusic
+                    ? (item.albumCoverUrl || item.imageUrl)
+                    : item.imageUrl;
                   return (
                     <div
                       key={item.itemId}
@@ -485,7 +556,7 @@ export default function FeedDetail() {
                       onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey })}
                     >
                       <ImageWithFallback
-                        src={item.imageUrl}
+                        src={displayImage}
                         alt={item.itemName}
                         className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
                       />
