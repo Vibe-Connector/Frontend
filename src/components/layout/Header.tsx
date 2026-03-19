@@ -180,11 +180,13 @@ const Header = () => {
           {/* 알림 벨 아이콘 + 드롭다운 패널 */}
           <div ref={notificationRef} className="relative">
             <button
-              className="relative cursor-pointer"
-              onClick={() => setNotificationOpen((prev) => !prev)}
+              className={`relative ${isAuthenticated ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}
+              onClick={() => isAuthenticated && setNotificationOpen((prev) => !prev)}
+              disabled={!isAuthenticated}
+              aria-label="알림"
             >
               <BellIcon />
-              {unreadCount > 0 && (
+              {isAuthenticated && unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
