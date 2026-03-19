@@ -246,6 +246,7 @@ export default function Explore() {
                           {vibe.isArchived ? <BookmarkFilledIcon /> : <BookmarkOutlineIcon />}
                         </button>
                       </div>
+
                     </div>
 
                     <div className="p-2">

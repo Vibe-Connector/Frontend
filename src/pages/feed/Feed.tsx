@@ -116,21 +116,32 @@ function PhotoGrid({
   return (
     <>
       <div className="grid grid-cols-5 gap-2">
-        {feeds.map((feed) => (
-          <button
-            key={feed.feedId}
-            type="button"
-            className="group relative aspect-4/5 cursor-pointer overflow-hidden rounded-control bg-surface"
-            onClick={() => onFeedClick(feed.feedId)}
-          >
-            <ImageWithFallback
-              src={feed.generatedImageUrl}
-              alt={feed.caption ?? `Vibe ${feed.feedId}`}
-              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-              placeholderClassName="flex h-full w-full items-center justify-center bg-disabled text-caption text-xs"
-            />
-          </button>
-        ))}
+        {feeds.map((feed) => {
+          const totalReactions = feed.reactions.reduce((sum, r) => sum + r.count, 0);
+          return (
+            <button
+              key={feed.feedId}
+              type="button"
+              className="group relative aspect-4/5 cursor-pointer overflow-hidden rounded-control bg-surface"
+              onClick={() => onFeedClick(feed.feedId)}
+            >
+              <ImageWithFallback
+                src={feed.generatedImageUrl}
+                alt={feed.caption ?? `Vibe ${feed.feedId}`}
+                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                placeholderClassName="flex h-full w-full items-center justify-center bg-disabled text-caption text-xs"
+              />
+              {/* 호버 시 통계 오버레이 */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/65 to-transparent px-2 pb-2 pt-8 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <div className="flex items-center justify-between text-[10px] text-white/90">
+                  <span>{feed.viewCount} views</span>
+                  <span>{totalReactions} reactions</span>
+                  <span>{feed.commentCount} comments</span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
       {hasNext && (
         <div className="mt-4 flex justify-center">
