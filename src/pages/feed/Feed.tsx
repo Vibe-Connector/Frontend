@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LOCALE_MAP } from '@/i18n/config';
 import PageContainer from '@/components/layout/PageContainer';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { ButtonDefault } from '@/components/common';
@@ -60,6 +62,7 @@ function ProfileSection({
   onFollowerClick: () => void;
   onFollowingClick: () => void;
 }) {
+  const { t } = useTranslation();
   const [avatarError, setAvatarError] = useState(false);
 
   return (
@@ -75,17 +78,17 @@ function ProfileSection({
         <span className="text-[16px] font-medium text-high-emphasis">{user.nickname}</span>
         <span className="text-sm text-caption">
           <button type="button" onClick={onFollowerClick} className="hover:underline">
-            팔로워 <strong>{followerCount}</strong>
+            {t('profile.followers')} <strong>{followerCount}</strong>
           </button>
           {' · '}
           <button type="button" onClick={onFollowingClick} className="hover:underline">
-            팔로잉 <strong>{followingCount}</strong>
+            {t('profile.followingCount')} <strong>{followingCount}</strong>
           </button>
         </span>
       </div>
       {!isOwnProfile && (
         <ButtonDefault shape="pill" className="ml-auto px-5! py-2! text-[14px]!" onClick={onToggleFollow}>
-          {isFollowing ? '팔로잉' : '팔로우'}
+          {isFollowing ? t('feed.following') : t('feed.follow')}
         </ButtonDefault>
       )}
     </div>
@@ -155,6 +158,7 @@ function PhotoGrid({
 }
 
 function CollectionCard({ collection, onClick }: { collection: Collection; onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <button type="button" className="w-45 cursor-pointer text-left" onClick={onClick}>
       <div className="relative flex h-32.5 w-full items-center justify-center overflow-hidden rounded-card bg-surface">
@@ -173,16 +177,17 @@ function CollectionCard({ collection, onClick }: { collection: Collection; onCli
         )}
       </div>
       <p className="mt-2 text-[14px] font-semibold text-high-emphasis">{collection.name}</p>
-      <p className="text-[12px] text-caption">핀 {collection.pinCount}개 &middot; {collection.createdAt}</p>
+      <p className="text-[12px] text-caption">{collection.pinCount}{t('archive.itemsCount')} &middot; {collection.createdAt}</p>
     </button>
   );
 }
 
 function CreateCollectionCard({ onClick }: { onClick: () => void }) {
+  const { t } = useTranslation();
   return (
     <button type="button" className="w-45 cursor-pointer text-left" onClick={onClick}>
       <div className="flex h-32.5 w-full items-center justify-center overflow-hidden rounded-card bg-surface transition-colors hover:bg-disabled">
-        <span className="rounded-control border border-stroke bg-white px-4 py-1.5 text-[13px] font-medium text-high-emphasis">만들기</span>
+        <span className="rounded-control border border-stroke bg-white px-4 py-1.5 text-[13px] font-medium text-high-emphasis">{t('archive.create')}</span>
       </div>
       <p className="mt-2 text-[14px] font-semibold text-transparent">&nbsp;</p>
       <p className="text-[12px] text-transparent">&nbsp;</p>
@@ -242,10 +247,11 @@ function CollectionsSection({
   const createCardIndex = filtered.length; // 만들기 카드의 가상 인덱스
   const showCreateCard = isOwnProfile && createCardIndex >= startIndex && createCardIndex < startIndex + VISIBLE_COUNT;
 
+  const { t } = useTranslation();
   const tabs: { key: ArchiveFilter; label: string }[] = [
-    { key: 'ALL', label: '전체' },
-    { key: 'VIBE', label: 'Vibe' },
-    { key: 'ITEM', label: 'Item' },
+    { key: 'ALL', label: t('archive.all') },
+    { key: 'VIBE', label: t('archive.vibe') },
+    { key: 'ITEM', label: t('archive.item') },
   ];
 
   return (
@@ -309,10 +315,10 @@ function CollectionsSection({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-10 text-caption">
-          <p className="text-sm">아카이브 폴더가 없습니다</p>
+          <p className="text-sm">{t('archive.emptyArchive')}</p>
           {isOwnProfile && (
             <button type="button" onClick={onCreateClick} className="mt-2 text-sm text-accent hover:underline">
-              폴더 만들기
+              {t('archive.newFolder')}
             </button>
           )}
         </div>
@@ -323,6 +329,7 @@ function CollectionsSection({
 
 // --- Main Component ---
 export default function Feed() {
+  const { t, i18n } = useTranslation();
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -383,7 +390,7 @@ export default function Feed() {
           pinCount: f.archiveCount,
           isPrivate: f.isPublic === false,
           thumbnailUrl: f.thumbnailUrl,
-          createdAt: new Date(f.createdAt).toLocaleDateString('ko-KR'),
+          createdAt: new Date(f.createdAt).toLocaleDateString(LOCALE_MAP[i18n.language] || 'ko-KR'),
           folderType: (f.folderType === 'ITEM' ? 'ITEM' : 'VIBE') as 'VIBE' | 'ITEM',
         }));
         setCollections(mapped.length > 0 ? mapped : []);
@@ -485,7 +492,7 @@ export default function Feed() {
             loadingMore={feedLoadingMore}
           />
         ) : (
-          <p className="py-12 text-center text-sm text-caption">아직 게시된 피드가 없습니다</p>
+          <p className="py-12 text-center text-sm text-caption">{t('feed.emptyFeed')}</p>
         )}
         <div ref={feedSentinelRef} />
       </section>

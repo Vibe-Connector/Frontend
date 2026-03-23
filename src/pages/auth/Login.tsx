@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput } from '@/components/common';
 import { login } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { getGoogleOAuthUrl, getNaverOAuthUrl } from '@/utils/oauth';
+import i18n from '@/i18n/config';
+import { LANGUAGE_MAP } from '@/i18n/config';
 
 export default function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +26,9 @@ export default function Login() {
     try {
       const data = await login({ email: id, password });
       authLogin(data);
+      if (data.preferredLanguageId && LANGUAGE_MAP[data.preferredLanguageId]) {
+        i18n.changeLanguage(LANGUAGE_MAP[data.preferredLanguageId]);
+      }
       navigate('/explore');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '로그인에 실패했습니다.';
@@ -69,14 +76,14 @@ export default function Login() {
           }}
         >
           <TextInput
-            label="ID"
+            label={t('auth.id')}
             value={id}
             onChange={(e) => setId(e.target.value)}
             autoComplete="username"
           />
 
           <TextInput
-            label="PASSWORD"
+            label={t('auth.password')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -90,14 +97,14 @@ export default function Login() {
 
           {/* LOG IN button */}
           <ButtonDefault shape="rect" type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Loading...' : 'LOG IN'}
+            {loading ? t('auth.loginLoading') : t('auth.loginButton')}
           </ButtonDefault>
         </form>
 
         {/* Divider */}
         <div className="mt-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-stroke" />
-          <span className="text-xs text-caption">또는</span>
+          <span className="text-xs text-caption">{t('auth.divider')}</span>
           <div className="h-px flex-1 bg-stroke" />
         </div>
 
@@ -114,7 +121,7 @@ export default function Login() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Google로 로그인
+            {t('auth.googleLogin')}
           </button>
 
           <button
@@ -126,7 +133,7 @@ export default function Login() {
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" />
             </svg>
-            Naver로 로그인
+            {t('auth.naverLogin')}
           </button>
         </div>
 
@@ -137,7 +144,7 @@ export default function Login() {
             className="flex-1 cursor-pointer rounded-control bg-surface px-4 py-3 text-[16px] leading-[24px] font-medium tracking-[-1px] text-default transition-opacity duration-150 hover:opacity-80 active:opacity-70 font-pretendard"
             onClick={() => navigate('/signup')}
           >
-            REGISTER
+            {t('auth.register')}
           </button>
 
           <button
@@ -145,7 +152,7 @@ export default function Login() {
             className="flex-1 cursor-pointer whitespace-nowrap rounded-control bg-surface px-4 py-3 text-[16px] leading-[24px] font-medium tracking-[-1px] text-default transition-opacity duration-150 hover:opacity-80 active:opacity-70 font-pretendard"
             onClick={() => alert('아이디/비번 찾기 기능은 준비 중입니다.')}
           >
-            아이디/비번 찾기
+            {t('auth.forgotPassword')}
           </button>
         </div>
       </div>

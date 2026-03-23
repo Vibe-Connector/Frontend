@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MOOD_KEYWORDS,
   MAX_CUSTOM_MOODS,
@@ -32,6 +33,7 @@ export default function MoodMindMap({
   moods,
   isLimitReached = false,
 }: MoodMindMapProps) {
+  const { t } = useTranslation();
   const displayMoods = moods ?? MOOD_KEYWORDS;
 
   const groupedMoods = useMemo(() => {
@@ -57,10 +59,10 @@ export default function MoodMindMap({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-[-0.5px] text-high-emphasis">
-            지금 어떤 기분인가요?
+            {t('vibe.moodQuestion')}
           </h2>
           <p className="mt-1 text-sm text-caption">
-            원하는 기분을 골라보세요
+            {t('vibe.moodSubtitle')}
           </p>
         </div>
         <div
@@ -84,7 +86,7 @@ export default function MoodMindMap({
           return (
             <div key={zone}>
               <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-caption/70">
-                {zoneConfig.label}
+                {t(zoneConfig.labelKey)}
               </p>
               <div className="flex flex-wrap gap-2.5">
                 {zoneMoods.map((mood) => (
@@ -110,7 +112,7 @@ export default function MoodMindMap({
         </div>
         <div className="relative flex justify-center">
           <span className="bg-vibe-bg px-3 text-xs text-caption">
-            또는 직접 표현하기
+            {t('vibe.customMood')}
           </span>
         </div>
       </div>
@@ -137,7 +139,7 @@ export default function MoodMindMap({
                 type="button"
                 onClick={() => onRemoveCustomMood(mood)}
                 className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-caption hover:text-high-emphasis"
-                aria-label={`${mood} 삭제`}
+                aria-label={t('vibe.moodDeleteAria', { mood })}
               >
                 &times;
               </button>
@@ -149,7 +151,7 @@ export default function MoodMindMap({
       {/* Limit notice */}
       {isLimitReached && (
         <p className="mt-5 text-center text-xs font-medium text-accent">
-          최대 {MAX_MOOD_SELECTIONS}개까지 선택할 수 있어요
+          {t('vibe.moodLimit', { max: MAX_MOOD_SELECTIONS })}
         </p>
       )}
     </div>

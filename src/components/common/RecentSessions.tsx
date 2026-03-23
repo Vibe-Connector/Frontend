@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getVibeHistory } from '@/api/vibe';
 import type { VibeHistoryResponse } from '@/api/vibe';
 
 const MAX_DISPLAY = 5;
 
 export default function RecentSessions() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<VibeHistoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +23,7 @@ export default function RecentSessions() {
     return (
       <div className="rounded-card border border-stroke bg-white p-6">
         <h2 className="text-lg font-semibold tracking-[-0.5px] text-high-emphasis">
-          최근 생성한 Vibe
+          {t('recentSessions.title')}
         </h2>
         <div className="mt-6 flex items-center justify-center py-8">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-disabled border-t-accent" />
@@ -34,10 +36,10 @@ export default function RecentSessions() {
     return (
       <div className="rounded-card border border-stroke bg-white p-6">
         <h2 className="text-lg font-semibold tracking-[-0.5px] text-high-emphasis">
-          최근 생성한 Vibe
+          {t('recentSessions.title')}
         </h2>
         <p className="mt-6 text-center text-sm text-caption">
-          아직 생성한 Vibe가 없습니다.
+          {t('recentSessions.empty')}
         </p>
       </div>
     );
@@ -71,10 +73,10 @@ export default function RecentSessions() {
               {/* Text */}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-high-emphasis">
-                  {s.phrase || '분위기 문구 없음'}
+                  {s.phrase || t('recentSessions.noDescription')}
                 </p>
                 <p className="mt-0.5 text-xs text-caption">
-                  {new Date(s.createdAt).toLocaleDateString('ko-KR', {
+                  {new Date(s.createdAt).toLocaleDateString(i18n.language === 'ko' ? 'ko-KR' : i18n.language === 'ja' ? 'ja-JP' : i18n.language === 'zh' ? 'zh-CN' : 'en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
@@ -106,7 +108,7 @@ export default function RecentSessions() {
         className="mt-4 w-full cursor-pointer rounded-control border border-stroke py-2.5 text-center text-sm font-medium text-caption transition-colors hover:bg-surface"
         onClick={() => navigate('/profile/sessionhistory')}
       >
-        전체 보기
+        {t('recentSessions.viewAll')}
       </button>
     </div>
   );

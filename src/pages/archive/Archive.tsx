@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LOCALE_MAP } from '@/i18n/config';
 import {
   DndContext,
   closestCenter,
@@ -24,11 +26,7 @@ import type { FolderResponse } from '@/api/archive';
 type SortMode = 'CREATED' | 'NAME' | 'CUSTOM';
 type FilterType = 'ALL' | 'VIBE' | 'ITEM';
 
-const FILTER_LABELS: Record<FilterType, string> = {
-  ALL: '전체',
-  VIBE: 'Vibe',
-  ITEM: 'Item',
-};
+// Filter labels are now rendered dynamically via t() in the component
 
 interface ArchiveFolder {
   id: string;
@@ -49,13 +47,13 @@ const FALLBACK_FOLDERS: ArchiveFolder[] = [
   { id: '2', numericId: 2, title: 'MyPlaces', pinCount: 0, timeLabel: '방금', isPrivate: true, folderType: 'ITEM', sortOrder: 1, createdAt: '', previewImages: [] },
 ];
 
-function mapFolderResponse(f: FolderResponse): ArchiveFolder {
+function mapFolderResponse(f: FolderResponse, locale: string = 'ko-KR'): ArchiveFolder {
   return {
     id: String(f.folderId),
     numericId: f.folderId,
     title: f.folderName,
     pinCount: f.archiveCount,
-    timeLabel: new Date(f.createdAt).toLocaleDateString('ko-KR'),
+    timeLabel: new Date(f.createdAt).toLocaleDateString(locale),
     isPrivate: f.isPublic === false,
     thumbnailUrl: f.thumbnailUrl,
     folderType: f.folderType,
@@ -146,6 +144,7 @@ function FolderCardContent({
   folder: ArchiveFolder;
   onEdit?: (e: React.MouseEvent) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <>
       {/* Thumbnail */}
@@ -180,7 +179,7 @@ function FolderCardContent({
         {folder.title}
       </p>
       <p className="text-[13px] tracking-[-0.5px] text-caption">
-        {folder.pinCount}개 항목 · {folder.timeLabel}
+        {folder.pinCount}{t('archive.itemsCount')} · {folder.timeLabel}
       </p>
     </>
   );
@@ -260,6 +259,7 @@ function FolderEditModal({
   onRename: (newName: string, isPublic: boolean) => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const [editName, setEditName] = useState(folder.title);
   const [isPublic, setIsPublic] = useState(!folder.isPrivate);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -285,11 +285,11 @@ function FolderEditModal({
       >
         {confirmDelete ? (
           <>
-            <h3 className="text-lg font-bold text-high-emphasis">폴더 삭제</h3>
+            <h3 className="text-lg font-bold text-high-emphasis">{t('archive.deleteFolder')}</h3>
             <p className="mt-2 text-sm text-caption">
-              "{folder.title}" 폴더를 삭제하시겠습니까?
+              "{folder.title}" {t('archive.confirmUnbookmark')}
               <br />
-              폴더 내 아카이브는 미분류로 이동됩니다.
+              {t('archive.archiveMoved')}
             </p>
             <div className="mt-5 flex gap-2">
               <button
@@ -297,23 +297,23 @@ function FolderEditModal({
                 className="flex-1 cursor-pointer rounded-lg border border-stroke px-4 py-2 text-sm font-medium text-default transition-colors hover:bg-gray-50"
                 onClick={() => setConfirmDelete(false)}
               >
-                취소
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 className="flex-1 cursor-pointer rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600"
                 onClick={onDelete}
               >
-                삭제
+                {t('common.delete')}
               </button>
             </div>
           </>
         ) : (
           <>
-            <h3 className="text-lg font-bold text-high-emphasis">폴더 수정</h3>
+            <h3 className="text-lg font-bold text-high-emphasis">{t('archive.editFolder')}</h3>
 
             {/* Rename */}
-            <label className="mt-4 block text-sm font-medium text-default">폴더 이름</label>
+            <label className="mt-4 block text-sm font-medium text-default">{t('archive.folderName')}</label>
             <input
               type="text"
               value={editName}
@@ -330,7 +330,7 @@ function FolderEditModal({
 
             {/* Public/Private toggle */}
             <label className="mt-3 flex items-center justify-between text-sm font-medium text-default">
-              <span>공개 설정</span>
+              <span>{t('feed.publicSetting')}</span>
               <button
                 type="button"
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
@@ -347,7 +347,7 @@ function FolderEditModal({
               </button>
             </label>
             <p className="mt-0.5 text-xs text-caption">
-              {isPublic ? '다른 사용자가 이 폴더를 볼 수 있습니다' : '나만 볼 수 있는 비공개 폴더입니다'}
+              {isPublic ? t('feed.publicDesc') : t('feed.privateDesc')}
             </p>
 
             <div className="mt-5 flex gap-2">
@@ -356,7 +356,7 @@ function FolderEditModal({
                 className="flex-1 cursor-pointer rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-500 transition-colors hover:bg-red-50"
                 onClick={() => setConfirmDelete(true)}
               >
-                삭제
+                {t('common.delete')}
               </button>
               <button
                 type="button"
@@ -364,7 +364,7 @@ function FolderEditModal({
                 onClick={handleRename}
                 disabled={saving || !editName.trim()}
               >
-                저장
+                {t('archive.update')}
               </button>
             </div>
           </>
@@ -385,6 +385,7 @@ function FolderCreateModal({
   onClose: () => void;
   onCreate: (name: string, type: 'VIBE' | 'ITEM', isPublic: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [type, setType] = useState<'VIBE' | 'ITEM'>(folderType);
   const [isPublic, setIsPublic] = useState(true);
@@ -404,9 +405,9 @@ function FolderCreateModal({
         className="relative z-10 w-80 rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-bold text-high-emphasis">새 폴더 만들기</h3>
+        <h3 className="text-lg font-bold text-high-emphasis">{t('archive.newFolder')}</h3>
 
-        <label className="mt-4 block text-sm font-medium text-default">폴더 이름</label>
+        <label className="mt-4 block text-sm font-medium text-default">{t('archive.folderName')}</label>
         <input
           type="text"
           value={name}
@@ -422,27 +423,27 @@ function FolderCreateModal({
           disabled={saving}
         />
 
-        <label className="mt-3 block text-sm font-medium text-default">폴더 유형</label>
+        <label className="mt-3 block text-sm font-medium text-default">{t('archive.folderType')}</label>
         <div className="mt-1 flex gap-2">
-          {(['VIBE', 'ITEM'] as const).map((t) => (
+          {(['VIBE', 'ITEM'] as const).map((ft) => (
             <button
-              key={t}
+              key={ft}
               type="button"
               className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-                type === t
+                type === ft
                   ? 'border-high-emphasis bg-high-emphasis text-white'
                   : 'border-stroke text-default hover:bg-gray-50'
               }`}
-              onClick={() => setType(t)}
+              onClick={() => setType(ft)}
               disabled={saving}
             >
-              {t === 'VIBE' ? 'Vibe' : 'Item'}
+              {ft === 'VIBE' ? 'Vibe' : 'Item'}
             </button>
           ))}
         </div>
 
         <label className="mt-3 flex items-center justify-between text-sm font-medium text-default">
-          <span>공개 설정</span>
+          <span>{t('feed.publicSetting')}</span>
           <button
             type="button"
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
@@ -459,7 +460,7 @@ function FolderCreateModal({
           </button>
         </label>
         <p className="mt-0.5 text-xs text-caption">
-          {isPublic ? '다른 사용자가 이 폴더를 볼 수 있습니다' : '나만 볼 수 있는 비공개 폴더입니다'}
+          {isPublic ? t('feed.publicDesc') : t('feed.privateDesc')}
         </p>
 
         <div className="mt-5 flex gap-2">
@@ -468,7 +469,7 @@ function FolderCreateModal({
             className="flex-1 cursor-pointer rounded-lg border border-stroke px-4 py-2 text-sm font-medium text-default transition-colors hover:bg-gray-50"
             onClick={onClose}
           >
-            취소
+            {t('common.cancel')}
           </button>
           <button
             type="button"
@@ -476,7 +477,7 @@ function FolderCreateModal({
             onClick={handleCreate}
             disabled={saving || !name.trim()}
           >
-            만들기
+            {t('archive.create')}
           </button>
         </div>
       </div>
@@ -486,13 +487,10 @@ function FolderCreateModal({
 
 // ── Main Component ──
 
-const SORT_LABELS: Record<SortMode, string> = {
-  CREATED: '생성일순',
-  NAME: '이름순',
-  CUSTOM: '사용자 지정',
-};
+// Sort labels are rendered dynamically via t() in the component
 
 export default function Archive() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const [folders, setFolders] = useState<ArchiveFolder[]>([]);
@@ -513,7 +511,8 @@ export default function Archive() {
   useEffect(() => {
     getFolders()
       .then(async (res: FolderResponse[]) => {
-        const mapped = res.map(mapFolderResponse);
+        const locale = LOCALE_MAP[i18n.language] || 'ko-KR';
+        const mapped = res.map((f) => mapFolderResponse(f, locale));
         if (mapped.length === 0) {
           setFolders(FALLBACK_FOLDERS);
           return;
@@ -593,20 +592,21 @@ export default function Archive() {
   const handleCreateFolder = (name: string, type: 'VIBE' | 'ITEM', isPublic: boolean) => {
     if (folders.length >= 5) {
       setShowCreateModal(false);
-      setErrorMessage('폴더는 최대 5개까지 생성할 수 있습니다.');
+      setErrorMessage(t('archive.maxFolders'));
       return;
     }
+    const locale = LOCALE_MAP[i18n.language] || 'ko-KR';
     createFolder({ folderName: name, folderType: type, isPublic })
       .then((res: FolderResponse) => {
-        setFolders((prev) => [...prev, mapFolderResponse(res)]);
+        setFolders((prev) => [...prev, mapFolderResponse(res, locale)]);
         setShowCreateModal(false);
       })
       .catch((err: unknown) => {
         setShowCreateModal(false);
         const msg =
           err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ARCHIVE_007'
-            ? '폴더는 최대 5개까지 생성할 수 있습니다.'
-            : '폴더 생성에 실패했습니다.';
+            ? t('archive.maxFolders')
+            : t('common.errorOccurred');
         setErrorMessage(msg);
       });
   };
@@ -647,7 +647,7 @@ export default function Archive() {
         className="cursor-pointer rounded-control bg-white px-5 py-2.5 text-[16px] font-medium tracking-[-1px] text-default shadow-card transition-opacity duration-150 hover:opacity-80 font-pretendard"
         onClick={() => setShowCreateModal(true)}
       >
-        만들기
+        {t('archive.create')}
       </button>
     </div>
   );
@@ -656,18 +656,22 @@ export default function Archive() {
     <PageContainer className="mx-auto mt-6 max-w-190">
       {/* Category tabs */}
       <div className="flex gap-1 rounded-lg bg-surface p-1">
-        {(Object.keys(FILTER_LABELS) as FilterType[]).map((type) => (
+        {([
+          { key: 'ALL' as FilterType, label: t('archive.all') },
+          { key: 'VIBE' as FilterType, label: t('archive.vibe') },
+          { key: 'ITEM' as FilterType, label: t('archive.item') },
+        ]).map((tab) => (
           <button
-            key={type}
+            key={tab.key}
             type="button"
             className={`cursor-pointer rounded-md px-4 py-1.5 text-[14px] font-medium tracking-[-0.5px] transition-colors ${
-              filterType === type
+              filterType === tab.key
                 ? 'bg-white text-high-emphasis shadow-sm'
                 : 'text-caption hover:text-default'
             }`}
-            onClick={() => setFilterType(type)}
+            onClick={() => setFilterType(tab.key)}
           >
-            {FILTER_LABELS[type]}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -681,7 +685,7 @@ export default function Archive() {
             onClick={() => setShowSortDropdown((v) => !v)}
           >
             <SortIcon />
-            {SORT_LABELS[sortMode]}
+            {{ CREATED: t('archive.sortDate'), NAME: t('archive.sortName'), CUSTOM: t('archive.sortCustom') }[sortMode]}
             <ChevronDownIcon />
           </button>
 
@@ -689,7 +693,11 @@ export default function Archive() {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
               <div className="absolute left-0 z-20 mt-1 w-36 overflow-hidden rounded-lg border border-stroke bg-white shadow-lg">
-                {(Object.keys(SORT_LABELS) as SortMode[]).map((mode) => (
+                {([
+                  { mode: 'CREATED' as SortMode, label: t('archive.sortDate') },
+                  { mode: 'NAME' as SortMode, label: t('archive.sortName') },
+                  { mode: 'CUSTOM' as SortMode, label: t('archive.sortCustom') },
+                ]).map(({ mode, label }) => (
                   <button
                     key={mode}
                     type="button"
@@ -698,7 +706,7 @@ export default function Archive() {
                     }`}
                     onClick={() => handleSortChange(mode)}
                   >
-                    {SORT_LABELS[mode]}
+                    {label}
                   </button>
                 ))}
               </div>
@@ -765,14 +773,14 @@ export default function Archive() {
             className="relative z-10 w-80 rounded-2xl bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-high-emphasis">알림</h3>
+            <h3 className="text-lg font-bold text-high-emphasis">{t('header.notification')}</h3>
             <p className="mt-2 text-sm text-caption">{errorMessage}</p>
             <button
               type="button"
               className="mt-5 w-full cursor-pointer rounded-lg bg-high-emphasis px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90"
               onClick={() => setErrorMessage(null)}
             >
-              확인
+              {t('common.confirm')}
             </button>
           </div>
         </div>

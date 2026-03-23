@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toggleCommentLike, createComment, updateComment, deleteComment } from '@/api/feed';
 import type { CommentResponse } from '@/api/types';
 import { useAuthStore } from '@/store/authStore';
@@ -56,6 +57,7 @@ interface CommentItemProps {
 /* ---------- Component ---------- */
 
 export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, onCommentUpdated, onCommentDeleted }: CommentItemProps) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?.userId);
   const isOwner = currentUserId === comment.userId;
@@ -149,7 +151,7 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
     }
   };
 
-  const timeLabel = formatTime(comment.createdAt);
+  const timeLabel = formatTime(comment.createdAt, t, i18n.language);
 
   return (
     <div className={depth > 0 ? 'ml-8 mt-2' : ''}>
@@ -191,13 +193,13 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
                 disabled={editSubmitting}
                 className="rounded-control bg-brand px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                저장
+                {t('common.save')}
               </button>
               <button
                 onClick={() => { setEditing(false); setEditText(comment.content); }}
                 className="rounded-control px-3 py-1.5 text-xs font-medium text-caption transition-colors hover:text-high-emphasis"
               >
-                취소
+                {t('common.cancel')}
               </button>
             </div>
           ) : (
@@ -226,13 +228,13 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
                         onClick={() => { setEditing(true); setShowMenu(false); }}
                         className="w-full px-3 py-1.5 text-left text-xs text-high-emphasis transition-colors hover:bg-input"
                       >
-                        수정
+                        {t('comment.edit')}
                       </button>
                       <button
                         onClick={() => { setShowDeleteConfirm(true); setShowMenu(false); }}
                         className="w-full px-3 py-1.5 text-left text-xs text-red-500 transition-colors hover:bg-input"
                       >
-                        삭제
+                        {t('comment.delete')}
                       </button>
                     </div>
                   )}
@@ -264,7 +266,7 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
                 }}
                 className="transition-colors hover:text-high-emphasis"
               >
-                답글
+                {t('comment.reply')}
               </button>
             )}
           </div>
@@ -272,19 +274,19 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
           {/* 삭제 확인 */}
           {showDeleteConfirm && (
             <div className="mt-2 flex items-center gap-2 rounded-control bg-red-50 px-3 py-2">
-              <span className="flex-1 text-xs text-red-600">댓글을 삭제하시겠습니까?</span>
+              <span className="flex-1 text-xs text-red-600">{t('comment.deleteConfirm')}</span>
               <button
                 onClick={handleDelete}
                 disabled={deleting}
                 className="rounded-control bg-red-500 px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                삭제
+                {t('comment.delete')}
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 className="rounded-control px-3 py-1 text-xs font-medium text-caption transition-colors hover:text-high-emphasis"
               >
-                취소
+                {t('common.cancel')}
               </button>
             </div>
           )}
@@ -296,7 +298,7 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
                 type="text"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="답글을 입력하세요..."
+                placeholder={t('comment.replyPlaceholder')}
                 className="flex-1 rounded-control bg-input px-2.5 py-1.5 text-xs text-high-emphasis placeholder:text-low-emphasis focus:outline-none focus:ring-1 focus:ring-accent"
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitReply()}
                 autoFocus
@@ -306,7 +308,7 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
                 disabled={submitting}
                 className="rounded-control bg-brand px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                게시
+                {t('comment.post')}
               </button>
             </div>
           )}
@@ -335,14 +337,14 @@ export default function CommentItem({ comment, feedId, depth = 0, onReplyAdded, 
 
 /* ---------- Helper ---------- */
 
-function formatTime(isoString: string): string {
+function formatTime(isoString: string, t: (key: string) => string, lang: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return '방금';
-  if (minutes < 60) return `${minutes}분 전`;
+  if (minutes < 1) return t('comment.justNow');
+  if (minutes < 60) return `${minutes}${t('comment.minutesAgo')}`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
+  if (hours < 24) return `${hours}${t('comment.hoursAgo')}`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}일 전`;
-  return new Date(isoString).toLocaleDateString('ko-KR');
+  if (days < 7) return `${days}${t('comment.daysAgo')}`;
+  return new Date(isoString).toLocaleDateString(lang === 'ko' ? 'ko-KR' : lang === 'ja' ? 'ja-JP' : lang === 'zh' ? 'zh-CN' : 'en-US');
 }

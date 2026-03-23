@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LOCALE_MAP } from '@/i18n/config';
+import i18n from '@/i18n/config';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput, Dropdown, ProfileAvatarUpload } from '@/components/common';
 import { getMyProfile, updateProfile } from '@/api/user';
@@ -39,6 +42,7 @@ const timezoneOptions = [
 ];
 
 export default function ProfileSettings() {
+  const { t } = useTranslation();
   // [BEFORE INTEGRATION] 하드코딩된 'Alexa Rawles', 'alexarawles@gmail.com'
   // [AFTER INTEGRATION] API에서 프로필 + 설정 데이터 로드
   const authUser = useAuthStore((s) => s.user);
@@ -93,6 +97,9 @@ export default function ProfileSettings() {
     // language 코드 → preferredLanguageId 변환
     const langIdMap: Record<string, number> = { ko: 1, en: 2, ja: 3, zh: 4 };
     const preferredLanguageId = language ? langIdMap[language] : undefined;
+
+    const langCodeMap: Record<string, string> = { ko: 'ko', en: 'en', ja: 'ja', zh: 'zh' };
+    if (language) i18n.changeLanguage(langCodeMap[language] || 'ko');
 
     const profilePromise = updateProfile({
       name: fullName || undefined,
@@ -219,7 +226,7 @@ export default function ProfileSettings() {
                 }
                 className="h-4 w-4 rounded"
               />
-              Push 알림
+              {t('profile.pushNotification')}
             </label>
             <label className="flex items-center gap-3 text-[14px] text-high-emphasis">
               <input
@@ -230,7 +237,7 @@ export default function ProfileSettings() {
                 }
                 className="h-4 w-4 rounded"
               />
-              이메일 알림
+              {t('profile.emailNotification')}
             </label>
           </div>
         </div>
@@ -239,7 +246,7 @@ export default function ProfileSettings() {
       {/* Social Accounts */}
       <div className="mt-10">
         <h2 className="text-[16px] font-semibold tracking-[-1px] text-high-emphasis">
-          소셜 계정 연동
+          {t('profile.socialAccounts')}
         </h2>
         <div className="mt-4 space-y-3">
           {/* Google */}
@@ -258,7 +265,7 @@ export default function ProfileSettings() {
                     <p className="text-sm font-medium text-high-emphasis">Google</p>
                     {google && (
                       <p className="text-xs text-caption">
-                        {new Date(google.linkedAt).toLocaleDateString('ko-KR')} 연동됨
+                        {new Date(google.linkedAt).toLocaleDateString(LOCALE_MAP[i18n.language] || 'ko-KR')} {t('profile.connected')}
                       </p>
                     )}
                   </div>
@@ -276,7 +283,7 @@ export default function ProfileSettings() {
                         .finally(() => setUnlinking(null));
                     }}
                   >
-                    {unlinking === 'GOOGLE' ? '...' : '연동 해제'}
+                    {unlinking === 'GOOGLE' ? '...' : t('profile.disconnect')}
                   </button>
                 ) : (
                   <button
@@ -284,7 +291,7 @@ export default function ProfileSettings() {
                     className="cursor-pointer rounded-control bg-brand px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-80"
                     onClick={() => { window.location.href = getGoogleOAuthUrl('link'); }}
                   >
-                    연동하기
+                    {t('profile.connect')}
                   </button>
                 )}
               </div>
@@ -305,7 +312,7 @@ export default function ProfileSettings() {
                     <p className="text-sm font-medium text-high-emphasis">Naver</p>
                     {naver && (
                       <p className="text-xs text-caption">
-                        {new Date(naver.linkedAt).toLocaleDateString('ko-KR')} 연동됨
+                        {new Date(naver.linkedAt).toLocaleDateString(LOCALE_MAP[i18n.language] || 'ko-KR')} {t('profile.connected')}
                       </p>
                     )}
                   </div>
@@ -323,7 +330,7 @@ export default function ProfileSettings() {
                         .finally(() => setUnlinking(null));
                     }}
                   >
-                    {unlinking === 'NAVER' ? '...' : '연동 해제'}
+                    {unlinking === 'NAVER' ? '...' : t('profile.disconnect')}
                   </button>
                 ) : (
                   <button
@@ -332,7 +339,7 @@ export default function ProfileSettings() {
                     style={{ backgroundColor: '#03C75A' }}
                     onClick={() => { window.location.href = getNaverOAuthUrl('link'); }}
                   >
-                    연동하기
+                    {t('profile.connect')}
                   </button>
                 )}
               </div>
@@ -368,7 +375,7 @@ export default function ProfileSettings() {
             </p>
             <p className="text-[12px] tracking-[-0.5px] text-caption">
               {profile?.lastLoginAt
-                ? new Date(profile.lastLoginAt).toLocaleDateString('ko-KR')
+                ? new Date(profile.lastLoginAt).toLocaleDateString(LOCALE_MAP[i18n.language] || 'ko-KR')
                 : '1 month ago'}
             </p>
           </div>
@@ -380,7 +387,7 @@ export default function ProfileSettings() {
           className="mt-4 cursor-pointer rounded-control border border-blue px-4 py-2 text-[14px] font-medium tracking-[-0.5px] text-blue transition-opacity duration-150 hover:opacity-80 font-pretendard"
           onClick={() => alert('+Add Email Address 기능은 준비 중입니다.')}
         >
-          +Add Email Address
+          {t('profile.addEmail')}
         </button>
       </div>
       </div>

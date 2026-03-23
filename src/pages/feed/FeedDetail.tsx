@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LOCALE_MAP } from '@/i18n/config';
 import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
@@ -104,8 +106,8 @@ function BookmarkIcon({ filled }: { filled?: boolean }) {
 
 /* ---------- Helpers ---------- */
 
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString('ko-KR', {
+function formatDate(isoString: string, locale: string = 'ko-KR'): string {
+  return new Date(isoString).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -142,6 +144,7 @@ function FeedSkeleton() {
 /* ---------- Component ---------- */
 
 export default function FeedDetail() {
+  const { t, i18n } = useTranslation();
   const { feedId } = useParams<{ feedId: string }>();
   const location = useLocation();
   const preview = (location.state as FeedRouterState | null)?.feed;
@@ -358,8 +361,8 @@ export default function FeedDetail() {
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          <p className="text-lg font-medium text-high-emphasis">비공개 피드입니다</p>
-          <p className="mt-1 text-sm">이 피드는 작성자만 볼 수 있습니다</p>
+          <p className="text-lg font-medium text-high-emphasis">{t('feed.privateFeed')}</p>
+          <p className="mt-1 text-sm">{t('feed.privateFeedDesc')}</p>
           <button
             type="button"
             onClick={() => navigate(-1)}
@@ -413,7 +416,7 @@ export default function FeedDetail() {
               }
             }}
           >
-            {isFollowing ? '팔로잉' : '팔로우'}
+            {isFollowing ? t('feed.following') : t('feed.follow')}
           </ButtonDefault>
         )}
       </div>
@@ -437,7 +440,7 @@ export default function FeedDetail() {
                   maxLength={300}
                   rows={3}
                   className="w-full resize-none rounded-control border border-stroke bg-white px-3 py-2 text-sm text-high-emphasis outline-none focus:border-accent"
-                  placeholder="캡션을 입력하세요"
+                  placeholder={t('feed.captionPlaceholder')}
                 />
                 <label className="mt-2 flex items-center gap-2 text-sm text-caption">
                   <input
@@ -446,7 +449,7 @@ export default function FeedDetail() {
                     onChange={(e) => setEditPublic(e.target.checked)}
                     className="h-4 w-4 accent-accent"
                   />
-                  공개
+                  {t('feed.public')}
                 </label>
                 <div className="mt-3 flex gap-2">
                   <button
@@ -455,14 +458,14 @@ export default function FeedDetail() {
                     disabled={saving}
                     className="rounded-full bg-default px-4 py-1.5 text-sm font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
                   >
-                    {saving ? '저장 중…' : '저장'}
+                    {saving ? t('common.saving') : t('common.save')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditMode(false)}
                     className="rounded-full border border-stroke px-4 py-1.5 text-sm font-bold text-high-emphasis transition-colors hover:bg-input"
                   >
-                    취소
+                    {t('common.cancel')}
                   </button>
                 </div>
               </>
@@ -475,8 +478,8 @@ export default function FeedDetail() {
                 )}
                 {feed.createdAt && (
                   <p className="mt-1 text-xs text-low-emphasis">
-                    {formatDate(feed.createdAt)}
-                    {!feedIsPublic && <span className="ml-2 text-caption">· 비공개</span>}
+                    {formatDate(feed.createdAt, LOCALE_MAP[i18n.language] || 'ko-KR')}
+                    {!feedIsPublic && <span className="ml-2 text-caption">· {t('feed.private')}</span>}
                   </p>
                 )}
                 {isOwner && (
@@ -486,14 +489,14 @@ export default function FeedDetail() {
                       onClick={handleEditStart}
                       className="text-sm font-medium text-caption transition-colors hover:text-high-emphasis"
                     >
-                      수정
+                      {t('common.edit')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowDeleteModal(true)}
                       className="text-sm font-medium text-caption transition-colors hover:text-red-500"
                     >
-                      삭제
+                      {t('common.delete')}
                     </button>
                   </div>
                 )}
@@ -564,7 +567,7 @@ export default function FeedDetail() {
 
           {/* Recommended Items Grid */}
           <div className="rounded-card bg-surface p-5">
-            <h3 className="mb-3 text-sm font-semibold text-high-emphasis">추천 아이템</h3>
+            <h3 className="mb-3 text-sm font-semibold text-high-emphasis">{t('feed.recommendedItems')}</h3>
             {vibeItems.length > 0 ? (
               <div className="grid grid-cols-4 gap-3">
                 {vibeItems.slice(0, 8).map((item) => {
@@ -615,7 +618,7 @@ export default function FeedDetail() {
                 })}
               </div>
             ) : (
-              <p className="py-6 text-center text-sm text-low-emphasis">추천 아이템이 없습니다.</p>
+              <p className="py-6 text-center text-sm text-low-emphasis">{t('feed.noRecommendedItems')}</p>
             )}
           </div>
         </div>
@@ -624,11 +627,11 @@ export default function FeedDetail() {
       {/* ===== Similar Mood Section ===== */}
       <div className="mt-12">
         <h2 className="mb-6 text-center text-lg font-semibold text-high-emphasis">
-          비슷한 무드의 이미지 추천
+          {t('feed.similarMood')}
         </h2>
 
         {similarFeeds.length === 0 && !similarLoading ? (
-          <p className="py-8 text-center text-sm text-low-emphasis">추천 피드가 없습니다.</p>
+          <p className="py-8 text-center text-sm text-low-emphasis">{t('feed.noSimilarFeeds')}</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
             {similarFeeds.map((vibe) => {
@@ -744,10 +747,10 @@ export default function FeedDetail() {
       <Modal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="피드를 삭제하시겠습니까?"
-        description="삭제된 피드는 복구할 수 없습니다."
-        primaryAction={{ label: '삭제', onClick: handleDelete }}
-        secondaryAction={{ label: '취소', onClick: () => setShowDeleteModal(false) }}
+        title={t('feed.deleteConfirm')}
+        description={t('feed.deleteWarning')}
+        primaryAction={{ label: t('common.delete'), onClick: handleDelete }}
+        secondaryAction={{ label: t('common.cancel'), onClick: () => setShowDeleteModal(false) }}
       />
     </PageContainer>
   );

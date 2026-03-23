@@ -9,6 +9,7 @@ export interface TokenResponse {
   email: string;
   nickname: string;
   profileImageUrl: string | null;
+  preferredLanguageId: number | null;
   accessToken: string;
   refreshToken: string;
 }
@@ -50,7 +51,7 @@ export const useAuthStore = create<AuthState>()(
             email: response.email,
             nickname: response.nickname,
             profileImageUrl: response.profileImageUrl,
-            preferredLanguageId: null,
+            preferredLanguageId: response.preferredLanguageId ?? null,
           },
           isAuthenticated: true,
         }),

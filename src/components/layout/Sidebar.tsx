@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppMode } from '../../hooks/useAppMode';
 
 /* ─── Icons (Material Design, viewBox 0 0 24 24) ─── */
@@ -51,21 +52,22 @@ type SidebarItemData = {
 /* ─── Sidebar ─── */
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { sidebarMode, switchToExplore, switchToProfile } = useAppMode();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const exploreItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/explore'); } },
-    { icon: <FeedIcon />, label: 'My Feed', onClick: () => navigate('/feed') },
-    { icon: <ArchiveIcon />, label: 'My Archive', onClick: () => navigate('/archive') },
+    { icon: <HomeIcon />, label: t('sidebar.home'), onClick: () => { switchToExplore(); navigate('/explore'); } },
+    { icon: <FeedIcon />, label: t('sidebar.myFeed'), onClick: () => navigate('/feed') },
+    { icon: <ArchiveIcon />, label: t('sidebar.myArchive'), onClick: () => navigate('/archive') },
   ];
 
   const profileItems: SidebarItemData[] = [
-    { icon: <HomeIcon />, label: 'Home', onClick: () => { switchToExplore(); navigate('/explore'); } },
-    { icon: <MyInfoIcon />, label: 'My Info', onClick: () => { switchToProfile('my-info'); navigate('/profile'); } },
-    { icon: <ReportIcon />, label: 'Report', onClick: () => { switchToProfile('report'); navigate('/profile/report'); } },
-    { icon: <SettingsIcon />, label: 'Settings', onClick: () => { switchToProfile('settings'); navigate('/profile/settings'); } },
+    { icon: <HomeIcon />, label: t('sidebar.home'), onClick: () => { switchToExplore(); navigate('/explore'); } },
+    { icon: <MyInfoIcon />, label: t('sidebar.myInfo'), onClick: () => { switchToProfile('my-info'); navigate('/profile'); } },
+    { icon: <ReportIcon />, label: t('sidebar.report'), onClick: () => { switchToProfile('report'); navigate('/profile/report'); } },
+    { icon: <SettingsIcon />, label: t('sidebar.settings'), onClick: () => { switchToProfile('settings'); navigate('/profile/settings'); } },
   ];
 
   const items = sidebarMode === 'explore' ? exploreItems : profileItems;

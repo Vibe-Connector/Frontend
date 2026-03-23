@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AnalogClockProps {
   amPm: 'AM' | 'PM';
@@ -43,6 +44,7 @@ export default function AnalogClock({
   onHourChange,
   onMinuteChange,
 }: AnalogClockProps) {
+  const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const draggingRef = useRef(false);
 
@@ -146,7 +148,7 @@ export default function AnalogClock({
               onClick={() => handleHourClick(hour)}
               role="radio"
               aria-checked={isSelected}
-              aria-label={`${hour}시`}
+              aria-label={t('vibe.hourAria', { hour })}
             />
           );
         })}

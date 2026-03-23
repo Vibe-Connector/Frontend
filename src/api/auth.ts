@@ -59,6 +59,7 @@ export interface SocialLoginResponse {
   email: string | null;
   nickname: string | null;
   profileImageUrl: string | null;
+  preferredLanguageId: number | null;
   accessToken: string | null;
   refreshToken: string | null;
   isNewUser: boolean;

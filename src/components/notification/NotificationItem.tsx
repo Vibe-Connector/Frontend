@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { NotificationResponse } from '@/api/notification';
 
 // ── SVG Icons (타입별) ──
@@ -44,16 +45,16 @@ const typeIconMap: Record<string, () => React.ReactElement> = {
 
 // ── 상대 시간 포맷 ──
 
-function formatTime(isoString: string): string {
+function formatTime(isoString: string, t: (key: string) => string, lang: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return '방금';
-  if (minutes < 60) return `${minutes}분 전`;
+  if (minutes < 1) return t('notification.justNow');
+  if (minutes < 60) return `${minutes}${t('notification.minutesAgo')}`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
+  if (hours < 24) return `${hours}${t('notification.hoursAgo')}`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}일 전`;
-  return new Date(isoString).toLocaleDateString('ko-KR');
+  if (days < 7) return `${days}${t('notification.daysAgo')}`;
+  return new Date(isoString).toLocaleDateString(lang === 'ko' ? 'ko-KR' : lang === 'ja' ? 'ja-JP' : lang === 'zh' ? 'zh-CN' : 'en-US');
 }
 
 // ── Component ──
@@ -65,6 +66,7 @@ interface NotificationItemProps {
 }
 
 const NotificationItem = ({ notification, onClick, groupCount }: NotificationItemProps) => {
+  const { t, i18n } = useTranslation();
   const IconComponent = typeIconMap[notification.type] ?? BellSmallIcon;
   const hasGroup = groupCount !== undefined && groupCount > 1;
 
@@ -94,7 +96,7 @@ const NotificationItem = ({ notification, onClick, groupCount }: NotificationIte
             ? `${notification.body.split('님')[0]}님 외 ${groupCount - 1}명`
             : notification.body}
         </p>
-        <p className="text-xs text-muted mt-1">{formatTime(notification.createdAt)}</p>
+        <p className="text-xs text-muted mt-1">{formatTime(notification.createdAt, t, i18n.language)}</p>
       </div>
 
       {/* 미읽음 표시 */}

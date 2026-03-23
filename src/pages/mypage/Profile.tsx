@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
+import { LOCALE_MAP, LANGUAGE_MAP } from '@/i18n/config';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput, Dropdown, ProfileAvatarUpload } from '@/components/common';
 import { getMyProfile, updateProfile } from '@/api/user';
@@ -36,6 +39,7 @@ const timezoneOptions = [
 ];
 
 export default function Profile() {
+  const { t, i18n } = useTranslation();
   // [BEFORE INTEGRATION] 하드코딩된 'Alexa Rawles', 'alexarawles@gmail.com'
   // [AFTER INTEGRATION] API에서 프로필 데이터 로드
   const authUser = useAuthStore((s) => s.user);
@@ -169,7 +173,19 @@ export default function Profile() {
           placeholder="Select Language"
           options={languageOptions}
           value={language}
-          onChange={setLanguage}
+          onChange={(val) => {
+            setLanguage(val);
+            // 즉시 i18n 언어 변경
+            if (val) i18n.changeLanguage(val);
+            // Backend DB + authStore 동기화
+            const langIdMap: Record<string, number> = { ko: 1, en: 2, ja: 3, zh: 4 };
+            const langId = val ? langIdMap[val] : undefined;
+            if (langId) {
+              updateProfile({ preferredLanguageId: langId })
+                .then(() => updateAuthUser({ preferredLanguageId: langId }))
+                .catch(() => {/* 무시 */});
+            }
+          }}
         />
         <Dropdown
           label="Time Zone"
@@ -207,7 +223,7 @@ export default function Profile() {
             </p>
             <p className="text-[12px] tracking-[-0.5px] text-caption">
               {profile?.lastLoginAt
-                ? new Date(profile.lastLoginAt).toLocaleDateString('ko-KR')
+                ? new Date(profile.lastLoginAt).toLocaleDateString(LOCALE_MAP[i18n.language] || 'ko-KR')
                 : '1 month ago'}
             </p>
           </div>
