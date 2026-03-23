@@ -134,7 +134,7 @@ export default function FeedDetail() {
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
-  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string; recommendReason: string | null } | null>(null);
   const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
   const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
   const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
@@ -192,7 +192,11 @@ export default function FeedDetail() {
         // 추천 아이템 로드 + 아카이브 상태 초기화
         getVibeResultItems(res.resultId)
           .then((categories) => {
-            const flat = categories.flatMap((c) => c.items);
+            const flat = categories.flatMap((c) => c.items).map((item) =>
+              item.categoryKey === 'music'
+                ? { ...item, albumCoverUrl: null, imageUrl: null }
+                : item
+            );
             setVibeItems(flat);
             // 아이템 아카이브 상태 로드
             const itemIds = new Set(flat.map((item) => item.itemId));
@@ -223,41 +227,30 @@ export default function FeedDetail() {
       });
   }, [feedId]);
 
-  // 음악 아이템의 Spotify 데이터 보완 (앨범커버, 이름 없을 때)
+  // 음악 아이템은 항상 Spotify API로 앨범커버 조회 (DB 이미지는 사용하지 않음)
   useEffect(() => {
     if (vibeItems.length === 0 || spotifyEnrichedRef.current) return;
-    const needsEnrichment = vibeItems.some(
-      (item) => item.categoryKey === 'music' && (!item.albumCoverUrl || isItemKey(item.itemName))
-    );
-    if (!needsEnrichment) return;
+    const musicItems = vibeItems.filter((item) => item.categoryKey === 'music');
+    if (musicItems.length === 0) return;
     spotifyEnrichedRef.current = true;
 
-    const musicItems = vibeItems.filter(
-      (item) => item.categoryKey === 'music' && (!item.albumCoverUrl || isItemKey(item.itemName))
-    );
-
     musicItems.forEach((item) => {
-      // ISRC → MBID → 이름+아티스트 순서로 정확하게 검색
+      if (!item.isrc && !item.musicbrainzId && !item.itemName) return;
       searchSpotifyTrack({
         isrc: item.isrc,
         mbid: item.musicbrainzId,
-        query: (!item.isrc && !item.musicbrainzId && !isItemKey(item.itemName)) ? item.itemName : null,
+        query: (!item.isrc && !item.musicbrainzId) ? item.itemName : null,
       })
         .then((spotifyData) => {
-          // 검증: ISRC 매칭 시 신뢰, 아니면 앨범명이나 아티스트로 교차 검증
-          const isVerified = verifySpotifyMatch(item, spotifyData);
-          if (!isVerified) return;
-
           setVibeItems((prev) =>
             prev.map((v) =>
               v.itemId === item.itemId
                 ? {
                     ...v,
-                    albumCoverUrl: v.albumCoverUrl || spotifyData.albumCoverUrl,
-                    previewUrl: v.previewUrl || spotifyData.previewUrl,
-                    spotifyUri: v.spotifyUri || spotifyData.spotifyUri,
-                    // itemKey 형태의 이름이면 Spotify 트랙명으로 대체
-                    itemName: isItemKey(v.itemName) ? spotifyData.trackName : v.itemName,
+                    albumCoverUrl: spotifyData.albumCoverUrl,
+                    previewUrl: spotifyData.previewUrl ?? v.previewUrl,
+                    spotifyUri: spotifyData.spotifyUri ?? v.spotifyUri,
+                    itemName: spotifyData.trackName ?? v.itemName,
                   }
                 : v
             )
@@ -545,15 +538,14 @@ export default function FeedDetail() {
                 {vibeItems.slice(0, 8).map((item) => {
                   const isArchived = item.itemId in itemArchiveMap;
                   const isMusic = item.categoryKey === 'music';
-                  // 음악: 앨범커버 우선, 그 외: imageUrl
                   const displayImage = isMusic
-                    ? (item.albumCoverUrl || item.imageUrl)
+                    ? item.albumCoverUrl
                     : item.imageUrl;
                   return (
                     <div
                       key={item.itemId}
                       className="group/item relative aspect-square cursor-pointer overflow-hidden rounded-control bg-white"
-                      onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey })}
+                      onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey, recommendReason: item.recommendReason ?? null })}
                     >
                       <ImageWithFallback
                         src={displayImage}
@@ -711,6 +703,7 @@ export default function FeedDetail() {
           onClose={() => setSelectedItem(null)}
           itemId={selectedItem.itemId}
           categoryKey={selectedItem.categoryKey}
+          recommendReason={selectedItem.recommendReason}
           onArchive={() => {
             setItemBookmarkTarget(selectedItem.itemId);
             setSelectedItem(null);

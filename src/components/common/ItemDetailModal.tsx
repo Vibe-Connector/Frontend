@@ -18,6 +18,7 @@ export interface ItemDetailModalProps {
   itemId: number;
   categoryKey: string;
   onArchive?: () => void;
+  recommendReason?: string | null;
 }
 
 /* ── 카테고리 매핑 ── */
@@ -216,7 +217,7 @@ function CoffeeDetail({ data }: { data: CoffeeDetailResponse }) {
 
 /* ── 메인 컴포넌트 ── */
 
-export default function ItemDetailModal({ open, onClose, itemId, categoryKey, onArchive }: ItemDetailModalProps) {
+export default function ItemDetailModal({ open, onClose, itemId, categoryKey, onArchive, recommendReason }: ItemDetailModalProps) {
   const [detail, setDetail] = useState<ItemDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -245,16 +246,15 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
     getItemDetail(itemId, category)
       .then((data) => {
         setDetail(data);
-        // 음악이면 Spotify 데이터 조회 (앨범커버/미리듣기 없거나 이름이 itemKey일 때)
+        // 음악이면 항상 Spotify API로 앨범커버 조회 (DB 이미지는 사용하지 않음)
         if (category === 'music') {
           const musicData = data as MusicDetailResponse;
           const nameIsKey = !musicData.itemName || /^(music|movie|lighting|coffee)_/.test(musicData.itemName);
-          if (!musicData.albumCoverUrl || !musicData.previewUrl || nameIsKey) {
-            // ISRC → MBID → 이름+아티스트 순서로 검색
-            const hasReliableId = !!musicData.isrc || !!musicData.musicbrainzId;
-            const searchQuery = !hasReliableId && !nameIsKey ? musicData.itemName : null;
-            const searchArtist = !hasReliableId ? musicData.artists?.[0]?.name : undefined;
+          const hasReliableId = !!musicData.isrc || !!musicData.musicbrainzId;
+          const searchQuery = !hasReliableId && !nameIsKey ? musicData.itemName : null;
+          const searchArtist = !hasReliableId ? musicData.artists?.[0]?.name : undefined;
 
+          if (hasReliableId || searchQuery) {
             searchSpotifyTrack({
               isrc: musicData.isrc ?? undefined,
               mbid: musicData.musicbrainzId ?? undefined,
@@ -316,15 +316,15 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
   // 음악 전용 데이터 추출
   const isMusicItem = category === 'music' && detail && isMusic(detail, category);
   const musicDetail = isMusicItem ? (detail as MusicDetailResponse) : null;
-  const albumCover = musicDetail?.albumCoverUrl || spotifyData?.albumCoverUrl;
-  const previewUrl = musicDetail?.previewUrl || spotifyData?.previewUrl;
-  const spotifyUri = musicDetail?.spotifyUri;
-  const spotifyUrl = spotifyUri
-    ? `https://open.spotify.com/track/${spotifyUri.replace('spotify:track:', '')}`
-    : spotifyData?.spotifyUrl;
+  const albumCover = isMusicItem ? (spotifyData?.albumCoverUrl ?? null) : null;
+  const previewUrl = spotifyData?.previewUrl ?? musicDetail?.previewUrl;
+  const spotifyUrl = spotifyData?.spotifyUrl
+    ?? (musicDetail?.spotifyUri
+      ? `https://open.spotify.com/track/${musicDetail.spotifyUri.replace('spotify:track:', '')}`
+      : null);
 
-  // 상단 이미지: 음악이면 앨범커버, 그 외는 일반 이미지
-  const headerImage = isMusicItem ? (albumCover || detail?.imageUrl) : detail?.imageUrl;
+  // 상단 이미지: 음악이면 Spotify 앨범커버, 그 외는 일반 이미지
+  const headerImage = isMusicItem ? albumCover : detail?.imageUrl;
 
   return (
     <div
@@ -420,6 +420,9 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 )}
                 {detail.description && (
                   <p className="mt-2 text-xs leading-relaxed text-caption">{detail.description}</p>
+                )}
+                {recommendReason && (
+                  <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
                 )}
 
                 {/* 구분선 */}

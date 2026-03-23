@@ -249,18 +249,17 @@ function ItemRow({
   const isPlaying = playingId === item.id;
   const hasPoster = categoryKey === 'tvshow' && item.imageUrl && !posterError;
 
-  // 앨범 커버: DB 데이터 → Spotify 조회 결과 순서로 사용
-  const albumCover = item.albumCoverUrl || spotifyData?.albumCoverUrl;
-  const previewUrl = item.previewUrl || spotifyData?.previewUrl;
-  const spotifyUrl = item.spotifyUri
-    ? `https://open.spotify.com/track/${item.spotifyUri.replace('spotify:track:', '')}`
-    : spotifyData?.spotifyUrl;
+  // 음악 앨범 커버는 Spotify API에서만 가져옴 (DB 이미지는 사용하지 않음)
+  const albumCover = spotifyData?.albumCoverUrl ?? null;
+  const previewUrl = spotifyData?.previewUrl ?? item.previewUrl;
+  const spotifyUrl = spotifyData?.spotifyUrl
+    ?? (item.spotifyUri
+      ? `https://open.spotify.com/track/${item.spotifyUri.replace('spotify:track:', '')}`
+      : null);
 
-  // 음악 아이템: 앨범커버 없거나 이름이 itemKey면 Spotify API로 조회
-  const nameIsKey = !item.name || /^(music|movie|lighting|coffee)_/.test(item.name);
+  // 음악 아이템: 항상 Spotify API로 조회
   useEffect(() => {
     if (!isMusic || fetchedRef.current) return;
-    if (item.albumCoverUrl && !nameIsKey) return;
     if (!item.isrc && !item.musicbrainzId && !item.name) return;
 
     fetchedRef.current = true;
@@ -273,7 +272,7 @@ function ItemRow({
       .then(setSpotifyData)
       .catch(() => { /* 조회 실패는 무시 */ })
       .finally(() => setSpotifyLoading(false));
-  }, [isMusic, item.albumCoverUrl, item.isrc, item.musicbrainzId, item.name]);
+  }, [isMusic, item.isrc, item.musicbrainzId, item.name]);
 
   return (
     <div
