@@ -42,14 +42,20 @@ const UserIcon = () => (
 /* ─── 메뉴 항목 타입 ─── */
 type ProfileMenuItem = {
   label: string;
-  action: ProfilePage | 'logout';
+  action: ProfilePage | 'logout' | 'login' | 'signup';
 };
 
-/** 드롭다운 메뉴 항목 목록 */
-const MENU_ITEMS: ProfileMenuItem[] = [
+/** 인증된 사용자 드롭다운 메뉴 항목 */
+const AUTH_MENU_ITEMS: ProfileMenuItem[] = [
   { label: '내 정보', action: 'my-info' },
   { label: '설정', action: 'settings' },
   { label: '로그아웃', action: 'logout' },
+];
+
+/** 비인증 사용자 드롭다운 메뉴 항목 */
+const GUEST_MENU_ITEMS: ProfileMenuItem[] = [
+  { label: '로그인', action: 'login' },
+  { label: '회원가입', action: 'signup' },
 ];
 
 /** 프로필 페이지별 경로 매핑 */
@@ -65,10 +71,13 @@ const ProfileDropdown = () => {
   const navigate = useNavigate();
   const { switchToProfile } = useAppMode();
   const authLogout = useAuthStore((s) => s.logout);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   /** 바깥 클릭 시 드롭다운 닫기 — useClickOutside 훅 사용 */
   const close = useCallback(() => setIsOpen(false), []);
   useClickOutside(containerRef, close, isOpen);
+
+  const menuItems = isAuthenticated ? AUTH_MENU_ITEMS : GUEST_MENU_ITEMS;
 
   /** 메뉴 항목 클릭 핸들러 */
   const handleItemClick = (action: ProfileMenuItem['action']) => {
@@ -76,6 +85,10 @@ const ProfileDropdown = () => {
       logout().catch(() => {});
       authLogout();
       navigate('/login');
+    } else if (action === 'login') {
+      navigate('/login');
+    } else if (action === 'signup') {
+      navigate('/signup');
     } else {
       switchToProfile(action);
       navigate(PROFILE_ROUTES[action]);
@@ -114,7 +127,7 @@ const ProfileDropdown = () => {
           className="absolute right-0 top-full mt-2 min-w-[160px]
             rounded-control bg-white py-1 shadow-card z-50"
         >
-          {MENU_ITEMS.map((item) => (
+          {menuItems.map((item) => (
             <li
               key={item.action}
               role="menuitem"

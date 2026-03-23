@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import PageContainer from '@/components/layout/PageContainer';
 import ReactionBar from '@/components/feed/ReactionBar';
 import CommentSection from '@/components/feed/CommentSection';
@@ -15,6 +15,18 @@ import { ButtonDefault } from '@/components/common';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import type { RecommendedItemResponse } from '@/api/vibe';
 import type { FeedResponse, ReactionSummary, SimilarFeedResponse } from '@/api/types';
+
+/* ---------- Router State ---------- */
+
+interface FeedRouterState {
+  feed?: {
+    image: string | null;
+    nickname: string;
+    avatar: string | null;
+    caption: string | null;
+    views: number;
+  };
+}
 
 /* ---------- Mock Data ---------- */
 // [BEFORE INTEGRATION] 하드코딩된 Mock 데이터
@@ -99,14 +111,50 @@ function formatDate(isoString: string): string {
   });
 }
 
+/* ---------- Skeleton ---------- */
+
+function FeedSkeleton() {
+  return (
+    <PageContainer>
+      <div className="mb-6 flex items-center gap-3">
+        <div className="h-10 w-10 animate-pulse rounded-full bg-disabled" />
+        <div className="h-4 w-28 animate-pulse rounded bg-disabled" />
+      </div>
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="shrink-0 lg:w-105">
+          <div className="aspect-4/5 w-full animate-pulse rounded-card bg-disabled" />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-5">
+          <div className="rounded-card bg-surface p-5">
+            <div className="space-y-2">
+              <div className="h-3 w-full animate-pulse rounded bg-disabled" />
+              <div className="h-3 w-4/5 animate-pulse rounded bg-disabled" />
+              <div className="h-3 w-3/5 animate-pulse rounded bg-disabled" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </PageContainer>
+  );
+}
+
 /* ---------- Component ---------- */
 
 export default function FeedDetail() {
   const { feedId } = useParams<{ feedId: string }>();
+  const location = useLocation();
+  const preview = (location.state as FeedRouterState | null)?.feed;
 
   // [BEFORE INTEGRATION] const feed = MOCK_FEED;
   // [AFTER INTEGRATION] API에서 피드 데이터 로드, 실패 시 폴백
-  const [feed, setFeed] = useState(FALLBACK_FEED);
+  const [feed, setFeed] = useState({
+    ...FALLBACK_FEED,
+    image: preview?.image ?? FALLBACK_FEED.image,
+    user: { ...FALLBACK_FEED.user, nickname: preview?.nickname ?? 'Nickname', avatar: preview?.avatar ?? '' },
+    caption: preview?.caption ?? null,
+    views: preview?.views ?? FALLBACK_FEED.views,
+  });
+  const [loading, setLoading] = useState(!preview);
   const [apiReactions, setApiReactions] = useState<ReactionSummary[]>([]);
   const [apiMyReactionTypes, setApiMyReactionTypes] = useState<string[]>([]);
   const [bookmarked, setBookmarked] = useState(false);
@@ -198,7 +246,8 @@ export default function FeedDetail() {
       .catch((err) => {
         if (err?.response?.status === 403) setForbidden(true);
         /* 그 외 폴백 유지 */
-      });
+      })
+      .finally(() => setLoading(false));
   }, [feedId]);
 
   // 비슷한 무드 추천 피드 로드
@@ -258,6 +307,8 @@ export default function FeedDetail() {
       /* TODO: 에러 토스트 */
     }
   };
+
+  if (loading) return <FeedSkeleton />;
 
   if (forbidden) {
     return (
@@ -543,7 +594,7 @@ export default function FeedDetail() {
               return (
                 <div
                   key={vibe.feedId}
-                  onClick={() => navigate(`/feed/${vibe.feedId}`)}
+                  onClick={() => navigate(`/feed/${vibe.feedId}`, { state: { feed: { image: vibe.generatedImageUrl, nickname: vibe.authorNickname, avatar: vibe.authorProfileImageUrl, caption: vibe.caption, views: 0 } } })}
                   className="group cursor-pointer"
                 >
                   <div className="relative overflow-hidden rounded-card bg-surface">
