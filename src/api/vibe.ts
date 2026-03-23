@@ -42,6 +42,12 @@ export interface RecommendedItemResponse {
   externalService: string | null;
   matchScore: number;
   recommendReason: string | null;
+  // 음악 전용 필드
+  albumCoverUrl: string | null;
+  previewUrl: string | null;
+  spotifyUri: string | null;
+  isrc: string | null;
+  musicbrainzId: string | null;
 }
 
 export interface CategoryRecommendation {

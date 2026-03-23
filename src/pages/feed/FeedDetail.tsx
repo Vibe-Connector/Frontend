@@ -9,6 +9,7 @@ import { getFeed, getSimilarFeeds, updateFeed, deleteFeed } from '@/api/feed';
 import Modal from '@/components/common/Modal';
 import { deleteArchiveVibe, deleteArchiveItem, getArchiveItems, getArchiveVibes } from '@/api/archive';
 import { getVibeResultItems } from '@/api/vibe';
+import { searchSpotifyTrack } from '@/api/spotify';
 import { followUser, unfollowUser, getFollowStatus } from '@/api/follow';
 import { useAuthStore } from '@/store/authStore';
 import { ButtonDefault } from '@/components/common';
@@ -162,7 +163,7 @@ export default function FeedDetail() {
   const [resultId, setResultId] = useState<number | null>(null);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [vibeItems, setVibeItems] = useState<RecommendedItemResponse[]>([]);
-  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<{ itemId: number; categoryKey: string; recommendReason: string | null } | null>(null);
   const [itemBookmarkTarget, setItemBookmarkTarget] = useState<number | null>(null);
   const [itemArchiveMap, setItemArchiveMap] = useState<Record<number, number>>({});
   const [similarBookmarkTarget, setSimilarBookmarkTarget] = useState<{ feedId: number; resultId: number } | null>(null);
@@ -178,6 +179,7 @@ export default function FeedDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [feedIsPublic, setFeedIsPublic] = useState(true);
   const fetchedRef = useRef<string | null>(null);
+  const spotifyEnrichedRef = useRef(false);
   const navigate = useNavigate();
   const currentUserId = useAuthStore((s) => s.user?.userId);
   const isOwner = currentUserId != null && feed.user.userId === currentUserId;
@@ -186,6 +188,7 @@ export default function FeedDetail() {
     if (!feedId || feedId === 'demo') return;
     if (fetchedRef.current === feedId) return;
     fetchedRef.current = feedId;
+    spotifyEnrichedRef.current = false;
     const numId = Number(feedId);
     if (isNaN(numId)) return;
 
@@ -218,7 +221,11 @@ export default function FeedDetail() {
         // 추천 아이템 로드 + 아카이브 상태 초기화
         getVibeResultItems(res.resultId)
           .then((categories) => {
-            const flat = categories.flatMap((c) => c.items);
+            const flat = categories.flatMap((c) => c.items).map((item) =>
+              item.categoryKey === 'music'
+                ? { ...item, albumCoverUrl: null, imageUrl: null }
+                : item
+            );
             setVibeItems(flat);
             // 아이템 아카이브 상태 로드
             const itemIds = new Set(flat.map((item) => item.itemId));
@@ -249,6 +256,39 @@ export default function FeedDetail() {
       })
       .finally(() => setLoading(false));
   }, [feedId]);
+
+  // 음악 아이템은 항상 Spotify API로 앨범커버 조회
+  useEffect(() => {
+    if (vibeItems.length === 0 || spotifyEnrichedRef.current) return;
+    const musicItems = vibeItems.filter((item) => item.categoryKey === 'music');
+    if (musicItems.length === 0) return;
+    spotifyEnrichedRef.current = true;
+
+    musicItems.forEach((item) => {
+      if (!item.isrc && !item.musicbrainzId && !item.itemName) return;
+      searchSpotifyTrack({
+        isrc: item.isrc,
+        mbid: item.musicbrainzId,
+        query: (!item.isrc && !item.musicbrainzId) ? item.itemName : null,
+      })
+        .then((spotifyData) => {
+          setVibeItems((prev) =>
+            prev.map((v) =>
+              v.itemId === item.itemId
+                ? {
+                    ...v,
+                    albumCoverUrl: spotifyData.albumCoverUrl,
+                    previewUrl: spotifyData.previewUrl ?? v.previewUrl,
+                    spotifyUri: spotifyData.spotifyUri ?? v.spotifyUri,
+                    itemName: spotifyData.trackName ?? v.itemName,
+                  }
+                : v
+            )
+          );
+        })
+        .catch(() => {/* 무시 */});
+    });
+  }, [vibeItems]);
 
   // 비슷한 무드 추천 피드 로드
   const loadSimilarFeeds = useCallback(async () => {
@@ -529,14 +569,16 @@ export default function FeedDetail() {
               <div className="grid grid-cols-4 gap-3">
                 {vibeItems.slice(0, 8).map((item) => {
                   const isArchived = item.itemId in itemArchiveMap;
+                  const isMusic = item.categoryKey === 'music';
+                  const displayImage = isMusic ? item.albumCoverUrl : item.imageUrl;
                   return (
                     <div
                       key={item.itemId}
                       className="group/item relative aspect-square cursor-pointer overflow-hidden rounded-control bg-white"
-                      onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey })}
+                      onClick={() => setSelectedItem({ itemId: item.itemId, categoryKey: item.categoryKey, recommendReason: item.recommendReason ?? null })}
                     >
                       <ImageWithFallback
-                        src={item.imageUrl}
+                        src={displayImage}
                         alt={item.itemName}
                         className="h-full w-full object-cover transition-transform duration-200 group-hover/item:scale-105"
                       />
@@ -691,6 +733,7 @@ export default function FeedDetail() {
           onClose={() => setSelectedItem(null)}
           itemId={selectedItem.itemId}
           categoryKey={selectedItem.categoryKey}
+          recommendReason={selectedItem.recommendReason}
           onArchive={() => {
             setItemBookmarkTarget(selectedItem.itemId);
             setSelectedItem(null);
