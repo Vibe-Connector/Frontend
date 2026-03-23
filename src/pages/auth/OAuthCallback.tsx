@@ -4,6 +4,8 @@ import { socialLogin } from '@/api/auth';
 import { linkSocialAccount } from '@/api/user';
 import { useAuthStore } from '@/store/authStore';
 import { parseModeFromState } from '@/utils/oauth';
+import i18n from '@/i18n/config';
+import { LANGUAGE_MAP } from '@/i18n/config';
 
 export default function OAuthCallback() {
   const { provider } = useParams<{ provider: string }>();
@@ -59,9 +61,13 @@ export default function OAuthCallback() {
               email: data.email!,
               nickname: data.nickname!,
               profileImageUrl: data.profileImageUrl,
+              preferredLanguageId: data.preferredLanguageId ?? null,
               accessToken: data.accessToken,
               refreshToken: data.refreshToken!,
             });
+            if (data.preferredLanguageId && LANGUAGE_MAP[data.preferredLanguageId]) {
+              i18n.changeLanguage(LANGUAGE_MAP[data.preferredLanguageId]);
+            }
             navigate('/explore', { replace: true });
           }
         })

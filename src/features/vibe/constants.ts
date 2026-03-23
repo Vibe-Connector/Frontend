@@ -2,12 +2,12 @@ import type { MoodKeyword, EmotionZone, TimeOption, WeatherOption, PlaceOption, 
 
 /* ── Emotion Zone 설정 ── */
 
-export const EMOTION_ZONES: Record<EmotionZone, { label: string; chipColor: string }> = {
-  warm:       { label: '따뜻함', chipColor: '#F1863B' },
-  energy:     { label: '활력',   chipColor: '#F4B225' },
-  calm:       { label: '고요함', chipColor: '#0090F9' },
-  melancholy: { label: '그리움', chipColor: '#82898E' },
-  dream:      { label: '몽환',   chipColor: '#7572FF' },
+export const EMOTION_ZONES: Record<EmotionZone, { labelKey: string; chipColor: string }> = {
+  warm:       { labelKey: 'vibe.zoneWarm',       chipColor: '#F1863B' },
+  energy:     { labelKey: 'vibe.zoneEnergy',     chipColor: '#F4B225' },
+  calm:       { labelKey: 'vibe.zoneCalm',       chipColor: '#0090F9' },
+  melancholy: { labelKey: 'vibe.zoneMelancholy', chipColor: '#82898E' },
+  dream:      { labelKey: 'vibe.zoneDream',      chipColor: '#7572FF' },
 };
 
 export const MOOD_ZONE_MAP: Record<string, EmotionZone> = {
@@ -44,11 +44,11 @@ export const TIME_OPTIONS: TimeOption[] = [
   { id: 'night', label: '밤', hourStart: 21, hourEnd: 24 },
 ];
 
-export const WEATHER_OPTIONS: WeatherOption[] = [
-  { id: 'sunny', label: '맑음', icon: 'sun' },
-  { id: 'cloudy', label: '흐림', icon: 'cloud' },
-  { id: 'rainy', label: '비', icon: 'rain' },
-  { id: 'snowy', label: '눈', icon: 'snow' },
+export const WEATHER_OPTIONS: (Omit<WeatherOption, 'label'> & { labelKey: string })[] = [
+  { id: 'sunny', labelKey: 'vibe.weatherSunny', icon: 'sun' },
+  { id: 'cloudy', labelKey: 'vibe.weatherCloudy', icon: 'cloud' },
+  { id: 'rainy', labelKey: 'vibe.weatherRainy', icon: 'rain' },
+  { id: 'snowy', labelKey: 'vibe.weatherSnowy', icon: 'snow' },
 ];
 
 export const PLACE_OPTIONS: PlaceOption[] = [

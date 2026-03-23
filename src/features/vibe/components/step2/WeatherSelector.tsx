@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { WEATHER_OPTIONS } from '../../constants';
 
 interface WeatherSelectorProps {
@@ -53,10 +54,19 @@ function WeatherIcon({ icon, isActive }: { icon: string; isActive: boolean }) {
 }
 
 export default function WeatherSelector({ weatherIntensities, onWeatherIntensityChange }: WeatherSelectorProps) {
+  const { t } = useTranslation();
+
+  const intensityLabel = (v: number) =>
+    v === 0 ? t('vibe.intensityNone')
+    : v === 20 ? t('vibe.intensityLight')
+    : v === 40 ? t('vibe.intensityMedium')
+    : v === 60 ? t('vibe.intensityStrong')
+    : t('vibe.intensityVeryStrong');
+
   return (
     <div className="rounded-card bg-white/50 p-6">
       <h3 className="mb-4 text-center text-sm font-medium text-high-emphasis">
-        오늘의 날씨는 어때요?
+        {t('vibe.weatherQuestion')}
       </h3>
       <div className="flex flex-col gap-4">
         {WEATHER_OPTIONS.map((weather) => {
@@ -74,7 +84,7 @@ export default function WeatherSelector({ weatherIntensities, onWeatherIntensity
                 <WeatherIcon icon={weather.icon} isActive={isActive} />
               </div>
               <span className={`w-10 text-sm font-medium animate-smooth ${isActive ? 'text-high-emphasis' : 'text-caption'}`}>
-                {weather.label}
+                {t(weather.labelKey)}
               </span>
               <div className="flex flex-1 items-center gap-2">
                 <input
@@ -85,10 +95,10 @@ export default function WeatherSelector({ weatherIntensities, onWeatherIntensity
                   value={intensity}
                   onChange={(e) => onWeatherIntensityChange(weather.id, Number(e.target.value))}
                   className="vibe-slider h-2 flex-1 cursor-pointer appearance-none rounded-pill bg-disabled"
-                  aria-label={`${weather.label} 강도`}
+                  aria-label={t('vibe.intensityAria', { weather: t(weather.labelKey) })}
                 />
                 <span className={`w-14 text-right text-xs font-medium ${isActive ? 'text-high-emphasis' : 'text-caption'}`}>
-                  {intensity === 0 ? '—' : intensity === 20 ? '약간' : intensity === 40 ? '보통' : intensity === 60 ? '강' : '매우 강'}
+                  {intensityLabel(intensity)}
                 </span>
               </div>
             </div>

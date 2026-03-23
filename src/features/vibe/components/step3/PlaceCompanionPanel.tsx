@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import PlaceSelector from './PlaceSelector';
 import CompanionSelector from './CompanionSelector';
 import { getSceneImageUrl } from '../../utils/sceneImage';
@@ -37,6 +38,7 @@ export default function PlaceCompanionPanel({
   companions,
   submitting = false,
 }: PlaceCompanionPanelProps) {
+  const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const showImage = selectedPlace && selectedCompanion && !imgError;
 
@@ -62,17 +64,15 @@ export default function PlaceCompanionPanel({
           <img
             key={`${selectedPlace}_${selectedCompanion}`}
             src={getSceneImageUrl(selectedPlace, selectedCompanion)}
-            alt="선택한 장소와 동반자"
+            alt={t('vibe.sceneAlt')}
             className="h-full w-full object-cover"
             onError={() => setImgError(true)}
           />
         ) : (
           <div className="p-8 text-center">
             <p className="text-4xl">✨</p>
-            <p className="mt-3 text-sm text-caption">
-              장소와 동반자를 선택하면
-              <br />
-              분위기 이미지가 표시됩니다
+            <p className="mt-3 text-sm text-caption whitespace-pre-line">
+              {t('vibe.sceneEmpty')}
             </p>
           </div>
         )}

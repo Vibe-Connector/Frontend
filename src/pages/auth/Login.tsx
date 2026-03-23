@@ -6,6 +6,8 @@ import { ButtonDefault, TextInput } from '@/components/common';
 import { login } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { getGoogleOAuthUrl, getNaverOAuthUrl } from '@/utils/oauth';
+import i18n from '@/i18n/config';
+import { LANGUAGE_MAP } from '@/i18n/config';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -24,6 +26,9 @@ export default function Login() {
     try {
       const data = await login({ email: id, password });
       authLogin(data);
+      if (data.preferredLanguageId && LANGUAGE_MAP[data.preferredLanguageId]) {
+        i18n.changeLanguage(LANGUAGE_MAP[data.preferredLanguageId]);
+      }
       navigate('/explore');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '로그인에 실패했습니다.';

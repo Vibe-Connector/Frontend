@@ -19,6 +19,23 @@ export const LOCALE_MAP: Record<string, string> = {
   zh: 'zh-CN',
 };
 
+// localStorage에서 저장된 언어 설정 복원 (Zustand persist 구조 호환)
+function getInitialLanguage(): string {
+  try {
+    const stored = localStorage.getItem('vibelink-auth');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Zustand v5 persist: { state: { user: { preferredLanguageId } } }
+      const langId = parsed?.state?.user?.preferredLanguageId;
+      if (langId && LANGUAGE_MAP[langId]) return LANGUAGE_MAP[langId];
+      // Zustand v4 호환: { user: { preferredLanguageId } }
+      const langId2 = parsed?.user?.preferredLanguageId;
+      if (langId2 && LANGUAGE_MAP[langId2]) return LANGUAGE_MAP[langId2];
+    }
+  } catch { /* 파싱 실패 시 기본값 */ }
+  return 'ko';
+}
+
 i18n.use(initReactI18next).init({
   resources: {
     ko: { translation: ko },
@@ -26,7 +43,7 @@ i18n.use(initReactI18next).init({
     ja: { translation: ja },
     zh: { translation: zh },
   },
-  lng: 'ko',
+  lng: getInitialLanguage(),
   fallbackLng: 'ko',
   interpolation: { escapeValue: false },
 });

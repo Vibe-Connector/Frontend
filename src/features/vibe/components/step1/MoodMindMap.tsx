@@ -86,7 +86,7 @@ export default function MoodMindMap({
           return (
             <div key={zone}>
               <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-caption/70">
-                {zoneConfig.label}
+                {t(zoneConfig.labelKey)}
               </p>
               <div className="flex flex-wrap gap-2.5">
                 {zoneMoods.map((mood) => (
@@ -139,7 +139,7 @@ export default function MoodMindMap({
                 type="button"
                 onClick={() => onRemoveCustomMood(mood)}
                 className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-caption hover:text-high-emphasis"
-                aria-label={`${mood} 삭제`}
+                aria-label={t('vibe.moodDeleteAria', { mood })}
               >
                 &times;
               </button>
@@ -151,7 +151,7 @@ export default function MoodMindMap({
       {/* Limit notice */}
       {isLimitReached && (
         <p className="mt-5 text-center text-xs font-medium text-accent">
-          최대 {MAX_MOOD_SELECTIONS}개까지 선택할 수 있어요
+          {t('vibe.moodLimit', { max: MAX_MOOD_SELECTIONS })}
         </p>
       )}
     </div>

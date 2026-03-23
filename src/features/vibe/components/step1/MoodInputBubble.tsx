@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MoodInputBubbleProps {
   onSubmit: (keyword: string) => void;
@@ -13,6 +14,7 @@ export default function MoodInputBubble({
   maxCustom,
   disabled = false,
 }: MoodInputBubbleProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
   const isMaxReached = customCount >= maxCustom;
   const isDisabled = disabled || isMaxReached;
@@ -38,12 +40,12 @@ export default function MoodInputBubble({
         }}
         placeholder={
           isMaxReached
-            ? `최대 ${maxCustom}개까지 추가 가능`
-            : '기분을 직접 입력해보세요'
+            ? t('vibe.customMoodMaxed', { max: maxCustom })
+            : t('vibe.customMoodPlaceholder')
         }
         disabled={isDisabled}
         className="flex-1 rounded-control border border-stroke bg-white px-4 py-2.5 text-sm text-high-emphasis placeholder:text-caption outline-none focus:border-accent disabled:opacity-40"
-        aria-label="커스텀 무드 키워드 입력"
+        aria-label={t('vibe.customMoodAria')}
       />
       <button
         type="button"
@@ -51,7 +53,7 @@ export default function MoodInputBubble({
         disabled={isDisabled || !value.trim()}
         className="shrink-0 cursor-pointer rounded-control bg-brand px-4 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
-        추가
+        {t('vibe.customMoodAdd')}
       </button>
     </div>
   );
