@@ -363,7 +363,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
       onClick={handleOverlayClick}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 font-pretendard"
     >
-      <div className={`relative w-full overflow-hidden rounded-card bg-white shadow-card ${isMovieCategory ? 'h-125 max-w-3xl' : 'max-h-[85vh] max-w-md'}`}>
+      <div className={`relative w-full overflow-hidden rounded-card bg-white shadow-card ${(isMovieCategory || category === 'music') ? 'h-125 max-w-3xl' : 'max-h-[85vh] max-w-md'}`}>
         {/* 닫기 버튼 */}
         <button
           type="button"
@@ -391,7 +391,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
           </div>
         )}
 
-        {/* 콘텐츠 — 영화: 2컬럼, 나머지: 세로 레이아웃 */}
+        {/* 콘텐츠 — 영화·음악: 2컬럼, 나머지: 세로 레이아웃 */}
         {detail && !loading && (
           isMovieCategory && isMovie(detail, category!) ? (
             /* ── 영화: 포스터 좌측 + 정보 우측 ── */
@@ -414,13 +414,52 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 {detail.description && (
                   <MovieOverviewText text={detail.description} movieTitle={getDisplayName(detail, category)} />
                 )}
+                {recommendReason && (
+                  <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
+                )}
                 <hr className="my-4 border-stroke" />
                 <MovieDetail data={detail} />
                 <ActionButtons onArchive={onArchive} externalLink={detail.externalLink} onClose={onClose} />
               </div>
             </div>
+          ) : category === 'music' && isMusic(detail, category!) ? (
+            /* ── 음악: 앨범커버 좌측 + 정보 우측 ── */
+            <div className="flex h-full">
+              <div className="flex w-80 shrink-0 items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                {spotifyData?.albumCoverUrl ? (
+                  <img
+                    src={spotifyData.albumCoverUrl}
+                    alt={spotifyData.trackName ?? detail.itemName ?? '앨범 커버'}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto p-5">
+                <span className="mb-2 inline-block w-fit rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-caption">
+                  {categoryLabel}
+                </span>
+                <h2 className="text-lg font-bold text-high-emphasis">
+                  {spotifyData?.trackName || getDisplayName(detail, category)}
+                </h2>
+                {spotifyData?.artists && spotifyData.artists.length > 0 && (
+                  <p className="mt-0.5 text-sm text-caption">{spotifyData.artists.join(', ')}</p>
+                )}
+                {recommendReason && (
+                  <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
+                )}
+                <hr className="my-4 border-stroke" />
+                <MusicDetail data={detail} />
+                <ActionButtons onArchive={onArchive} externalLink={spotifyData?.spotifyUrl ?? detail.externalLink} onClose={onClose} />
+              </div>
+            </div>
           ) : (
-            /* ── 음악·커피·조명: 기존 세로 레이아웃 ── */
+            /* ── 커피·조명: 기존 세로 레이아웃 ── */
             <div className="max-h-[85vh] overflow-y-auto">
               {detail.imageUrl && (
                 <div className="w-full overflow-hidden">
@@ -435,16 +474,13 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <span className="mb-2 inline-block rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-caption">
                   {categoryLabel}
                 </span>
-                <h2 className="text-lg font-bold text-high-emphasis">
-                  {(category === 'music' && spotifyData?.trackName) || getDisplayName(detail, category)}
-                </h2>
+                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category)}</h2>
                 {detail.brand && <p className="mt-0.5 text-sm text-caption">{detail.brand}</p>}
                 {detail.description && <ExpandableText text={detail.description} />}
                 {recommendReason && (
                   <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
                 )}
                 <hr className="my-4 border-stroke" />
-                {category && isMusic(detail, category) && <MusicDetail data={detail} />}
                 {category && isLighting(detail, category) && <LightingDetail data={detail} />}
                 {category && isCoffee(detail, category) && <CoffeeDetail data={detail} />}
                 <ActionButtons onArchive={onArchive} externalLink={detail.externalLink} onClose={onClose} />
