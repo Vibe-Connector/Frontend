@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault, TextInput } from '@/components/common';
 import { signup, socialSignup, checkEmail, sendVerificationCode, verifyCode } from '@/api/auth';
@@ -19,6 +20,7 @@ interface SocialSignupData {
 }
 
 export default function SignUp() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [nickname, setNickname] = useState('');
   const [password, setPassword] = useState('');
@@ -59,7 +61,7 @@ export default function SignUp() {
 
   const handleSendCode = async () => {
     if (!email) {
-      setEmailStatus('이메일을 입력해 주세요.');
+      setEmailStatus(t('auth.emailRequired'));
       return;
     }
     setCodeSending(true);
@@ -68,7 +70,7 @@ export default function SignUp() {
       // 1. 이메일 중복 확인
       const result = await checkEmail(email);
       if (!result.available) {
-        setEmailStatus('이미 사용 중인 이메일입니다.');
+        setEmailStatus(t('auth.emailExists'));
         return;
       }
       // 2. 인증 코드 발송
@@ -77,7 +79,7 @@ export default function SignUp() {
       setEmailVerified(false);
       setVerifyStatus('');
       setVerificationCodeInput('');
-      setEmailStatus('인증 코드가 발송되었습니다. 이메일을 확인해 주세요.');
+      setEmailStatus(t('auth.codeSent'));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '인증 코드 발송에 실패했습니다.';
       setEmailStatus(message);
@@ -88,7 +90,7 @@ export default function SignUp() {
 
   const handleVerify = async () => {
     if (!verificationCodeInput) {
-      setVerifyStatus('인증 코드를 입력해 주세요.');
+      setVerifyStatus(t('auth.codeRequired'));
       return;
     }
     setVerifying(true);
@@ -97,7 +99,7 @@ export default function SignUp() {
       const result = await verifyCode(email, verificationCodeInput);
       if (result.verified) {
         setEmailVerified(true);
-        setVerifyStatus('이메일 인증이 완료되었습니다.');
+        setVerifyStatus(t('auth.emailVerified'));
         setEmailStatus('');
       }
     } catch (err: unknown) {
@@ -110,19 +112,19 @@ export default function SignUp() {
 
   const handleRegister = async () => {
     if (!isSocialMode && !emailVerified) {
-      setError('이메일 인증을 완료해 주세요.');
+      setError(t('auth.emailVerificationNeeded'));
       return;
     }
     if (password !== passwordConfirm) {
-      setError('비밀번호가 일치하지 않습니다.');
+      setError(t('auth.passwordMismatch'));
       return;
     }
     if (!nickname.trim()) {
-      setError('닉네임을 입력해 주세요.');
+      setError(t('auth.nicknameRequired'));
       return;
     }
     if (password.length < 8) {
-      setError('비밀번호는 8자 이상이어야 합니다.');
+      setError(t('auth.passwordMinLength'));
       return;
     }
     setError('');
@@ -143,7 +145,7 @@ export default function SignUp() {
       }
       navigate('/explore');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '회원가입에 실패했습니다.';
+      const message = err instanceof Error ? err.message : t('auth.signupFailed');
       setError(message);
     } finally {
       setLoading(false);
@@ -192,7 +194,7 @@ export default function SignUp() {
 
         {isSocialMode && (
           <p className="mb-6 text-sm text-caption">
-            소셜 인증이 완료되었습니다. 닉네임과 비밀번호를 설정해 주세요.
+            {t('auth.socialComplete')}
           </p>
         )}
 
@@ -206,14 +208,14 @@ export default function SignUp() {
           {/* Row 1: NICKNAME / PASSWORD */}
           <div className="grid grid-cols-2 gap-6">
             <TextInput
-              label="NICKNAME"
+              label={t('auth.nickname')}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               autoComplete="nickname"
             />
 
             <TextInput
-              label="PASSWORD"
+              label={t('auth.password')}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -225,7 +227,7 @@ export default function SignUp() {
           <div className="mt-6 grid grid-cols-2 gap-6">
             <div>
               <label className="mb-1 block text-[13px] font-medium tracking-[-1px] text-high-emphasis">
-                EMAIL
+                {t('auth.email')}
               </label>
               <div className="flex gap-2">
                 <TextInput
@@ -252,7 +254,7 @@ export default function SignUp() {
                     onClick={handleSendCode}
                     disabled={codeSending || emailVerified}
                   >
-                    {codeSending ? '...' : codeSent ? 'RE-SEND' : 'SEND CODE'}
+                    {codeSending ? '...' : codeSent ? t('auth.resend') : t('auth.sendCode')}
                   </button>
                 )}
               </div>
@@ -267,7 +269,7 @@ export default function SignUp() {
             </div>
 
             <TextInput
-              label="PASSWORD DOUBLE CHECK"
+              label={t('auth.passwordCheck')}
               type="password"
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
@@ -280,7 +282,7 @@ export default function SignUp() {
             {!isSocialMode ? (
               <div>
                 <label className="mb-1 block text-[13px] font-medium tracking-[-1px] text-high-emphasis">
-                  VERIFICATION CODE
+                  {t('auth.verificationCode')}
                 </label>
                 <div className="flex gap-2">
                   <TextInput
@@ -295,7 +297,7 @@ export default function SignUp() {
                     onClick={handleVerify}
                     disabled={verifying || emailVerified || !codeSent}
                   >
-                    {verifying ? '...' : emailVerified ? 'VERIFIED' : 'VERIFY'}
+                    {verifying ? '...' : emailVerified ? t('auth.verified') : t('auth.verify')}
                   </button>
                 </div>
                 {verifyStatus && (
@@ -316,7 +318,7 @@ export default function SignUp() {
                 className="w-[110px]"
                 disabled={loading}
               >
-                {loading ? '...' : 'REGISTER'}
+                {loading ? '...' : t('auth.register')}
               </ButtonDefault>
             </div>
           </div>
@@ -327,7 +329,7 @@ export default function SignUp() {
           <>
             <div className="mt-6 flex items-center gap-3">
               <div className="h-px flex-1 bg-stroke" />
-              <span className="text-xs text-caption">또는</span>
+              <span className="text-xs text-caption">{t('auth.divider')}</span>
               <div className="h-px flex-1 bg-stroke" />
             </div>
 
@@ -343,7 +345,7 @@ export default function SignUp() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                Google로 가입
+                {t('auth.googleSignup')}
               </button>
 
               <button
@@ -355,7 +357,7 @@ export default function SignUp() {
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" />
                 </svg>
-                Naver로 가입
+                {t('auth.naverSignup')}
               </button>
             </div>
           </>

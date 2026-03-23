@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getFolders, archiveVibe, archiveItem, createFolder } from '@/api/archive';
 import type { FolderResponse } from '@/api/archive';
 import { ApiError } from '@/api/types';
@@ -12,6 +13,7 @@ interface BookmarkModalProps {
 }
 
 export default function BookmarkModal({ open, onClose, resultId, itemId, onArchived }: BookmarkModalProps) {
+  const { t } = useTranslation();
   const folderType = itemId ? 'ITEM' : 'VIBE';
   const [folders, setFolders] = useState<FolderResponse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,9 +79,9 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
       onClose();
     } catch (err: unknown) {
       if (err instanceof ApiError && err.code === 'ARCHIVE_008') {
-        setError('폴더당 최대 20개까지 저장할 수 있습니다.');
+        setError(t('archive.maxItems'));
       } else {
-        setError(err instanceof ApiError ? err.message : '저장에 실패했습니다.');
+        setError(err instanceof ApiError ? err.message : t('common.errorOccurred'));
       }
     } finally {
       setSaving(false);
@@ -109,11 +111,11 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
       onClose();
     } catch (err: unknown) {
       if (err instanceof ApiError && err.code === 'ARCHIVE_007') {
-        setError('폴더는 최대 5개까지 생성할 수 있습니다.');
+        setError(t('archive.maxFolders'));
         setCreatingFolder(false);
         setNewFolderName('');
       } else {
-        setError(err instanceof ApiError ? err.message : '폴더 생성에 실패했습니다.');
+        setError(err instanceof ApiError ? err.message : t('common.errorOccurred'));
       }
     } finally {
       setSaving(false);
@@ -134,10 +136,10 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
       <div className="relative w-full max-w-sm overflow-hidden rounded-card bg-white shadow-card">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-stroke px-5 py-4">
-          <h2 className="text-base font-bold text-high-emphasis">폴더에 저장</h2>
+          <h2 className="text-base font-bold text-high-emphasis">{t('modal.bookmarkTitle')}</h2>
           <button
             type="button"
-            aria-label="닫기"
+            aria-label={t('common.close')}
             onClick={onClose}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-low-emphasis transition-colors hover:bg-input hover:text-high-emphasis"
           >
@@ -168,7 +170,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
                     <p className="truncate text-sm font-medium text-high-emphasis">
                       {folder.folderName}
                     </p>
-                    <p className="text-xs text-low-emphasis">{folder.archiveCount}개 항목</p>
+                    <p className="text-xs text-low-emphasis">{folder.archiveCount}{t('archive.itemsCount')}</p>
                   </div>
                 </button>
               ))}
@@ -193,7 +195,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
-                  placeholder="폴더 이름"
+                  placeholder={t('archive.folderName')}
                   autoFocus
                   className="min-w-0 flex-1 rounded-lg border border-stroke px-3 py-2 text-sm outline-none focus:border-accent"
                 />
@@ -203,7 +205,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
                   onClick={handleCreateFolder}
                   className="shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-50"
                 >
-                  저장
+                  {t('common.save')}
                 </button>
                 <button
                   type="button"
@@ -214,11 +216,11 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
                   }}
                   className="shrink-0 rounded-lg border border-stroke px-3 py-2 text-sm text-caption transition-colors hover:bg-input"
                 >
-                  취소
+                  {t('common.cancel')}
                 </button>
               </div>
               <label className="flex items-center justify-between text-xs text-default">
-                <span>{newFolderPublic ? '공개' : '비공개'}</span>
+                <span>{newFolderPublic ? t('feed.public') : t('feed.private')}</span>
                 <button
                   type="button"
                   className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
@@ -243,7 +245,7 @@ export default function BookmarkModal({ open, onClose, resultId, itemId, onArchi
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z" />
               </svg>
-              새 폴더 만들기
+              {t('archive.newFolder')}
             </button>
           )}
         </div>

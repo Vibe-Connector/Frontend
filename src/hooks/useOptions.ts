@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/authStore';
 const LANGUAGE_LOCALE_MAP: Record<number, string> = {
   1: 'ko',
   2: 'en',
+  3: 'ja',
+  4: 'zh',
 };
 
 export function useOptions(langOverride?: string) {

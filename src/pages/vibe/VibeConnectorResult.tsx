@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/layout/PageContainer';
 import { ButtonDefault } from '@/components/common';
 import { getVibeSession, createVibe } from '@/api/vibe';
@@ -237,6 +238,7 @@ function ItemRow({
   playingId: string | null;
   onPlayPreview: (item: ItemRowItem) => void;
 }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
   const [posterError, setPosterError] = useState(false);
@@ -307,7 +309,7 @@ function ItemRow({
         <button
           className="flex-shrink-0 overflow-hidden rounded-[4px]"
           onClick={() => hasPoster && setPosterOpen(true)}
-          title={hasPoster ? '포스터 보기' : undefined}
+          title={hasPoster ? t('result.posterView') : undefined}
         >
           {hasPoster ? (
             <img
@@ -335,7 +337,7 @@ function ItemRow({
             rel="noopener noreferrer"
             className="mt-1 inline-block text-xs font-medium text-accent hover:underline"
           >
-            구입처
+            {t('common.purchase')}
           </a>
         )}
       </div>
@@ -351,7 +353,7 @@ function ItemRow({
                   : 'bg-brand text-white hover:bg-brand/80'
               }`}
               onClick={() => onPlayPreview(item)}
-              title={isPlaying ? '정지' : '미리듣기'}
+              title={isPlaying ? t('result.stop') : t('result.preview')}
             >
               {isPlaying ? <PauseIcon /> : <PlayIcon />}
             </button>
@@ -362,7 +364,7 @@ function ItemRow({
               target="_blank"
               rel="noopener noreferrer"
               className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1DB954] text-white hover:bg-[#1ed760] transition-colors"
-              title="Spotify에서 열기"
+              title={t('result.openSpotify')}
             >
               <SpotifyIcon />
             </a>
@@ -435,6 +437,7 @@ function mapApiResultToView(apiResult: VibeResultResponse) {
 }
 
 export default function VibeConnectorResult() {
+  const { t } = useTranslation();
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { data: options } = useOptions();
@@ -616,19 +619,19 @@ export default function VibeConnectorResult() {
                 </div>
               ) : imageTimedOut ? (
                 <div className="flex aspect-[8/11] w-full flex-col items-center justify-center gap-3">
-                  <p className="text-sm text-caption">이미지를 생성할 수 없었습니다</p>
+                  <p className="text-sm text-caption">{t('result.imageError')}</p>
                   <button
                     className="rounded-control bg-brand px-4 py-2 text-sm text-white"
                     onClick={() => {
                       if (sessionId) startImagePolling(Number(sessionId));
                     }}
                   >
-                    다시 시도
+                    {t('common.retry')}
                   </button>
                 </div>
               ) : (
                 <div className="flex aspect-[8/11] w-full items-center justify-center">
-                  <p className="text-sm text-caption">이미지 없음</p>
+                  <p className="text-sm text-caption">{t('result.imageNone')}</p>
                 </div>
               )}
             </div>
@@ -640,7 +643,7 @@ export default function VibeConnectorResult() {
               {/* Header */}
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold tracking-wide text-high-emphasis">
-                  ITEMS USED
+                  {t('result.itemsUsed')}
                 </h2>
                 <div
                   className="h-10 w-10 rounded-full border-2 border-stroke"
@@ -714,21 +717,21 @@ export default function VibeConnectorResult() {
               className="min-w-[120px]"
               onClick={() => navigate(`/feed/create?sessionId=${sessionId}`)}
             >
-              SHARE
+              {t('result.share')}
             </ButtonDefault>
             <ButtonDefault
               shape="rect"
               className="min-w-[120px]"
               onClick={() => navigate('/vibe/edit')}
             >
-              EDIT
+              {t('result.edit')}
             </ButtonDefault>
             <ButtonDefault
               shape="rect"
               className="min-w-[120px]"
               onClick={() => navigate('/vibe/connect')}
             >
-              CONNECT
+              {t('result.connect')}
             </ButtonDefault>
           </div>
         </div>

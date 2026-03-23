@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MOOD_KEYWORDS,
   MAX_CUSTOM_MOODS,
@@ -32,6 +33,7 @@ export default function MoodMindMap({
   moods,
   isLimitReached = false,
 }: MoodMindMapProps) {
+  const { t } = useTranslation();
   const displayMoods = moods ?? MOOD_KEYWORDS;
 
   const groupedMoods = useMemo(() => {
@@ -57,10 +59,10 @@ export default function MoodMindMap({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-[-0.5px] text-high-emphasis">
-            지금 어떤 기분인가요?
+            {t('vibe.moodQuestion')}
           </h2>
           <p className="mt-1 text-sm text-caption">
-            원하는 기분을 골라보세요
+            {t('vibe.moodSubtitle')}
           </p>
         </div>
         <div
@@ -110,7 +112,7 @@ export default function MoodMindMap({
         </div>
         <div className="relative flex justify-center">
           <span className="bg-vibe-bg px-3 text-xs text-caption">
-            또는 직접 표현하기
+            {t('vibe.customMood')}
           </span>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getItemDetail, type ItemCategory, type ItemDetailResponse } from '@/api/item';
 import type {
   MovieDetailResponse,
@@ -61,21 +62,21 @@ function isCoffee(d: ItemDetailResponse, cat: ItemCategory): d is CoffeeDetailRe
 /* ── 유틸 ── */
 
 /** itemName(한국어)이 없을 때 도메인별 원제/원명으로 폴백 */
-function getDisplayName(detail: ItemDetailResponse, category: ItemCategory | null): string {
+function getDisplayName(detail: ItemDetailResponse, category: ItemCategory | null, noName: string): string {
   if (detail.itemName) return detail.itemName;
   if (category === 'movie' && isMovie(detail, category)) {
-    return detail.originalTitle ?? '이름 없음';
+    return detail.originalTitle ?? noName;
   }
   if (category === 'music' && isMusic(detail, category)) {
-    return detail.albumName ?? detail.artists[0]?.name ?? '이름 없음';
+    return detail.albumName ?? detail.artists[0]?.name ?? noName;
   }
   if (category === 'coffee' && isCoffee(detail, category)) {
-    return detail.capsuleName ?? '이름 없음';
+    return detail.capsuleName ?? noName;
   }
   if (category === 'lighting' && isLighting(detail, category)) {
-    return detail.lightingType ?? detail.lightColor ?? '이름 없음';
+    return detail.lightingType ?? detail.lightColor ?? noName;
   }
-  return '이름 없음';
+  return noName;
 }
 
 function formatMs(ms: number): string {
@@ -132,6 +133,7 @@ function ExpandableText({ text, label }: { text: string; label?: string }) {
 /* ── 영화 줄거리 (더보기 → Wikipedia) ── */
 
 function MovieOverviewText({ text, movieTitle }: { text: string; movieTitle: string }) {
+  const { t } = useTranslation();
   const [truncated, setTruncated] = useState(false);
   const ref = useRef<HTMLParagraphElement>(null);
 
@@ -155,7 +157,7 @@ function MovieOverviewText({ text, movieTitle }: { text: string; movieTitle: str
           rel="noopener noreferrer"
           className="mt-1 inline-block text-xs font-medium text-accent hover:underline"
         >
-          더보기 →
+          {t('itemDetail.moreWiki')}
         </a>
       )}
     </div>
@@ -165,17 +167,18 @@ function MovieOverviewText({ text, movieTitle }: { text: string; movieTitle: str
 /* ── 도메인별 상세 섹션 ── */
 
 function MovieDetail({ data }: { data: MovieDetailResponse }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2 text-sm">
-      {data.originalTitle && <InfoRow label="원제" value={data.originalTitle} />}
-      {data.contentType && <InfoRow label="유형" value={data.contentType === 'TV' ? 'TV 시리즈' : '영화'} />}
-      <InfoRow label="개봉일" value={data.releaseDate} />
-      <InfoRow label="러닝타임" value={data.runtime ? `${data.runtime}분` : null} />
-      <InfoRow label="평점" value={data.voteAverage ? `${data.voteAverage.toFixed(1)} (${data.voteCount?.toLocaleString()}명)` : null} />
-      {data.genres.length > 0 && <InfoRow label="장르" value={data.genres.join(', ')} />}
+      {data.originalTitle && <InfoRow label={t('itemDetail.originalTitle')} value={data.originalTitle} />}
+      {data.contentType && <InfoRow label={t('itemDetail.type')} value={data.contentType === 'TV' ? t('itemDetail.tvSeries') : t('itemDetail.movie')} />}
+      <InfoRow label={t('itemDetail.releaseDate')} value={data.releaseDate} />
+      <InfoRow label={t('itemDetail.runtime')} value={data.runtime ? `${data.runtime}${t('itemDetail.minutes')}` : null} />
+      <InfoRow label={t('itemDetail.rating')} value={data.voteAverage ? `${data.voteAverage.toFixed(1)} (${data.voteCount?.toLocaleString()}명)` : null} />
+      {data.genres.length > 0 && <InfoRow label={t('itemDetail.genre')} value={data.genres.join(', ')} />}
       {data.castInfo.length > 0 && (
         <div className="pt-1">
-          <p className="mb-1 text-caption">출연진</p>
+          <p className="mb-1 text-caption">{t('itemDetail.cast')}</p>
           <div className="flex flex-wrap gap-1">
             {data.castInfo.slice(0, 6).map((c) => (
               <span key={c.name} className="rounded-full bg-surface px-2 py-0.5 text-xs text-high-emphasis">
@@ -190,70 +193,73 @@ function MovieDetail({ data }: { data: MovieDetailResponse }) {
 }
 
 function MusicDetail({ data }: { data: MusicDetailResponse }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2 text-sm">
-      {data.artists.length > 0 && <InfoRow label="아티스트" value={data.artists.map((a) => a.name).join(', ')} />}
-      <InfoRow label="앨범" value={data.albumName} />
-      {data.genres.length > 0 && <InfoRow label="장르" value={data.genres.join(', ')} />}
-      <InfoRow label="발매일" value={data.releaseDate} />
-      <InfoRow label="재생 시간" value={data.trackDurationMs ? formatMs(data.trackDurationMs) : null} />
-      <InfoRow label="유형" value={data.contentType} />
+      {data.artists.length > 0 && <InfoRow label={t('itemDetail.artist')} value={data.artists.map((a) => a.name).join(', ')} />}
+      <InfoRow label={t('itemDetail.album')} value={data.albumName} />
+      {data.genres.length > 0 && <InfoRow label={t('itemDetail.genre')} value={data.genres.join(', ')} />}
+      <InfoRow label={t('itemDetail.releaseDate')} value={data.releaseDate} />
+      <InfoRow label={t('itemDetail.playTime')} value={data.trackDurationMs ? formatMs(data.trackDurationMs) : null} />
+      <InfoRow label={t('itemDetail.type')} value={data.contentType} />
     </div>
   );
 }
 
 function LightingDetail({ data }: { data: LightingDetailResponse }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2 text-sm">
-      <InfoRow label="조명 유형" value={data.lightingType} />
-      <InfoRow label="색상" value={data.lightColor} />
-      <InfoRow label="색온도" value={data.colorTempKelvin ? `${data.colorTempKelvin}K${data.colorTempName ? ` (${data.colorTempName})` : ''}` : data.colorTempName} />
-      <InfoRow label="밝기" value={data.brightnessPercent ? `${data.brightnessPercent}%${data.brightnessLevel ? ` (${data.brightnessLevel})` : ''}` : data.brightnessLevel} />
-      <InfoRow label="위치" value={data.position} />
-      <InfoRow label="공간" value={data.spaceContext} />
-      <InfoRow label="시간대" value={data.timeContext} />
-      {data.isDynamic && <InfoRow label="동적 조명" value="예" />}
+      <InfoRow label={t('itemDetail.lightingType')} value={data.lightingType} />
+      <InfoRow label={t('itemDetail.color')} value={data.lightColor} />
+      <InfoRow label={t('itemDetail.colorTemp')} value={data.colorTempKelvin ? `${data.colorTempKelvin}K${data.colorTempName ? ` (${data.colorTempName})` : ''}` : data.colorTempName} />
+      <InfoRow label={t('itemDetail.brightness')} value={data.brightnessPercent ? `${data.brightnessPercent}%${data.brightnessLevel ? ` (${data.brightnessLevel})` : ''}` : data.brightnessLevel} />
+      <InfoRow label={t('itemDetail.position')} value={data.position} />
+      <InfoRow label={t('itemDetail.space')} value={data.spaceContext} />
+      <InfoRow label={t('itemDetail.timeContext')} value={data.timeContext} />
+      {data.isDynamic && <InfoRow label={t('itemDetail.dynamicLighting')} value={t('common.yes')} />}
     </div>
   );
 }
 
 function CoffeeDetail({ data }: { data: CoffeeDetailResponse }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2 text-sm">
-      <InfoRow label="캡슐명" value={data.capsuleName} />
-      <InfoRow label="라인" value={data.line} />
-      <InfoRow label="서브 카테고리" value={data.subCategory} />
+      <InfoRow label={t('itemDetail.capsuleName')} value={data.capsuleName} />
+      <InfoRow label={t('itemDetail.line')} value={data.line} />
+      <InfoRow label={t('itemDetail.subCategory')} value={data.subCategory} />
       {data.intensity != null && (
-        <InfoRow label="강도" value={`${data.intensity}${data.intensityMax ? ` / ${data.intensityMax}` : ''}`} />
+        <InfoRow label={t('itemDetail.intensity')} value={`${data.intensity}${data.intensityMax ? ` / ${data.intensityMax}` : ''}`} />
       )}
-      <InfoRow label="원두" value={data.beanType} />
-      {data.origins.length > 0 && <InfoRow label="원산지" value={data.origins.join(', ')} />}
-      <InfoRow label="로스팅" value={data.roastLevel} />
+      <InfoRow label={t('itemDetail.bean')} value={data.beanType} />
+      {data.origins.length > 0 && <InfoRow label={t('itemDetail.origin')} value={data.origins.join(', ')} />}
+      <InfoRow label={t('itemDetail.roasting')} value={data.roastLevel} />
       {data.aromaProfile?.primary && data.aromaProfile.primary.length > 0 && (
-        <InfoRow label="아로마" value={data.aromaProfile.primary.join(', ')} />
+        <InfoRow label={t('itemDetail.aroma')} value={data.aromaProfile.primary.join(', ')} />
       )}
-      <InfoRow label="풍미" value={data.flavorNotes} />
+      <InfoRow label={t('itemDetail.flavor')} value={data.flavorNotes} />
       {(data.body != null || data.bitterness != null || data.acidity != null) && (
         <div className="pt-1">
-          <p className="mb-1 text-caption">프로필</p>
+          <p className="mb-1 text-caption">{t('itemDetail.profileLabel')}</p>
           <div className="flex gap-3 text-xs">
-            {data.body != null && <span>바디 <strong>{data.body}</strong></span>}
-            {data.bitterness != null && <span>쓴맛 <strong>{data.bitterness}</strong></span>}
-            {data.acidity != null && <span>산미 <strong>{data.acidity}</strong></span>}
-            {data.roasting != null && <span>로스팅 <strong>{data.roasting}</strong></span>}
+            {data.body != null && <span>{t('itemDetail.body')} <strong>{data.body}</strong></span>}
+            {data.bitterness != null && <span>{t('itemDetail.bitterness')} <strong>{data.bitterness}</strong></span>}
+            {data.acidity != null && <span>{t('itemDetail.acidity')} <strong>{data.acidity}</strong></span>}
+            {data.roasting != null && <span>{t('itemDetail.roasting')} <strong>{data.roasting}</strong></span>}
           </div>
         </div>
       )}
       {data.cupSizes.length > 0 && (
-        <InfoRow label="컵 사이즈" value={data.cupSizes.map((c) => `${c.type} (${c.ml}ml)`).join(', ')} />
+        <InfoRow label={t('itemDetail.cupSize')} value={data.cupSizes.map((c) => `${c.type} (${c.ml}ml)`).join(', ')} />
       )}
       {data.pricePerCapsuleKrw != null && (
-        <InfoRow label="가격" value={`₩${data.pricePerCapsuleKrw.toLocaleString()}`} />
+        <InfoRow label={t('itemDetail.price')} value={`₩${data.pricePerCapsuleKrw.toLocaleString()}`} />
       )}
       {(data.isDecaf || data.isLimitedEdition) && (
         <div className="flex gap-2 pt-1">
-          {data.isDecaf && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">디카페인</span>}
-          {data.isLimitedEdition && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">한정판</span>}
+          {data.isDecaf && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">{t('itemDetail.decaf')}</span>}
+          {data.isLimitedEdition && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">{t('itemDetail.limited')}</span>}
         </div>
       )}
     </div>
@@ -263,6 +269,7 @@ function CoffeeDetail({ data }: { data: CoffeeDetailResponse }) {
 /* ── 액션 버튼 ── */
 
 function ActionButtons({ onArchive, externalLink, onClose }: { onArchive?: () => void; externalLink?: string | null; onClose: () => void }) {
+  const { t } = useTranslation();
   if (!onArchive && !externalLink) return null;
   return (
     <div className="mt-5 flex gap-3">
@@ -272,7 +279,7 @@ function ActionButtons({ onArchive, externalLink, onClose }: { onArchive?: () =>
           onClick={() => { onArchive(); onClose(); }}
           className="flex-1 rounded-full border border-stroke bg-white px-4 py-2.5 text-sm font-bold text-high-emphasis transition-opacity hover:bg-input"
         >
-          아카이브 저장
+          {t('modal.archiveSave')}
         </button>
       )}
       {externalLink && (
@@ -281,7 +288,7 @@ function ActionButtons({ onArchive, externalLink, onClose }: { onArchive?: () =>
           onClick={() => window.open(externalLink, '_blank')}
           className="flex-1 rounded-full bg-default px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-80"
         >
-          외부 링크 열기
+          {t('modal.externalLink')}
         </button>
       )}
     </div>
@@ -291,6 +298,7 @@ function ActionButtons({ onArchive, externalLink, onClose }: { onArchive?: () =>
 /* ── 메인 컴포넌트 ── */
 
 export default function ItemDetailModal({ open, onClose, itemId, categoryKey, onArchive, recommendReason }: ItemDetailModalProps) {
+  const { t } = useTranslation();
   const [detail, setDetail] = useState<ItemDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -298,6 +306,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
   const overlayRef = useRef<HTMLDivElement>(null);
   const category = toItemCategory(categoryKey);
   const isMovieCategory = category === 'movie';
+  const noName = t('common.noName');
 
   useEffect(() => {
     if (!open) return;
@@ -367,7 +376,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
         {/* 닫기 버튼 */}
         <button
           type="button"
-          aria-label="닫기"
+          aria-label={t('common.close')}
           onClick={onClose}
           className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-low-emphasis transition-colors hover:bg-input hover:text-high-emphasis"
         >
@@ -386,8 +395,8 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
         {/* 에러 */}
         {error && !loading && (
           <div className="py-16 text-center">
-            <p className="text-sm text-caption">아이템 정보를 불러올 수 없습니다.</p>
-            <button onClick={onClose} className="mt-4 text-sm font-medium text-accent">닫기</button>
+            <p className="text-sm text-caption">{t('modal.errorLoad')}</p>
+            <button onClick={onClose} className="mt-4 text-sm font-medium text-accent">{t('common.close')}</button>
           </div>
         )}
 
@@ -400,7 +409,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <div className="w-80 shrink-0">
                   <ImageWithFallback
                     src={detail.imageUrl}
-                    alt={getDisplayName(detail, category)}
+                    alt={getDisplayName(detail, category, noName)}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -409,13 +418,13 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <span className="mb-2 inline-block w-fit rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-caption">
                   {categoryLabel}
                 </span>
-                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category)}</h2>
+                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category, noName)}</h2>
                 {detail.brand && <p className="mt-0.5 text-sm text-caption">{detail.brand}</p>}
                 {detail.description && (
-                  <MovieOverviewText text={detail.description} movieTitle={getDisplayName(detail, category)} />
+                  <MovieOverviewText text={detail.description} movieTitle={getDisplayName(detail, category, noName)} />
                 )}
                 {recommendReason && (
-                  <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-accent">{t('modal.recommendReason')}: {recommendReason}</p>
                 )}
                 <hr className="my-4 border-stroke" />
                 <MovieDetail data={detail} />
@@ -429,7 +438,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 {spotifyData?.albumCoverUrl ? (
                   <img
                     src={spotifyData.albumCoverUrl}
-                    alt={spotifyData.trackName ?? detail.itemName ?? '앨범 커버'}
+                    alt={spotifyData.trackName ?? detail.itemName ?? noName}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -445,13 +454,13 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                   {categoryLabel}
                 </span>
                 <h2 className="text-lg font-bold text-high-emphasis">
-                  {spotifyData?.trackName || getDisplayName(detail, category)}
+                  {spotifyData?.trackName || getDisplayName(detail, category, noName)}
                 </h2>
                 {spotifyData?.artists && spotifyData.artists.length > 0 && (
                   <p className="mt-0.5 text-sm text-caption">{spotifyData.artists.join(', ')}</p>
                 )}
                 {recommendReason && (
-                  <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-accent">{t('modal.recommendReason')}: {recommendReason}</p>
                 )}
                 <hr className="my-4 border-stroke" />
                 <MusicDetail data={detail} />
@@ -465,7 +474,7 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <div className="w-full overflow-hidden">
                   <ImageWithFallback
                     src={detail.imageUrl}
-                    alt={detail.itemName ?? '아이템'}
+                    alt={detail.itemName ?? noName}
                     className="h-52 w-full object-cover"
                   />
                 </div>
@@ -474,11 +483,11 @@ export default function ItemDetailModal({ open, onClose, itemId, categoryKey, on
                 <span className="mb-2 inline-block rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-caption">
                   {categoryLabel}
                 </span>
-                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category)}</h2>
+                <h2 className="text-lg font-bold text-high-emphasis">{getDisplayName(detail, category, noName)}</h2>
                 {detail.brand && <p className="mt-0.5 text-sm text-caption">{detail.brand}</p>}
                 {detail.description && <ExpandableText text={detail.description} />}
                 {recommendReason && (
-                  <p className="mt-2 text-xs leading-relaxed text-accent">추천 이유: {recommendReason}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-accent">{t('modal.recommendReason')}: {recommendReason}</p>
                 )}
                 <hr className="my-4 border-stroke" />
                 {category && isLighting(detail, category) && <LightingDetail data={detail} />}

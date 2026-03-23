@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/layout/PageContainer';
 import StepIndicator from '@/features/vibe/components/StepIndicator';
 import StepNavigation from '@/features/vibe/components/StepNavigation';
@@ -11,15 +12,6 @@ import { MAX_MOOD_SELECTIONS, EMOTION_ZONES, MOOD_ZONE_MAP } from '@/features/vi
 import type { MoodKeyword } from '@/features/vibe/types';
 import { useOptions } from '@/hooks/useOptions';
 import { createVibe } from '@/api/vibe';
-
-
-// 한국어 폴백 맵 (번역 데이터가 없을 때 사용)
-const MOOD_KOREAN_MAP: Record<string, string> = {
-  cozy: '포근한', dreamy: '몽글몽글한', languid: '나른한', crisp: '청량한',
-  melancholic: '쓸쓸한', energetic: '활기찬', serene: '고요한', nostalgic: '향수 어린',
-  focused: '몰입되는', whimsical: '발랄한', romantic: '로맨틱한', mysterious: '신비로운',
-  warm: '따뜻한', refreshing: '상쾌한', contemplative: '사색적인',
-};
 
 // Backend place_key → 이모지 매핑
 const PLACE_EMOJI_MAP: Record<string, string> = {
@@ -38,6 +30,7 @@ const COMPANION_EMOJI_MAP: Record<string, string> = {
 };
 
 export default function VibeConnector() {
+  const { t } = useTranslation();
   const flow = useVibeFlow();
   const navigate = useNavigate();
   const { data: options } = useOptions();
@@ -50,9 +43,7 @@ export default function VibeConnector() {
       const zone = MOOD_ZONE_MAP[m.keywordValue] ?? 'calm';
       return {
         id: m.keywordValue,
-        label: m.label === m.keywordValue
-          ? (MOOD_KOREAN_MAP[m.keywordValue] ?? m.label)
-          : m.label,
+        label: m.label,
         color: EMOTION_ZONES[zone].chipColor,
         zone,
       };
@@ -133,7 +124,7 @@ export default function VibeConnector() {
     const companionOption = options.companions.find((c) => c.companionKey === flow.selectedCompanion || String(c.companionId) === flow.selectedCompanion);
 
     if (!timeId || !weatherId || !placeOption || !companionOption || moodKeywordIds.length === 0) {
-      alert('모든 옵션을 선택해주세요.');
+      alert(t('vibe.selectAllOptions'));
       return;
     }
 
@@ -151,7 +142,7 @@ export default function VibeConnector() {
       });
       navigate(`/vibe/result/${result.sessionId}`);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Vibe 생성에 실패했습니다.';
+      const message = err instanceof Error ? err.message : t('vibe.generationFailed');
       alert(message);
     } finally {
       setSubmitting(false);

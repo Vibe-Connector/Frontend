@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/layout/PageContainer';
 import { getVibeSession } from '@/api/vibe';
 import { createFeed } from '@/api/feed';
 import type { VibeResultResponse } from '@/api/vibe';
 
 export default function FeedCreate() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = Number(searchParams.get('sessionId'));
@@ -20,7 +22,7 @@ export default function FeedCreate() {
   // ── Vibe 결과 로드 ──
   useEffect(() => {
     if (!sessionId || isNaN(sessionId)) {
-      setError('유효하지 않은 세션입니다');
+      setError(t('feed.invalidSession'));
       setLoading(false);
       return;
     }
@@ -30,7 +32,7 @@ export default function FeedCreate() {
         setVibeResult(res);
         if (res.phrase) setCaption(res.phrase);
       })
-      .catch(() => setError('Vibe 결과를 불러올 수 없습니다'))
+      .catch(() => setError(t('feed.vibeLoadFailed')))
       .finally(() => setLoading(false));
   }, [sessionId]);
 
@@ -49,9 +51,9 @@ export default function FeedCreate() {
       .catch((err) => {
         const msg = err?.response?.data?.message;
         if (msg?.includes('이미') || err?.response?.status === 409) {
-          setError('이미 게시된 Vibe입니다');
+          setError(t('feed.alreadyPosted'));
         } else {
-          setError('피드 게시에 실패했습니다. 다시 시도해주세요');
+          setError(t('feed.postFailed'));
         }
       })
       .finally(() => setSubmitting(false));
@@ -96,16 +98,16 @@ export default function FeedCreate() {
             onClick={() => navigate(-1)}
             className="text-sm text-caption hover:text-high-emphasis"
           >
-            취소
+            {t('common.cancel')}
           </button>
-          <h1 className="text-lg font-semibold text-high-emphasis">새 피드</h1>
+          <h1 className="text-lg font-semibold text-high-emphasis">{t('feed.postButton')}</h1>
           <button
             type="button"
             onClick={handlePublish}
             disabled={submitting || !vibeResult}
             className="text-sm font-semibold text-accent disabled:opacity-50"
           >
-            {submitting ? '게시 중...' : '게시'}
+            {submitting ? t('feed.posting') : t('feed.postButton')}
           </button>
         </div>
 
@@ -136,7 +138,7 @@ export default function FeedCreate() {
             id="caption"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            placeholder="이 Vibe에 대해 한마디..."
+            placeholder={t('feed.vibeCaption')}
             maxLength={2000}
             rows={3}
             className="w-full resize-none rounded-card border border-stroke bg-surface px-4 py-3 text-sm text-high-emphasis placeholder:text-caption focus:border-accent focus:outline-none"
@@ -147,9 +149,9 @@ export default function FeedCreate() {
         {/* 공개/비공개 토글 */}
         <div className="mt-4 flex items-center justify-between rounded-card bg-surface px-4 py-3">
           <div>
-            <p className="text-sm font-medium text-high-emphasis">공개 설정</p>
+            <p className="text-sm font-medium text-high-emphasis">{t('feed.publicSetting')}</p>
             <p className="text-xs text-caption">
-              {isPublic ? '모든 사용자가 이 피드를 볼 수 있습니다' : '나만 볼 수 있습니다'}
+              {isPublic ? t('feed.publicDesc') : t('feed.privateDesc')}
             </p>
           </div>
           <button
@@ -176,7 +178,7 @@ export default function FeedCreate() {
           disabled={submitting || !vibeResult}
           className="mt-6 w-full rounded-card bg-accent py-3 text-sm font-semibold text-white transition-colors hover:bg-accent/90 disabled:opacity-50"
         >
-          {submitting ? '게시 중...' : isPublic ? '피드에 공개하기' : '비공개로 저장하기'}
+          {submitting ? t('feed.posting') : isPublic ? t('feed.publicPost') : t('feed.privateSave')}
         </button>
       </div>
     </PageContainer>

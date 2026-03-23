@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getComments, createComment } from '@/api/feed';
 import type { CommentResponse } from '@/api/types';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +14,7 @@ interface CommentSectionProps {
 /* ---------- Component ---------- */
 
 export default function CommentSection({ feedId }: CommentSectionProps) {
+  const { t } = useTranslation();
   const currentUserId = useAuthStore((s) => s.user?.userId);
 
   const [comments, setComments] = useState<CommentResponse[]>([]);
@@ -91,14 +93,14 @@ export default function CommentSection({ feedId }: CommentSectionProps) {
 
   return (
     <div className="mt-4 border-t border-stroke pt-4">
-      <h3 className="mb-3 text-sm font-semibold text-high-emphasis">댓글</h3>
+      <h3 className="mb-3 text-sm font-semibold text-high-emphasis">{t('comment.title')}</h3>
 
       {loading ? (
         <div className="flex justify-center py-4">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-stroke border-t-accent" />
         </div>
       ) : comments.length === 0 ? (
-        <p className="py-2 text-sm text-low-emphasis">아직 댓글이 없습니다.</p>
+        <p className="py-2 text-sm text-low-emphasis">{t('comment.empty')}</p>
       ) : (
         <div className="max-h-100 space-y-3 overflow-y-auto">
           {comments.map((c) => (
@@ -121,7 +123,7 @@ export default function CommentSection({ feedId }: CommentSectionProps) {
             type="text"
             value={newText}
             onChange={(e) => setNewText(e.target.value)}
-            placeholder="댓글을 입력하세요..."
+            placeholder={t('comment.placeholder')}
             className="flex-1 rounded-control bg-input px-3 py-2 text-sm text-high-emphasis placeholder:text-low-emphasis focus:outline-none focus:ring-1 focus:ring-accent"
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           />
@@ -130,7 +132,7 @@ export default function CommentSection({ feedId }: CommentSectionProps) {
             disabled={submitting}
             className="rounded-control bg-brand px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            게시
+            {t('comment.post')}
           </button>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { useAppMode } from '../../hooks/useAppMode';
 import { useAuthStore } from '@/store/authStore';
@@ -41,21 +42,21 @@ const UserIcon = () => (
 
 /* ─── 메뉴 항목 타입 ─── */
 type ProfileMenuItem = {
-  label: string;
+  labelKey: string;
   action: ProfilePage | 'logout' | 'login' | 'signup';
 };
 
 /** 인증된 사용자 드롭다운 메뉴 항목 */
 const AUTH_MENU_ITEMS: ProfileMenuItem[] = [
-  { label: '내 정보', action: 'my-info' },
-  { label: '설정', action: 'settings' },
-  { label: '로그아웃', action: 'logout' },
+  { labelKey: 'header.myInfo', action: 'my-info' },
+  { labelKey: 'header.settings', action: 'settings' },
+  { labelKey: 'header.logout', action: 'logout' },
 ];
 
 /** 비인증 사용자 드롭다운 메뉴 항목 */
 const GUEST_MENU_ITEMS: ProfileMenuItem[] = [
-  { label: '로그인', action: 'login' },
-  { label: '회원가입', action: 'signup' },
+  { labelKey: 'header.login', action: 'login' },
+  { labelKey: 'header.signup', action: 'signup' },
 ];
 
 /** 프로필 페이지별 경로 매핑 */
@@ -66,6 +67,7 @@ const PROFILE_ROUTES: Record<ProfilePage, string> = {
 };
 
 const ProfileDropdown = () => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -142,7 +144,7 @@ const ProfileDropdown = () => {
               className="cursor-pointer px-4 py-3 text-sm text-high-emphasis
                 hover:bg-input transition-colors duration-100"
             >
-              {item.label}
+              {t(item.labelKey)}
             </li>
           ))}
         </ul>

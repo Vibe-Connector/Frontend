@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PageContainer from '@/components/layout/PageContainer';
 import ExploreMasonryGrid from '@/components/common/ExploreMasonryGrid';
 
 const LOADING_IMAGE = 'https://picsum.photos/seed/vibe-loading/800/400';
 
 export default function VibeConnectorLoading() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showFeed, setShowFeed] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -72,15 +74,15 @@ export default function VibeConnectorLoading() {
           {/* Title */}
           <h2 className="text-lg font-bold text-high-emphasis">
             {progress < 100
-              ? '요청하신 분위기가 곧 생성됩니다'
-              : '분위기 생성 완료!'}
+              ? t('loading.creating')
+              : t('loading.complete')}
           </h2>
 
           {/* Subtitle */}
           <p className="mt-2 text-sm text-caption">
             {progress < 100
-              ? '다른 유저들의 분위기가 궁금하진 않으신가요?'
-              : '잠시 후 결과 페이지로 이동합니다'}
+              ? t('loading.otherVibes')
+              : t('loading.redirectSoon')}
           </p>
 
           {/* Progress Bar */}
@@ -98,7 +100,7 @@ export default function VibeConnectorLoading() {
               onClick={() => setShowFeed(true)}
               className="mt-5 inline-flex items-center justify-center rounded-pill bg-brand px-8 py-3 text-sm font-medium text-white hover:opacity-80 active:opacity-70 cursor-pointer animate-smooth"
             >
-              보러 가기
+              {t('loading.viewButton')}
             </button>
           )}
         </div>
@@ -109,14 +111,14 @@ export default function VibeConnectorLoading() {
         <div className="mt-10 animate-slide-right">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-lg font-bold text-high-emphasis">
-              다른 유저들의 Vibe
+              {t('loading.otherVibesSection')}
             </h3>
             <button
               type="button"
               onClick={() => setShowFeed(false)}
               className="text-sm text-caption hover:text-high-emphasis animate-smooth cursor-pointer"
             >
-              접기
+              {t('loading.collapse')}
             </button>
           </div>
           <ExploreMasonryGrid seedOffset={100} />

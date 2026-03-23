@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import TabToggle from '../common/TabToggle';
 import ProfileDropdown from '../common/ProfileDropdown';
 import { useAppMode } from '../../hooks/useAppMode';
@@ -9,9 +10,9 @@ import { NotificationPanel } from '../notification';
 
 type Tab = 'generate' | 'explore';
 
-const HEADER_TABS: { key: Tab; label: string }[] = [
-  { key: 'generate', label: 'Generate' },
-  { key: 'explore', label: 'Explore' },
+const HEADER_TAB_KEYS: { key: Tab; labelKey: string }[] = [
+  { key: 'generate', labelKey: 'header.generate' },
+  { key: 'explore', labelKey: 'header.explore' },
 ];
 
 const VibelinkLogo = () => (
@@ -72,6 +73,7 @@ const BellIcon = () => (
 );
 
 const Header = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { sidebarMode, profilePage, switchToExplore } = useAppMode();
@@ -147,8 +149,14 @@ const Header = () => {
 
   /** 프로필 페이지 라벨 매핑 */
   const profilePageLabel =
-    profilePage === 'my-info' ? '내 정보' :
-    profilePage === 'report' ? 'Report' : '설정';
+    profilePage === 'my-info' ? t('header.myInfo') :
+    profilePage === 'report' ? t('header.report') : t('header.settings');
+
+  /** 번역된 헤더 탭 */
+  const HEADER_TABS = HEADER_TAB_KEYS.map(({ key, labelKey }) => ({
+    key,
+    label: t(labelKey),
+  }));
 
   return (
     <header className="w-full bg-white">
@@ -183,7 +191,7 @@ const Header = () => {
               className={`relative ${isAuthenticated ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}
               onClick={() => isAuthenticated && setNotificationOpen((prev) => !prev)}
               disabled={!isAuthenticated}
-              aria-label="알림"
+              aria-label={t('header.notification')}
             >
               <BellIcon />
               {isAuthenticated && unreadCount > 0 && (
